@@ -2,13 +2,14 @@ import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { forceFlag } from "../../flags.js";
+import { OAuthClient } from "../../services/oauth-client.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 
 export default class AccountsLogout extends ControlBaseCommand {
   static override args = {
-    accountAlias: Args.string({
+    accountAliasOrId: Args.string({
       description:
-        "Alias of the account to log out from (defaults to current account)",
+        "Alias or ID of the account to log out from (defaults to current account)",
       required: false,
     }),
   };
@@ -18,6 +19,7 @@ export default class AccountsLogout extends ControlBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> mycompany",
+    "<%= config.bin %> <%= command.id %> VgQpOZ",
     "<%= config.bin %> <%= command.id %> --json",
     "<%= config.bin %> <%= command.id %> --pretty-json",
   ];
@@ -30,29 +32,24 @@ export default class AccountsLogout extends ControlBaseCommand {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsLogout);
 
-    // Determine which account to log out from
-    const targetAlias =
-      args.accountAlias || this.configManager.getCurrentAccountAlias();
-
-    if (!targetAlias) {
-      this.fail(
-        'No account is currently selected and no alias provided. Use "ably accounts list" to see available accounts.',
-        flags,
-        "accountLogout",
-      );
-    }
-
-    const accounts = this.configManager.listAccounts();
-    const accountExists = accounts.some(
-      (account) => account.alias === targetAlias,
-    );
-
-    if (!accountExists) {
-      this.fail(
-        `Account with alias "${targetAlias}" not found. Use "ably accounts list" to see available accounts.`,
-        flags,
-        "accountLogout",
-      );
+    // The accountAliasOrId arg accepts two formats:
+    //   1. Account alias  — e.g. "mycompany" (the label set during login)
+    //   2. Account ID     — e.g. "VgQpOZ"    (the Ably-assigned account ID)
+    let targetAlias: string;
+    if (args.accountAliasOrId) {
+      targetAlias = this.resolveAccountAlias(args.accountAliasOrId, flags);
+    } else {
+      const currentAlias = this.configManager.getCurrentAccountAlias();
+      if (!currentAlias) {
+        this.fail(
+          'No account is currently selected and no alias or ID provided. Run "ably accounts list" to see available accounts.',
+          flags,
+          "accountLogout",
+        );
+      }
+      // Validate that the current alias still exists in the accounts list.
+      // This catches stale config where current.account points to a removed alias.
+      targetAlias = this.resolveAccountAlias(currentAlias, flags);
     }
 
     // In JSON mode, require --force to prevent accidental destructive actions
@@ -70,6 +67,64 @@ export default class AccountsLogout extends ControlBaseCommand {
       if (!confirmed) {
         this.logWarning("Logout canceled.", flags);
         return;
+      }
+    }
+
+    // Revoke OAuth tokens if this is an OAuth account and no other aliases share the session
+    if (this.configManager.getAuthMethod(targetAlias) === "oauth") {
+      const oauthTokens = this.configManager.getOAuthTokens(targetAlias);
+      if (oauthTokens) {
+        const sharingAliases =
+          this.configManager.getAliasesForOAuthSession(targetAlias);
+        const isLastAlias = sharingAliases.length <= 1;
+
+        if (isLastAlias) {
+          const targetAccount = this.configManager
+            .listAccounts()
+            .find((a) => a.alias === targetAlias)?.account;
+          // Revoke against the host that minted the token. A --control-host
+          // override here would send the token to a server that never issued
+          // it — a no-op revocation that silently leaves the real token live.
+          const oauthHost = targetAccount?.oauthHost ?? flags["oauth-host"];
+          const oauthClient = new OAuthClient({
+            oauthHost,
+          });
+          // Abortable best-effort revocation. The external AbortController
+          // cancels the in-flight fetch when the timer fires (unlike the old
+          // Promise.race which let the request complete in the background),
+          // and surfacing the reason lets us warn the user that revocation
+          // did not complete so they know the token may still be live until
+          // its natural expiry.
+          const revokeWithTimeout = async (
+            token: string,
+            label: string,
+            timeoutMs = 5000,
+          ): Promise<void> => {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+              await oauthClient.revokeToken(token, {
+                signal: controller.signal,
+              });
+            } catch (error) {
+              const reason = controller.signal.aborted
+                ? `timed out after ${timeoutMs}ms`
+                : error instanceof Error
+                  ? error.message
+                  : String(error);
+              this.logWarning(
+                `Failed to revoke ${label} token (${reason}); it may remain valid until its natural expiry.`,
+                flags,
+              );
+            } finally {
+              clearTimeout(timer);
+            }
+          };
+          await Promise.all([
+            revokeWithTimeout(oauthTokens.accessToken, "access"),
+            revokeWithTimeout(oauthTokens.refreshToken, "refresh"),
+          ]);
+        }
       }
     }
 

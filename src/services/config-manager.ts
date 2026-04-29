@@ -2,7 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { parse, stringify } from "smol-toml";
+import { extractKeyNameFromApiKey } from "../utils/api-key.js";
 import isTestMode from "../utils/test-mode.js";
+import { DEFAULT_OAUTH_HOST } from "./oauth-client.js";
 
 // Updated to include key and app metadata
 export interface AppConfig {
@@ -13,16 +15,34 @@ export interface AppConfig {
 }
 
 export interface AccountConfig {
-  accessToken: string;
+  // Legacy: pre-OAuth configs store the access token directly on the account.
+  // OAuth accounts use oauthSessionKey to reference a shared OAuthSession instead.
+  // Do not remove — needed for backward compatibility with existing configs.
+  accessToken?: string;
+  accessTokenExpiresAt?: number;
   accountId: string;
   accountName: string;
   apps?: {
     [appId: string]: AppConfig;
   };
+  authMethod?: "oauth";
+  controlHost?: string;
   currentAppId?: string;
   endpoint?: string;
+  // OAuth authorization server host (ably.com or a review-app override).
+  // Kept separate from controlHost so the session key and token-refresh
+  // traffic always targets the host that actually minted the tokens.
+  oauthHost?: string;
+  oauthSessionKey?: string;
   tokenId?: string;
   userEmail: string;
+}
+
+export interface OAuthSession {
+  accessToken: string;
+  accessTokenExpiresAt: number;
+  oauthScope?: string;
+  refreshToken: string;
 }
 
 export interface AblyConfig {
@@ -38,11 +58,12 @@ export interface AblyConfig {
       }[];
     };
   };
+  oauthSessions?: Record<string, OAuthSession>;
 }
 
 export interface ConfigManager {
   // Account management
-  getAccessToken(alias?: string): string | undefined;
+  getAccessToken(): string | undefined;
   getCurrentAccount(): AccountConfig | undefined;
   getCurrentAccountAlias(): string | undefined;
   listAccounts(): { account: AccountConfig; alias: string }[];
@@ -58,6 +79,35 @@ export interface ConfigManager {
   ): void;
   switchAccount(alias: string): boolean;
   removeAccount(alias: string): boolean;
+
+  // OAuth management
+  storeOAuthTokens(
+    alias: string,
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+      scope?: string;
+      userEmail?: string;
+    },
+    accountInfo?: {
+      accountId?: string;
+      accountName?: string;
+      controlHost?: string;
+      oauthHost?: string;
+    },
+  ): void;
+  getOAuthTokens(alias?: string):
+    | {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number;
+      }
+    | undefined;
+  isAccessTokenExpired(): boolean;
+  getAuthMethod(alias?: string): "oauth" | undefined;
+  getAliasesForOAuthSession(alias: string): string[];
+  clearOAuthSession(alias?: string): void;
 
   // App management
   getApiKey(appId?: string): string | undefined;
@@ -101,6 +151,7 @@ export interface ConfigManager {
   // Config file
   getConfigPath(): string;
   saveConfig(): void;
+  reloadConfig(): void;
 }
 
 // Type declaration for test mocks available on globalThis
@@ -153,14 +204,18 @@ export class TomlConfigManager implements ConfigManager {
     this.saveConfig();
   }
 
-  // Get access token for the current account or specific alias
-  public getAccessToken(alias?: string): string | undefined {
-    if (alias) {
-      return this.config.accounts[alias]?.accessToken;
-    }
+  public getAccessToken(): string | undefined {
+    const account = this.getCurrentAccount();
+    if (!account) return undefined;
 
-    const currentAccount = this.getCurrentAccount();
-    return currentAccount?.accessToken;
+    // OAuth accounts read from the shared session
+    const session = account.oauthSessionKey
+      ? this.config.oauthSessions?.[account.oauthSessionKey]
+      : undefined;
+    if (session) return session.accessToken;
+
+    // Fallback: pre-OAuth configs store the token directly on the account
+    return account.accessToken;
   }
 
   // Get API key for current app or specific app ID
@@ -265,7 +320,7 @@ export class TomlConfigManager implements ConfigManager {
     }
 
     if (appConfig.apiKey) {
-      return appConfig.apiKey.split(":")[0];
+      return extractKeyNameFromApiKey(appConfig.apiKey);
     }
 
     return undefined;
@@ -292,11 +347,26 @@ export class TomlConfigManager implements ConfigManager {
 
   // Remove an account
   public removeAccount(alias: string): boolean {
-    if (!this.config.accounts[alias]) {
+    const account = this.config.accounts[alias];
+    if (!account) {
       return false;
     }
 
+    const sessionKey = account.oauthSessionKey;
     delete this.config.accounts[alias];
+
+    // Clean up orphaned OAuth session entry
+    if (sessionKey && this.config.oauthSessions?.[sessionKey]) {
+      const stillReferenced = Object.values(this.config.accounts).some(
+        (a) => a.oauthSessionKey === sessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[sessionKey];
+        if (Object.keys(this.config.oauthSessions).length === 0) {
+          delete this.config.oauthSessions;
+        }
+      }
+    }
 
     // If the removed account was the current one, clear the current account selection
     if (this.config.current?.account === alias) {
@@ -305,6 +375,16 @@ export class TomlConfigManager implements ConfigManager {
 
     this.saveConfig();
     return true;
+  }
+
+  public getAliasesForOAuthSession(alias: string): string[] {
+    const account = this.config.accounts[alias];
+    if (!account?.oauthSessionKey) return [alias];
+
+    const sessionKey = account.oauthSessionKey;
+    return Object.entries(this.config.accounts)
+      .filter(([, acc]) => acc.oauthSessionKey === sessionKey)
+      .map(([a]) => a);
   }
 
   // Remove API key for an app
@@ -333,6 +413,14 @@ export class TomlConfigManager implements ConfigManager {
         cause: error,
       });
     }
+  }
+
+  // Re-read config from disk, discarding in-memory state. Used by the token
+  // refresh path to detect whether a concurrent CLI invocation has rotated
+  // tokens since we loaded them — otherwise we could clobber valid peer
+  // tokens with our stale snapshot.
+  public reloadConfig(): void {
+    this.loadConfig();
   }
 
   // Set current app for the current account
@@ -444,7 +532,7 @@ export class TomlConfigManager implements ConfigManager {
       ...this.config.accounts[alias].apps[appId],
       apiKey,
       appName: metadata?.appName,
-      keyId: metadata?.keyId || apiKey.split(":")[0], // Extract key ID if not provided
+      keyId: metadata?.keyId || extractKeyNameFromApiKey(apiKey),
       keyName: metadata?.keyName,
     };
 
@@ -476,6 +564,150 @@ export class TomlConfigManager implements ConfigManager {
     this.saveConfig();
   }
 
+  // Store OAuth tokens, shared across aliases with the same userEmail + oauthHost.
+  // userEmail is supplied by callers from the /me response (fresh login) or from
+  // the previously-stored account metadata (token refresh, account switch) — it
+  // is never populated from the OAuth token response, which is RFC 6749 plain.
+  public storeOAuthTokens(
+    alias: string,
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+      scope?: string;
+      userEmail?: string;
+    },
+    accountInfo?: {
+      accountId?: string;
+      accountName?: string;
+      controlHost?: string;
+      oauthHost?: string;
+    },
+  ): void {
+    const userEmail =
+      tokens.userEmail ?? this.config.accounts[alias]?.userEmail ?? "";
+    const oauthHost =
+      accountInfo?.oauthHost ??
+      this.config.accounts[alias]?.oauthHost ??
+      DEFAULT_OAUTH_HOST;
+    const emailPart = userEmail.toLowerCase() || alias;
+    // Scope the session key by OAuth host so the same email on prod and a
+    // review app don't silently overwrite each other's refresh tokens — the
+    // issuer is the host that actually minted them.
+    const sessionKey = `${emailPart}::${oauthHost.toLowerCase()}`;
+
+    // Create/update the shared OAuth session
+    if (!this.config.oauthSessions) {
+      this.config.oauthSessions = {};
+    }
+
+    // Clean up the previous session entry if this account's key is changing
+    // (e.g. migration from a pre-oauthHost key format).
+    const previousSessionKey = this.config.accounts[alias]?.oauthSessionKey;
+    if (
+      previousSessionKey &&
+      previousSessionKey !== sessionKey &&
+      this.config.oauthSessions[previousSessionKey]
+    ) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== alias && acc.oauthSessionKey === previousSessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[previousSessionKey];
+      }
+    }
+
+    this.config.oauthSessions[sessionKey] = {
+      accessToken: tokens.accessToken,
+      accessTokenExpiresAt: tokens.expiresAt,
+      oauthScope: tokens.scope,
+      refreshToken: tokens.refreshToken,
+    };
+
+    // Store account metadata and reference the OAuth session
+    this.config.accounts[alias] = {
+      ...this.config.accounts[alias],
+      accountId:
+        accountInfo?.accountId ?? this.config.accounts[alias]?.accountId ?? "",
+      accountName:
+        accountInfo?.accountName ??
+        this.config.accounts[alias]?.accountName ??
+        "",
+      apps: this.config.accounts[alias]?.apps || {},
+      authMethod: "oauth",
+      controlHost:
+        accountInfo?.controlHost ?? this.config.accounts[alias]?.controlHost,
+      currentAppId: this.config.accounts[alias]?.currentAppId,
+      oauthHost:
+        accountInfo?.oauthHost ?? this.config.accounts[alias]?.oauthHost,
+      oauthSessionKey: sessionKey,
+      userEmail,
+    };
+
+    // Purge legacy pre-OAuth fields that the spread above may have carried
+    // over. They are inert for OAuth accounts but leave a stale plaintext
+    // token in the on-disk config.
+    delete this.config.accounts[alias].accessToken;
+    delete this.config.accounts[alias].accessTokenExpiresAt;
+    delete this.config.accounts[alias].tokenId;
+
+    if (!this.config.current || !this.config.current.account) {
+      this.config.current = { account: alias };
+    }
+
+    this.saveConfig();
+  }
+
+  // Get OAuth tokens for the current account or specific alias
+  public getOAuthTokens(alias?: string):
+    | {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number;
+      }
+    | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account || account.authMethod !== "oauth") return undefined;
+
+    const session = account.oauthSessionKey
+      ? this.config.oauthSessions?.[account.oauthSessionKey]
+      : undefined;
+    if (!session) return undefined;
+
+    return {
+      accessToken: session.accessToken,
+      expiresAt: session.accessTokenExpiresAt,
+      refreshToken: session.refreshToken,
+    };
+  }
+
+  public isAccessTokenExpired(): boolean {
+    const account = this.getCurrentAccount();
+    if (!account) return false;
+
+    // OAuth accounts read expiry from the shared session;
+    // falls back to account-level field for pre-OAuth configs
+    const session = account.oauthSessionKey
+      ? this.config.oauthSessions?.[account.oauthSessionKey]
+      : undefined;
+    const expiresAt =
+      session?.accessTokenExpiresAt ?? account.accessTokenExpiresAt;
+    if (!expiresAt) return false;
+
+    return Date.now() >= expiresAt - 60_000;
+  }
+
+  // Get the auth method for the current account or specific alias
+  public getAuthMethod(alias?: string): "oauth" | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    return account?.authMethod;
+  }
+
   // Switch to a different account
   public switchAccount(alias: string): boolean {
     if (!this.config.accounts[alias]) {
@@ -489,6 +721,37 @@ export class TomlConfigManager implements ConfigManager {
     this.config.current.account = alias;
     this.saveConfig();
     return true;
+  }
+
+  // Clear OAuth session(s) for an alias without removing the account itself.
+  // Used when a refresh token has been invalidated server-side — subsequent
+  // commands should surface "please re-login" immediately rather than
+  // re-attempting refresh against a dead token.
+  public clearOAuthSession(alias?: string): void {
+    const targetAlias = alias ?? this.config.current?.account;
+    if (!targetAlias) return;
+    const account = this.config.accounts[targetAlias];
+    if (!account) return;
+
+    const sessionKey = account.oauthSessionKey;
+    if (sessionKey && this.config.oauthSessions?.[sessionKey]) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== targetAlias && acc.oauthSessionKey === sessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[sessionKey];
+        if (Object.keys(this.config.oauthSessions).length === 0) {
+          delete this.config.oauthSessions;
+        }
+      }
+    }
+
+    delete account.oauthSessionKey;
+    delete account.accessToken;
+    delete account.accessTokenExpiresAt;
+
+    this.saveConfig();
   }
 
   private ensureConfigDirExists(): void {

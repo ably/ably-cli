@@ -90,7 +90,7 @@ export function standardFlagTests(
  * Options for standardControlApiErrorTests.
  */
 interface ControlApiErrorTestOptions {
-  /** Command args for runCommand, e.g., ["apps:create", "--name", "test"] */
+  /** Command args for runCommand, e.g., ["apps:create", "test"] */
   commandArgs: string[];
   /** import.meta.url of the test file */
   importMetaUrl: string;

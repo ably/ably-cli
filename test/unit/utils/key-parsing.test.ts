@@ -1,32 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
-  parseKeyIdentifier,
   resolveCurrentKeyName,
   parseCapabilities,
 } from "../../../src/utils/key-parsing.js";
-
-describe("parseKeyIdentifier", () => {
-  it("should parse appId.keyId format", () => {
-    expect(parseKeyIdentifier("app123.key456")).toEqual({
-      appId: "app123",
-      keyId: "key456",
-    });
-  });
-
-  it("should return keyId only when no dot present", () => {
-    expect(parseKeyIdentifier("key456")).toEqual({ keyId: "key456" });
-  });
-
-  it("should return keyId only when identifier contains a colon", () => {
-    expect(parseKeyIdentifier("app123.key456:secret")).toEqual({
-      keyId: "app123.key456:secret",
-    });
-  });
-
-  it("should return keyId only when multiple dots present", () => {
-    expect(parseKeyIdentifier("a.b.c")).toEqual({ keyId: "a.b.c" });
-  });
-});
 
 describe("resolveCurrentKeyName", () => {
   it("should prefix keyId with appId", () => {

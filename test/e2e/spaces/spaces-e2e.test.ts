@@ -1,12 +1,4 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
@@ -16,7 +8,6 @@ import {
   readProcessOutput,
   runBackgroundProcessAndGetOutput,
   killProcess,
-  forceExit,
   cleanupTrackedResources,
   trackTestOutputFile,
   testOutputFiles,
@@ -27,15 +18,6 @@ import {
 import { ChildProcess } from "node:child_process";
 
 describe("Spaces E2E Tests", () => {
-  // Skip all tests if API key not available
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   let testSpaceId: string;
   let client1Id: string;
   let client2Id: string;
@@ -212,7 +194,7 @@ describe("Spaces E2E Tests", () => {
           };
 
           const setLocationResult = await runBackgroundProcessAndGetOutput(
-            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(locationData)}' --client-id ${client2Id} --duration 5`,
+            `bin/run.js spaces locations set ${testSpaceId} '${JSON.stringify(locationData)}' --client-id ${client2Id} --duration 5`,
             process.env.CI ? 15000 : 15000, // Timeout for the command
           );
 
@@ -254,7 +236,7 @@ describe("Spaces E2E Tests", () => {
           };
 
           const updateLocationResult = await runBackgroundProcessAndGetOutput(
-            `bin/run.js spaces locations set ${testSpaceId} --location '${JSON.stringify(newLocationData)}' --client-id ${client2Id} --duration 5`,
+            `bin/run.js spaces locations set ${testSpaceId} '${JSON.stringify(newLocationData)}' --client-id ${client2Id} --duration 5`,
             process.env.CI ? 15000 : 15000, // Increased local timeout
           );
 

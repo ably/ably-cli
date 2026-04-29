@@ -1,16 +1,16 @@
-import { Args, Flags } from "@oclif/core";
+import { Args } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { forceFlag } from "../../../flags.js";
 import { formatCapabilities } from "../../../utils/key-display.js";
-import { parseKeyIdentifier } from "../../../utils/key-parsing.js";
 import { formatLabel, formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class KeysRevokeCommand extends ControlBaseCommand {
   static args = {
-    keyName: Args.string({
-      description: "Key name (APP_ID.KEY_ID) of the key to revoke",
+    keyNameOrValue: Args.string({
+      description:
+        'Key name "<APP_ID>.<KEY_ID>" or value "<APP_ID>.<KEY_ID>:<KEY_SECRET>"',
       required: true,
     }),
   };
@@ -18,45 +18,42 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
   static description = "Revoke an API key (permanently disables the key)";
 
   static examples = [
-    "$ ably auth keys revoke APP_ID.KEY_ID",
-    "$ ably auth keys revoke KEY_ID --app APP_ID",
-    "$ ably auth keys revoke APP_ID.KEY_ID --force",
-    "$ ably auth keys revoke APP_ID.KEY_ID --json",
-    "$ ably auth keys revoke APP_ID.KEY_ID --pretty-json",
+    '$ ably auth keys revoke "APP_ID.KEY_ID"',
+    '$ ably auth keys revoke "APP_ID.KEY_ID:KEY_SECRET"',
+    '$ ably auth keys revoke "APP_ID.KEY_ID" --force',
+    '$ ably auth keys revoke "APP_ID.KEY_ID" --json',
   ];
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
-    app: Flags.string({
-      description: "The app ID or name (defaults to current app)",
-      env: "ABLY_APP_ID",
-    }),
     ...forceFlag,
   };
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(KeysRevokeCommand);
 
-    const parsed = parseKeyIdentifier(args.keyName);
-    const keyId = parsed.keyId;
+    const keyIdentifier = args.keyNameOrValue;
 
-    const appId = parsed.appId ?? (await this.requireAppId(flags));
+    // Extract appId from the key identifier (key name or key value)
+    const appId = this.resolveAppIdForKey(keyIdentifier, flags);
 
     try {
       const controlApi = this.createControlApi(flags);
       // Get the key details first to show info to the user
-      const key = await controlApi.getKey(appId, keyId);
+      const fullKeyObject = await controlApi.getKey(appId, keyIdentifier);
 
-      const keyName = `${key.appId}.${key.id}`;
+      const keyName = `${fullKeyObject.appId}.${fullKeyObject.id}`;
 
       if (!this.shouldOutputJson(flags)) {
         this.log(`Key to revoke:`);
         this.log(`${formatLabel("Key Name")} ${formatResource(keyName)}`);
-        this.log(`${formatLabel("Key Label")} ${key.name || "Unnamed key"}`);
-        this.log(`${formatLabel("Full key")} ${key.key}`);
+        this.log(
+          `${formatLabel("Key Label")} ${fullKeyObject.name || "Unnamed key"}`,
+        );
+        this.log(`${formatLabel("Full key")} ${fullKeyObject.key}`);
 
         for (const line of formatCapabilities(
-          key.capability as Record<string, string[] | string>,
+          fullKeyObject.capability as Record<string, string[] | string>,
         )) {
           this.log(line);
         }
@@ -84,7 +81,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         }
       }
 
-      await controlApi.revokeKey(appId, keyId);
+      await controlApi.revokeKey(appId, fullKeyObject.id);
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
@@ -105,7 +102,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
       // Check if the revoked key is the current key for this app
       const currentKey = this.configManager.getApiKey(appId);
-      if (currentKey === key.key) {
+      if (currentKey === fullKeyObject.key) {
         if (this.shouldOutputJson(flags)) {
           // Auto-remove in JSON mode — key is already revoked, can't be used
           this.configManager.removeApiKey(appId);
@@ -121,7 +118,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
         }
       }
     } catch (error) {
-      this.fail(error, flags, "keyRevoke", { appId, keyId });
+      this.fail(error, flags, "keyRevoke", { appId, keyIdentifier });
     }
   }
 }

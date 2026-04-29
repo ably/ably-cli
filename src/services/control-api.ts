@@ -1,11 +1,14 @@
 import fetch, { type RequestInit } from "node-fetch";
 import { CommandError } from "../errors/command-error.js";
-import { getCliVersion } from "../utils/version.js";
+import { getAgentName, getCliVersion } from "../utils/version.js";
+import isTestMode from "../utils/test-mode.js";
+import type { TokenRefreshMiddleware } from "./token-refresh-middleware.js";
 
 export interface ControlApiOptions {
   accessToken: string;
   controlHost?: string;
   logErrors?: boolean;
+  tokenRefreshMiddleware?: TokenRefreshMiddleware;
 }
 
 export interface App {
@@ -177,13 +180,31 @@ export interface MeResponse {
   user: { email: string };
 }
 
+export interface AccountSummary {
+  id: string;
+  name: string;
+}
+
 export class ControlApi {
   private accessToken: string;
   private controlHost: string;
+  private logErrors: boolean;
+  private tokenRefreshMiddleware?: TokenRefreshMiddleware;
 
   constructor(options: ControlApiOptions) {
     this.accessToken = options.accessToken;
     this.controlHost = options.controlHost || "control.ably.net";
+    this.tokenRefreshMiddleware = options.tokenRefreshMiddleware;
+    // Explicit options.logErrors overrides env var; otherwise suppress in CI/test
+    if (options.logErrors === undefined) {
+      const suppressErrors =
+        process.env.SUPPRESS_CONTROL_API_ERRORS === "true" ||
+        process.env.CI === "true" ||
+        isTestMode();
+      this.logErrors = !suppressErrors;
+    } else {
+      this.logErrors = options.logErrors;
+    }
   }
 
   // Ask a question to the Ably AI agent
@@ -354,28 +375,42 @@ export class ControlApi {
     return this.request<AppStats[]>(`/apps/${appId}/stats${queryString}`);
   }
 
-  // Get a specific key by ID, key value, key name (APP_ID.KEY_ID), or label
-  async getKey(appId: string, keyIdOrValue: string): Promise<Key> {
+  // Get KEY by Key name "<appId>.<keyId>" or value "<appId>.<keyId>:<keySecret>", keyId or key label
+  async getKey(appId: string, keyIdentifier: string): Promise<Key> {
     const keys = await this.listKeys(appId);
 
     const matchingKey = keys.find((k) => {
       // Full key value (contains colon) e.g. "s57drg.3bnE1Q:secretpart"
-      if (keyIdOrValue.includes(":") && k.key === keyIdOrValue) return true;
+      if (keyIdentifier.includes(":") && k.key === keyIdentifier) return true;
       // Full key name e.g. "s57drg.3bnE1Q"
-      if (keyIdOrValue.includes(".") && `${k.appId}.${k.id}` === keyIdOrValue)
+      if (keyIdentifier.includes(".") && `${k.appId}.${k.id}` === keyIdentifier)
         return true;
       // Key ID only e.g. "3bnE1Q"
-      if (k.id === keyIdOrValue) return true;
+      if (k.id === keyIdentifier) return true;
       // Key label/name e.g. "Root"
-      if (k.name === keyIdOrValue) return true;
+      if (k.name === keyIdentifier) return true;
       return false;
     });
 
     if (!matchingKey) {
-      throw new Error(`Key "${keyIdOrValue}" not found`);
+      throw new Error(`Key "${keyIdentifier}" not found`);
     }
 
     return matchingKey;
+  }
+
+  // Get all accounts for the authenticated user
+  async getAccounts(): Promise<AccountSummary[]> {
+    try {
+      return await this.request<AccountSummary[]>("/me/accounts");
+    } catch (error: unknown) {
+      // Graceful degradation: fall back to single account from /me if endpoint not available
+      if (error instanceof CommandError && error.statusCode === 404) {
+        const me = await this.getMe();
+        return [{ id: me.account.id, name: me.account.name }];
+      }
+      throw error;
+    }
   }
 
   // Get user and account info
@@ -384,7 +419,14 @@ export class ControlApi {
   }
 
   async getNamespace(appId: string, namespaceId: string): Promise<Namespace> {
-    return this.request<Namespace>(`/apps/${appId}/namespaces/${namespaceId}`);
+    // Individual namespace GET endpoint is no longer available;
+    // list all namespaces and filter by ID instead.
+    const namespaces = await this.listNamespaces(appId);
+    const namespace = namespaces.find((ns) => ns.id === namespaceId);
+    if (!namespace) {
+      throw new Error(`Namespace with ID "${namespaceId}" not found`);
+    }
+    return namespace;
   }
 
   async getRule(appId: string, ruleId: string): Promise<Rule> {
@@ -518,9 +560,21 @@ export class ControlApi {
     method = "GET",
     body?: unknown,
   ): Promise<T> {
-    const url = this.controlHost.includes("local")
-      ? `http://${this.controlHost}/api/v1${path}`
-      : `https://${this.controlHost}/v1${path}`;
+    // If we have a token refresh middleware, get a valid token before each request
+    if (this.tokenRefreshMiddleware) {
+      this.accessToken =
+        await this.tokenRefreshMiddleware.getValidAccessToken();
+    }
+
+    // The dedicated Control API service (control.ably.net) serves at `/v1/`.
+    // The website itself (ably.com and Heroku review apps) proxies the
+    // Control API at `/api/v1/`. Match hosts whose first label starts with
+    // "control" so both `control.` and `control-*.` variants route correctly,
+    // case insensitively so ABLY_CONTROL_HOST values aren't locale-sensitive.
+    const isControlService = /^control[-.]/i.test(this.controlHost);
+    const scheme = this.controlHost.includes("local") ? "http" : "https";
+    const prefix = isControlService ? "/v1" : "/api/v1";
+    const url = `${scheme}://${this.controlHost}${prefix}${path}`;
 
     const isFormData = body instanceof FormData;
     const options: RequestInit = {
@@ -528,7 +582,7 @@ export class ControlApi {
         Accept: "application/json",
         Authorization: `Bearer ${this.accessToken}`,
         ...(!isFormData && { "Content-Type": "application/json" }),
-        "Ably-Agent": `ably-cli/${getCliVersion()}`,
+        "Ably-Agent": `${getAgentName()}/${getCliVersion()}`,
       },
       method,
     };

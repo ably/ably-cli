@@ -8,7 +8,7 @@ export default class QueuesIndexCommand extends BaseTopicCommand {
 
   static examples = [
     "<%= config.bin %> <%= command.id %> list",
-    '<%= config.bin %> <%= command.id %> create --name "my-queue"',
-    "<%= config.bin %> <%= command.id %> delete my-queue",
+    '<%= config.bin %> <%= command.id %> create "my-queue"',
+    '<%= config.bin %> <%= command.id %> delete "my-queue"',
   ];
 }

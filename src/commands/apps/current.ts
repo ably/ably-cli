@@ -1,6 +1,10 @@
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import {
+  extractAppIdFromApiKey,
+  extractKeyNameFromApiKey,
+} from "../../utils/api-key.js";
 import { errorMessage } from "../../utils/errors.js";
 import { formatLabel } from "../../utils/output.js";
 
@@ -57,7 +61,8 @@ export default class AppsCurrent extends ControlBaseCommand {
 
         if (apiKey) {
           const keyId =
-            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0]!;
+            this.configManager.getKeyId(currentAppId) ||
+            extractKeyNameFromApiKey(apiKey);
           const keyLabel =
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
           const keyName = keyId.includes(".")
@@ -94,7 +99,8 @@ export default class AppsCurrent extends ControlBaseCommand {
         if (apiKey) {
           // Extract the key ID and format the full key name (app_id.key_id)
           const keyId =
-            this.configManager.getKeyId(currentAppId) || apiKey.split(":")[0]!;
+            this.configManager.getKeyId(currentAppId) ||
+            extractKeyNameFromApiKey(apiKey);
           const keyLabel =
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
 
@@ -137,9 +143,8 @@ export default class AppsCurrent extends ControlBaseCommand {
       );
     }
 
-    // API key format is [APP_ID].[KEY_ID]:[KEY_SECRET]
-    const appId = apiKey.split(".")[0]!;
-    const keyId = apiKey.split(":")[0]!; // This includes APP_ID.KEY_ID
+    const appId = extractAppIdFromApiKey(apiKey);
+    const keyId = extractKeyNameFromApiKey(apiKey);
 
     try {
       // Create a control API instance using the base class method

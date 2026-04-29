@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { formatLabel, formatResource } from "../../utils/output.js";
@@ -6,19 +6,22 @@ import { formatLabel, formatResource } from "../../utils/output.js";
 export default class AppsCreateCommand extends ControlBaseCommand {
   static description = "Create a new app";
 
+  static args = {
+    appName: Args.string({
+      description: "Name of the app",
+      required: true,
+    }),
+  };
+
   static examples = [
-    '$ ably apps create --name "My New App"',
-    '$ ably apps create --name "My New App" --tls-only',
-    '$ ably apps create --name "My New App" --json',
-    '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps create --name "My New App"',
+    '$ ably apps create "My New App"',
+    '$ ably apps create "My New App" --tls-only',
+    '$ ably apps create "My New App" --json',
+    '$ ABLY_ACCESS_TOKEN="YOUR_ACCESS_TOKEN" ably apps create "My New App"',
   ];
 
   static flags = {
     ...ControlBaseCommand.globalFlags,
-    name: Flags.string({
-      description: "Name of the app",
-      required: true,
-    }),
     "tls-only": Flags.boolean({
       default: false,
       description: "Whether the app should accept TLS connections only",
@@ -26,14 +29,14 @@ export default class AppsCreateCommand extends ControlBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(AppsCreateCommand);
+    const { args, flags } = await this.parse(AppsCreateCommand);
 
     try {
       const controlApi = this.createControlApi(flags);
-      this.logProgress(`Creating app ${formatResource(flags.name)}`, flags);
+      this.logProgress(`Creating app ${formatResource(args.appName)}`, flags);
 
       const app = await controlApi.createApp({
-        name: flags.name,
+        name: args.appName,
         tlsOnly: flags["tls-only"],
       });
 
@@ -70,14 +73,16 @@ export default class AppsCreateCommand extends ControlBaseCommand {
         this.log(`${formatLabel("Updated")} ${this.formatDate(app.modified)}`);
       }
 
-      // Automatically switch to the newly created app
-      this.configManager.setCurrentApp(app.id);
-      this.configManager.storeAppInfo(app.id, { appName: app.name });
+      // Automatically switch to the newly created app if a local account exists
+      if (this.configManager.getCurrentAccount()) {
+        this.configManager.setCurrentApp(app.id);
+        this.configManager.storeAppInfo(app.id, { appName: app.name });
 
-      this.logSuccessMessage(
-        `Automatically switched to app ${formatResource(app.name)} (${app.id}).`,
-        flags,
-      );
+        this.logSuccessMessage(
+          `Automatically switched to app ${formatResource(app.name)} (${app.id}).`,
+          flags,
+        );
+      }
     } catch (error) {
       this.fail(error, flags, "appCreate");
     }

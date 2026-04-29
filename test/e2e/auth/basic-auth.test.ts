@@ -1,17 +1,8 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
-  forceExit,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -20,14 +11,6 @@ import {
 describe("Authentication E2E", () => {
   let tempConfigDir: string;
   let originalEnv: NodeJS.ProcessEnv;
-
-  beforeAll(async () => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
 
   beforeEach(() => {
     resetTestTracking();

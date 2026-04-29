@@ -26,6 +26,13 @@ import type {
   ConfigManager,
 } from "../../src/services/config-manager.js";
 
+// Kept in sync with DEFAULT_OAUTH_HOST in src/services/oauth-client.ts.
+// Duplicated here because importing from oauth-client pulls node-fetch into
+// the vitest setup graph (via test/unit/setup.ts → mock-config-manager),
+// which installs node-fetch's global agent *before* nock is set up per test
+// and breaks interception for commands that make HTTPS requests.
+const DEFAULT_OAUTH_HOST = "ably.com";
+
 /**
  * Type for test configuration values.
  */
@@ -204,6 +211,7 @@ export class MockConfigManager implements ConfigManager {
    */
   public clearAccounts(): void {
     this.config.accounts = {};
+    delete this.config.oauthSessions;
     if (this.config.current) {
       delete this.config.current.account;
     }
@@ -215,12 +223,18 @@ export class MockConfigManager implements ConfigManager {
     delete this.config.helpContext;
   }
 
-  public getAccessToken(alias?: string): string | undefined {
-    if (alias) {
-      return this.config.accounts[alias]?.accessToken;
-    }
-    const currentAccount = this.getCurrentAccount();
-    return currentAccount?.accessToken;
+  public getAccessToken(): string | undefined {
+    const account = this.getCurrentAccount();
+    if (!account) return undefined;
+
+    // OAuth accounts read from the shared session
+    const session = account.oauthSessionKey
+      ? this.config.oauthSessions?.[account.oauthSessionKey]
+      : undefined;
+    if (session) return session.accessToken;
+
+    // Fallback: pre-OAuth configs store the token directly on the account
+    return account.accessToken;
   }
 
   public getApiKey(appId?: string): string | undefined {
@@ -331,11 +345,26 @@ export class MockConfigManager implements ConfigManager {
   }
 
   public removeAccount(alias: string): boolean {
-    if (!this.config.accounts[alias]) {
+    const account = this.config.accounts[alias];
+    if (!account) {
       return false;
     }
 
+    const sessionKey = account.oauthSessionKey;
     delete this.config.accounts[alias];
+
+    // Clean up orphaned OAuth session entry
+    if (sessionKey && this.config.oauthSessions?.[sessionKey]) {
+      const stillReferenced = Object.values(this.config.accounts).some(
+        (a) => a.oauthSessionKey === sessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[sessionKey];
+        if (Object.keys(this.config.oauthSessions).length === 0) {
+          delete this.config.oauthSessions;
+        }
+      }
+    }
 
     if (this.config.current?.account === alias) {
       delete this.config.current.account;
@@ -360,6 +389,10 @@ export class MockConfigManager implements ConfigManager {
     // No-op for in-memory implementation
   }
 
+  public reloadConfig(): void {
+    // No-op: in-memory mock has no on-disk state to reload.
+  }
+
   public setCurrentApp(appId: string): void {
     const currentAccount = this.getCurrentAccount();
     const currentAlias = this.getCurrentAccountAlias();
@@ -377,6 +410,8 @@ export class MockConfigManager implements ConfigManager {
     accountInfo: {
       accountId: string;
       accountName: string;
+      controlHost?: string;
+      oauthHost?: string;
       tokenId?: string;
       userEmail: string;
     } = {
@@ -390,6 +425,8 @@ export class MockConfigManager implements ConfigManager {
       accessToken,
       accountId: accountInfo.accountId,
       accountName: accountInfo.accountName,
+      controlHost: accountInfo.controlHost,
+      oauthHost: accountInfo.oauthHost,
       userEmail: accountInfo.userEmail,
       tokenId: accountInfo.tokenId,
       apps: existing?.apps || {},
@@ -480,6 +517,173 @@ export class MockConfigManager implements ConfigManager {
         role: "assistant",
       },
     );
+  }
+
+  public storeOAuthTokens(
+    alias: string,
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: number;
+      scope?: string;
+      userEmail?: string;
+    },
+    accountInfo?: {
+      accountId?: string;
+      accountName?: string;
+      controlHost?: string;
+      oauthHost?: string;
+    },
+  ): void {
+    const userEmail =
+      tokens.userEmail ?? this.config.accounts[alias]?.userEmail ?? "";
+    const oauthHost =
+      accountInfo?.oauthHost ??
+      this.config.accounts[alias]?.oauthHost ??
+      DEFAULT_OAUTH_HOST;
+    const emailPart = userEmail.toLowerCase() || alias;
+    const sessionKey = `${emailPart}::${oauthHost.toLowerCase()}`;
+
+    // Create/update the shared OAuth session
+    if (!this.config.oauthSessions) {
+      this.config.oauthSessions = {};
+    }
+
+    // Clean up the previous session entry if this account's key is changing
+    const previousSessionKey = this.config.accounts[alias]?.oauthSessionKey;
+    if (
+      previousSessionKey &&
+      previousSessionKey !== sessionKey &&
+      this.config.oauthSessions[previousSessionKey]
+    ) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== alias && acc.oauthSessionKey === previousSessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[previousSessionKey];
+      }
+    }
+
+    this.config.oauthSessions[sessionKey] = {
+      accessToken: tokens.accessToken,
+      accessTokenExpiresAt: tokens.expiresAt,
+      oauthScope: tokens.scope,
+      refreshToken: tokens.refreshToken,
+    };
+
+    // Store account metadata and reference the OAuth session
+    this.config.accounts[alias] = {
+      ...this.config.accounts[alias],
+      accountId:
+        accountInfo?.accountId ?? this.config.accounts[alias]?.accountId ?? "",
+      accountName:
+        accountInfo?.accountName ??
+        this.config.accounts[alias]?.accountName ??
+        "",
+      apps: this.config.accounts[alias]?.apps || {},
+      authMethod: "oauth",
+      controlHost:
+        accountInfo?.controlHost ?? this.config.accounts[alias]?.controlHost,
+      currentAppId: this.config.accounts[alias]?.currentAppId,
+      oauthHost:
+        accountInfo?.oauthHost ?? this.config.accounts[alias]?.oauthHost,
+      oauthSessionKey: sessionKey,
+      userEmail,
+    };
+
+    // Purge legacy pre-OAuth fields that the spread above may have carried
+    // over. They are inert for OAuth accounts but leave a stale plaintext
+    // token in the on-disk config.
+    delete this.config.accounts[alias].accessToken;
+    delete this.config.accounts[alias].accessTokenExpiresAt;
+    delete this.config.accounts[alias].tokenId;
+
+    if (!this.config.current || !this.config.current.account) {
+      this.config.current = { account: alias };
+    }
+  }
+
+  public getOAuthTokens(alias?: string):
+    | {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: number;
+      }
+    | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account || account.authMethod !== "oauth") return undefined;
+
+    const session = account.oauthSessionKey
+      ? this.config.oauthSessions?.[account.oauthSessionKey]
+      : undefined;
+    if (!session) return undefined;
+
+    return {
+      accessToken: session.accessToken,
+      expiresAt: session.accessTokenExpiresAt,
+      refreshToken: session.refreshToken,
+    };
+  }
+
+  public isAccessTokenExpired(): boolean {
+    const account = this.getCurrentAccount();
+    if (!account) return false;
+
+    // OAuth accounts read expiry from the shared session;
+    // falls back to account-level field for pre-OAuth configs
+    const session = account.oauthSessionKey
+      ? this.config.oauthSessions?.[account.oauthSessionKey]
+      : undefined;
+    const expiresAt =
+      session?.accessTokenExpiresAt ?? account.accessTokenExpiresAt;
+    if (!expiresAt) return false;
+
+    return Date.now() >= expiresAt - 60_000;
+  }
+
+  public getAuthMethod(alias?: string): "oauth" | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    return account?.authMethod;
+  }
+
+  public getAliasesForOAuthSession(alias: string): string[] {
+    const account = this.config.accounts[alias];
+    if (!account?.oauthSessionKey) return [alias];
+
+    const sessionKey = account.oauthSessionKey;
+    return Object.entries(this.config.accounts)
+      .filter(([, acc]) => acc.oauthSessionKey === sessionKey)
+      .map(([a]) => a);
+  }
+
+  public clearOAuthSession(alias?: string): void {
+    const targetAlias = alias ?? this.config.current?.account;
+    if (!targetAlias) return;
+    const account = this.config.accounts[targetAlias];
+    if (!account) return;
+
+    const sessionKey = account.oauthSessionKey;
+    if (sessionKey && this.config.oauthSessions?.[sessionKey]) {
+      const stillReferenced = Object.entries(this.config.accounts).some(
+        ([otherAlias, acc]) =>
+          otherAlias !== targetAlias && acc.oauthSessionKey === sessionKey,
+      );
+      if (!stillReferenced) {
+        delete this.config.oauthSessions[sessionKey];
+        if (Object.keys(this.config.oauthSessions).length === 0) {
+          delete this.config.oauthSessions;
+        }
+      }
+    }
+
+    delete account.oauthSessionKey;
+    delete account.accessToken;
+    delete account.accessTokenExpiresAt;
   }
 
   public switchAccount(alias: string): boolean {

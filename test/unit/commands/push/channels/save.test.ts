@@ -16,7 +16,6 @@ describe("push:channels:save command", () => {
   standardArgValidationTests("push:channels:save", import.meta.url);
   standardFlagTests("push:channels:save", import.meta.url, [
     "--json",
-    "--channel",
     "--device-id",
     "--client-id",
   ]);
@@ -26,13 +25,7 @@ describe("push:channels:save command", () => {
       const mock = getMockAblyRest();
 
       const { stderr } = await runCommand(
-        [
-          "push:channels:save",
-          "--channel",
-          "my-channel",
-          "--device-id",
-          "device-1",
-        ],
+        ["push:channels:save", "my-channel", "--device-id", "device-1"],
         import.meta.url,
       );
 
@@ -50,13 +43,7 @@ describe("push:channels:save command", () => {
       const mock = getMockAblyRest();
 
       const { stderr } = await runCommand(
-        [
-          "push:channels:save",
-          "--channel",
-          "my-channel",
-          "--client-id",
-          "client-1",
-        ],
+        ["push:channels:save", "my-channel", "--client-id", "client-1"],
         import.meta.url,
       );
 
@@ -71,7 +58,7 @@ describe("push:channels:save command", () => {
 
     it("should require either device-id or client-id", async () => {
       const { error } = await runCommand(
-        ["push:channels:save", "--channel", "my-channel"],
+        ["push:channels:save", "my-channel"],
         import.meta.url,
       );
 
@@ -80,14 +67,7 @@ describe("push:channels:save command", () => {
 
     it("should output JSON when requested", async () => {
       const { stdout } = await runCommand(
-        [
-          "push:channels:save",
-          "--channel",
-          "my-channel",
-          "--device-id",
-          "dev-1",
-          "--json",
-        ],
+        ["push:channels:save", "my-channel", "--device-id", "dev-1", "--json"],
         import.meta.url,
       );
 
@@ -112,13 +92,7 @@ describe("push:channels:save command", () => {
       );
 
       const { error } = await runCommand(
-        [
-          "push:channels:save",
-          "--channel",
-          "my-channel",
-          "--device-id",
-          "dev-1",
-        ],
+        ["push:channels:save", "my-channel", "--device-id", "dev-1"],
         import.meta.url,
       );
 

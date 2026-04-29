@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Args, Flags } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
@@ -7,12 +7,19 @@ import { formatLabel, formatResource } from "../../../utils/output.js";
 export default class RulesCreateCommand extends ControlBaseCommand {
   static description = "Create a rule";
 
+  static args = {
+    ruleName: Args.string({
+      description: "Name of the rule",
+      required: true,
+    }),
+  };
+
   static examples = [
-    '$ ably apps rules create --name "chat" --persisted',
-    '$ ably apps rules create --name "chat" --mutable-messages',
-    '$ ably apps rules create --name "events" --push-enabled',
-    '$ ably apps rules create --name "notifications" --persisted --push-enabled --app "My App"',
-    '$ ably apps rules create --name "chat" --persisted --json',
+    '$ ably apps rules create "chat" --persisted',
+    '$ ably apps rules create "chat" --mutable-messages',
+    '$ ably apps rules create "events" --push-enabled',
+    '$ ably apps rules create "notifications" --persisted --push-enabled --app "My App"',
+    '$ ably apps rules create "chat" --persisted --json',
   ];
 
   static flags = {
@@ -56,10 +63,6 @@ export default class RulesCreateCommand extends ControlBaseCommand {
         "Whether messages on channels matching this rule can be updated or deleted after publishing. Automatically enables message persistence.",
       required: false,
     }),
-    name: Flags.string({
-      description: "Name of the rule",
-      required: true,
-    }),
     "persist-last": Flags.boolean({
       description:
         "Whether to persist only the last message on channels matching this rule",
@@ -89,7 +92,7 @@ export default class RulesCreateCommand extends ControlBaseCommand {
   };
 
   async run(): Promise<void> {
-    const { flags } = await this.parse(RulesCreateCommand);
+    const { args, flags } = await this.parse(RulesCreateCommand);
 
     const appId = await this.requireAppId(flags);
 
@@ -112,7 +115,7 @@ export default class RulesCreateCommand extends ControlBaseCommand {
         authenticated: flags.authenticated,
         batchingEnabled: flags["batching-enabled"],
         batchingInterval: flags["batching-interval"],
-        id: flags.name,
+        id: args.ruleName,
         conflationEnabled: flags["conflation-enabled"],
         conflationInterval: flags["conflation-interval"],
         conflationKey: flags["conflation-key"],

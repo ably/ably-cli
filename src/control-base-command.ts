@@ -1,22 +1,29 @@
 import { AblyBaseCommand } from "./base-command.js";
-import { controlApiFlags } from "./flags.js";
+import { controlApiFlags, oauthHostFlag } from "./flags.js";
 import { ControlApi, App } from "./services/control-api.js";
+import { OAuthClient } from "./services/oauth-client.js";
+import { TokenRefreshMiddleware } from "./services/token-refresh-middleware.js";
 import { BaseFlags } from "./types/cli.js";
 import { errorMessage } from "./utils/errors.js";
 import isWebCliMode from "./utils/web-mode.js";
 
 export abstract class ControlBaseCommand extends AblyBaseCommand {
-  // Control API commands get core + hidden control API flags
-  static globalFlags = { ...controlApiFlags };
+  // Control API commands get core + hidden control API flags + oauth-host
+  // (so token refresh can target the authorization server that minted the
+  // token even when --control-host points elsewhere).
+  static globalFlags = { ...controlApiFlags, ...oauthHostFlag };
 
   /**
    * Create a Control API instance for making requests
    */
   protected createControlApi(flags: BaseFlags): ControlApi {
     let accessToken = process.env.ABLY_ACCESS_TOKEN;
+    let tokenRefreshMiddleware: TokenRefreshMiddleware | undefined;
+    const account = accessToken
+      ? undefined
+      : this.configManager.getCurrentAccount();
 
     if (!accessToken) {
-      const account = this.configManager.getCurrentAccount();
       if (!account) {
         this.fail(
           `No access token provided. Please set the ABLY_ACCESS_TOKEN environment variable or configure an account with "ably accounts login".`,
@@ -25,7 +32,24 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
         );
       }
 
-      accessToken = account.accessToken;
+      accessToken = this.configManager.getAccessToken();
+
+      // Set up token refresh middleware for OAuth accounts.
+      // The OAuth issuer is an immutable property of the token — only the host
+      // that minted it can refresh it. Prefer the stored oauthHost so a
+      // --control-host override (intended for control-plane routing) does not
+      // silently direct refresh traffic at the wrong authorization server,
+      // which would return invalid_grant and wipe a valid session.
+      if (this.configManager.getAuthMethod() === "oauth") {
+        const oauthHost = account.oauthHost ?? flags["oauth-host"];
+        const oauthClient = new OAuthClient({
+          oauthHost,
+        });
+        tokenRefreshMiddleware = new TokenRefreshMiddleware(
+          this.configManager,
+          oauthClient,
+        );
+      }
     }
 
     if (!accessToken) {
@@ -44,9 +68,16 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       );
     }
 
+    // Prefer the stored account host (what the user picked at login time) so
+    // later commands don't silently target the default control plane when the
+    // user originally logged in against a review / staging deployment. The
+    // flag still wins if explicitly passed, to allow one-off overrides.
+    const controlHost = flags["control-host"] ?? account?.controlHost;
+
     return new ControlApi({
       accessToken,
-      controlHost: flags["control-host"],
+      controlHost,
+      tokenRefreshMiddleware,
     });
   }
 
@@ -110,7 +141,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       }
 
       this.fail(
-        `App "${appNameOrId}" not found. Please provide a valid app ID or name.`,
+        `App "${appNameOrId}" not found. Run "ably apps list" to see available apps.`,
         flags,
         "app",
       );
@@ -124,6 +155,65 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   }
 
   /**
+   * Resolve an account alias or ID to the account alias.
+   * Matches by alias first (exact), then by accountId (exact).
+   * Returns the alias string needed by configManager methods.
+   */
+  protected resolveAccountAlias(aliasOrId: string, flags: BaseFlags): string {
+    const accounts = this.configManager.listAccounts();
+
+    // Try alias match first
+    const byAlias = accounts.find((a) => a.alias === aliasOrId);
+    if (byAlias) return byAlias.alias;
+
+    // Try accountId match
+    const byId = accounts.find((a) => a.account.accountId === aliasOrId);
+    if (byId) return byId.alias;
+
+    this.fail(
+      `Account "${aliasOrId}" not found. Run "ably accounts list" to see available accounts.`,
+      flags,
+      "account",
+      {
+        availableAccounts: accounts.map(({ account, alias }) => ({
+          alias,
+          id: account.accountId,
+          name: account.accountName,
+        })),
+      },
+    );
+  }
+
+  /**
+   * Extract the appId from a key identifier.
+   *
+   * Accepts two formats — both embed the appId:
+   *   1. Key name        — "<appId>.<keyId>"              (contains ".", no ":")
+   *   2. Full key value  — "<appId>.<keyId>:<keySecret>"  (contains ":" and ".")
+   */
+  protected resolveAppIdForKey(
+    keyNameOrValue: string,
+    flags: BaseFlags,
+  ): string {
+    // Both accepted formats always contain "." — reject bare identifiers
+    if (!keyNameOrValue || !keyNameOrValue.includes(".")) {
+      this.fail(
+        `Invalid key identifier "${keyNameOrValue}". Expected key name "<appId>.<keyId>" or full key value "<appId>.<keyId>:<keySecret>". Run "ably auth keys list" to see available keys.`,
+        flags,
+        "keyResolve",
+      );
+    }
+
+    if (keyNameOrValue.includes(":")) {
+      // Full key value — appId is before the first dot
+      return keyNameOrValue.split(".")[0]!;
+    }
+
+    // Key name — appId is the first segment
+    return keyNameOrValue.split(".")[0]!;
+  }
+
+  /**
    * Prompts the user to select an app
    */
   protected async promptForApp(flags: BaseFlags = {}): Promise<string> {
@@ -133,7 +223,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
       if (apps.length === 0) {
         this.fail(
-          "No apps found in your account. Please create an app first.",
+          'No apps found in your account. Run "ably apps create" to create one.',
           flags,
           "app",
         );

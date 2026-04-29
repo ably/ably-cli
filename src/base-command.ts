@@ -9,6 +9,10 @@ import {
   createConfigManager,
 } from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
+import {
+  extractAppIdFromApiKey,
+  extractKeyNameFromApiKey,
+} from "./utils/api-key.js";
 import { CommandError } from "./errors/command-error.js";
 import { getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
@@ -25,7 +29,7 @@ import {
   formatWarning,
 } from "./utils/output.js";
 import stripAnsi from "strip-ansi";
-import { getCliVersion } from "./utils/version.js";
+import { getAgentName, getCliVersion } from "./utils/version.js";
 import Spaces from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
 import {
@@ -163,7 +167,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   constructor(argv: string[], config: CommandConfig) {
     super(argv, config);
     this.configManager = createConfigManager();
-    this.interactiveHelper = new InteractiveHelper(this.configManager);
+    this.interactiveHelper = new InteractiveHelper(this.configManager, {
+      log: this.log.bind(this),
+    });
     // Check if we're running in web CLI mode
     this.isWebCliMode = isWebCliMode();
   }
@@ -469,7 +475,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Make sure we have authentication after potentially modifying options
     if (!clientOptions.key && !clientOptions.token) {
       this.fail(
-        "Authentication required. Please provide either an API key, a token, or log in first.",
+        'Authentication required. Please provide either an API key, a token, or log in first. Run "ably accounts login" to configure authentication.',
         flags,
         "auth",
       );
@@ -611,15 +617,24 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         if (!appName) {
           try {
             // Get access token for control API
-            const currentAccount = this.configManager.getCurrentAccount();
             const accessToken =
-              process.env.ABLY_ACCESS_TOKEN || currentAccount?.accessToken;
+              process.env.ABLY_ACCESS_TOKEN ||
+              this.configManager.getAccessToken();
 
             if (accessToken) {
+              // Mirror createControlApi's host precedence (flag → env → stored
+              // account host) so the banner's app-name lookup honours the host
+              // the user picked at login. Without the account fallback this
+              // call silently targets control.ably.net even when the user
+              // logged in against a review/staging deployment, the lookup
+              // 404s, and the banner downgrades to "Unknown App".
+              const account = this.configManager.getCurrentAccount();
               const controlApi = new ControlApi({
                 accessToken,
                 controlHost:
-                  flags["control-host"] || process.env.ABLY_CONTROL_HOST,
+                  flags["control-host"] ??
+                  process.env.ABLY_CONTROL_HOST ??
+                  account?.controlHost,
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;
@@ -666,7 +681,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           const apiKey =
             flags["api-key"] || this.configManager.getApiKey(appId);
           if (apiKey) {
-            const keyId = apiKey.split(":")[0]!; // Extract key ID (part before colon)
+            const keyId = extractKeyNameFromApiKey(apiKey);
             const keyName =
               this.configManager.getKeyName(appId) || "Default Key";
             // Format the full key name (app_id.key_id)
@@ -732,12 +747,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
 
       // Debug log the API key format (masking the secret part)
-      const keyParts = apiKey.split(":");
-      const maskedKey = keyParts.length > 1 ? `${keyParts[0]}:***` : apiKey;
+      const keyName = extractKeyNameFromApiKey(apiKey);
+      const maskedKey = keyName ? `${keyName}:***` : apiKey;
       this.debug(`Using API key format: ${maskedKey}`);
 
-      // The app ID is the part before the first period in the key
-      const appId = apiKey.split(".")[0] || "";
+      const appId = extractAppIdFromApiKey(apiKey);
       if (!appId) {
         this.log("Failed to extract app ID from API key");
         return null;
@@ -750,6 +764,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Check if we have an app and key from flags or config
     let appId = flags.app || this.configManager.getCurrentAppId();
     let apiKey = this.configManager.getApiKey(appId);
+
+    // When apiKey comes from ABLY_API_KEY env var but appId is missing, extract it from the key
+    if (apiKey && !appId) {
+      appId = extractAppIdFromApiKey(apiKey);
+    }
 
     // If we have both, return them
     if (appId && apiKey) {
@@ -1100,10 +1119,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Set logLevel to highest ONLY when using custom handler to capture everything needed by it
     options.logLevel = 4;
 
-    // Add agent header to identify requests from the CLI
+    // Add agent header to identify requests from the CLI. Web CLI traffic is
+    // tagged separately so Ably can distinguish hosted vs local usage.
     (
       options as Ably.ClientOptions & { agents: Record<string, string> }
-    ).agents = { "ably-cli": getCliVersion() };
+    ).agents = { [getAgentName()]: getCliVersion() };
 
     return options;
   }

@@ -9,8 +9,8 @@ import {
 } from "vitest";
 import { ControlApi } from "../../../src/services/control-api.js";
 import {
+  E2E_ACCESS_TOKEN,
   runBackgroundProcessAndGetOutput,
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -18,6 +18,7 @@ import {
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
 import { runCommand } from "../../helpers/command-helpers.js";
+import { createTestApp } from "../../helpers/e2e-test-app.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe("Control API E2E Workflow Tests", () => {
@@ -34,9 +35,7 @@ describe("Control API E2E Workflow Tests", () => {
   let shouldSkip = false;
 
   beforeAll(async () => {
-    process.on("SIGINT", forceExit);
-
-    const accessToken = process.env.E2E_ABLY_ACCESS_TOKEN;
+    const accessToken = E2E_ACCESS_TOKEN;
     if (!accessToken) {
       console.log(
         "E2E_ABLY_ACCESS_TOKEN not available, skipping Control API E2E tests",
@@ -128,7 +127,6 @@ describe("Control API E2E Workflow Tests", () => {
         console.warn(`Failed to delete app ${appId}:`, error);
       }
     }
-    process.removeListener("SIGINT", forceExit);
   });
 
   beforeEach(() => {
@@ -157,7 +155,7 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 1. Create app
         const createResult = await runBackgroundProcessAndGetOutput(
-          `ABLY_ACCESS_TOKEN=${process.env.E2E_ABLY_ACCESS_TOKEN} ${cliPath} apps create --name "${appName}" --json`,
+          `ABLY_ACCESS_TOKEN=${E2E_ACCESS_TOKEN} ${cliPath} apps create "${appName}" --json`,
           30000,
         );
 
@@ -177,17 +175,19 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 2. List apps and verify our app is included
         const listResult = await runBackgroundProcessAndGetOutput(
-          `ABLY_ACCESS_TOKEN=${process.env.E2E_ABLY_ACCESS_TOKEN} ${cliPath} apps list --json`,
+          `ABLY_ACCESS_TOKEN=${E2E_ACCESS_TOKEN} ${cliPath} apps list --json`,
           30000,
         );
 
         expect(listResult.exitCode).toBe(0);
-        const listOutput = JSON.parse(listResult.stdout);
+        const listOutput = parseNdjsonLines(listResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(listOutput).toHaveProperty("apps");
         expect(Array.isArray(listOutput.apps)).toBe(true);
 
-        const foundApp = listOutput.apps.find(
-          (app: { id: string }) => app.id === appId,
+        const foundApp = (listOutput.apps as Array<{ id: string }>).find(
+          (app) => app.id === appId,
         );
         expect(foundApp).toBeDefined();
 
@@ -204,7 +204,7 @@ describe("Control API E2E Workflow Tests", () => {
             "--json",
           ],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
@@ -229,35 +229,16 @@ describe("Control API E2E Workflow Tests", () => {
   describe("API Key Management Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Key Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } =
+        await createTestApp("e2e-key-test"));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it("should create a new API key", async () => {
@@ -265,20 +246,21 @@ describe("Control API E2E Workflow Tests", () => {
 
       if (shouldSkip) return;
 
-      const keyName = `Test Key ${Date.now()}`;
+      const keyName = `Test-Key-${Date.now()}`;
       const createResult = await runCommand(
         [
           "auth",
           "keys",
           "create",
+          keyName,
           "--app",
           testAppId,
-          "--name",
-          keyName,
+          "--capabilities",
+          '{"[*]*":["*"]}',
           "--json",
         ],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
@@ -294,6 +276,106 @@ describe("Control API E2E Workflow Tests", () => {
       expect(result.key as Record<string, unknown>).toHaveProperty("key");
     });
 
+    it("should create an API key with channels-and-queues wildcard capability", async () => {
+      setupTestFailureHandler(
+        "should create an API key with channels-and-queues wildcard capability",
+      );
+
+      if (shouldSkip) return;
+
+      const keyName = `Test-Key-AllResourcesWildcard-${Date.now()}`;
+      const createResult = await runCommand(
+        [
+          "auth",
+          "keys",
+          "create",
+          keyName,
+          "--app",
+          testAppId,
+          "--capabilities",
+          '{"[*]*":["*"]}',
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
+        },
+      );
+
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty("success", true);
+
+      const key = result.key as Record<string, unknown>;
+      expect(key).toHaveProperty("name", keyName);
+      expect(key).toHaveProperty("key");
+
+      // Ably expands ["*"] server-side into the full op list.
+      const capability =
+        typeof key.capability === "string"
+          ? (JSON.parse(key.capability) as Record<string, string[]>)
+          : (key.capability as Record<string, string[]>);
+      expect(Object.keys(capability)).toEqual(["[*]*"]);
+      expect(capability["[*]*"]).toEqual(
+        expect.arrayContaining(["publish", "subscribe"]),
+      );
+
+      if (key.id) {
+        createdResources.keys.push(key.id as string);
+      }
+    });
+
+    it("should create an API key with channels-only wildcard capability", async () => {
+      setupTestFailureHandler(
+        "should create an API key with channels-only wildcard capability",
+      );
+
+      if (shouldSkip) return;
+
+      const keyName = `Test-Key-ChannelsWildcard-${Date.now()}`;
+      const createResult = await runCommand(
+        [
+          "auth",
+          "keys",
+          "create",
+          keyName,
+          "--app",
+          testAppId,
+          "--capabilities",
+          '{"*":["*"]}',
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
+        },
+      );
+
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty("success", true);
+
+      const key = result.key as Record<string, unknown>;
+      expect(key).toHaveProperty("name", keyName);
+      expect(key).toHaveProperty("key");
+
+      // Ably expands ["*"] server-side into the full op list.
+      const capability =
+        typeof key.capability === "string"
+          ? (JSON.parse(key.capability) as Record<string, string[]>)
+          : (key.capability as Record<string, string[]>);
+      expect(Object.keys(capability)).toEqual(["*"]);
+      expect(capability["*"]).toEqual(
+        expect.arrayContaining(["publish", "subscribe"]),
+      );
+
+      if (key.id) {
+        createdResources.keys.push(key.id as string);
+      }
+    });
+
     it("should list API keys", async () => {
       setupTestFailureHandler("should list API keys");
 
@@ -302,49 +384,179 @@ describe("Control API E2E Workflow Tests", () => {
       const listResult = await runCommand(
         ["auth", "keys", "list", "--app", testAppId, "--json"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
-      const result = JSON.parse(listResult.stdout);
+      const result = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
       expect(Array.isArray(result.keys)).toBe(true);
-      expect(result.keys.length).toBeGreaterThan(0);
+      expect((result.keys as unknown[]).length).toBeGreaterThan(0);
+    });
+
+    it("should revoke an API key", async () => {
+      setupTestFailureHandler("should revoke an API key");
+
+      if (shouldSkip) return;
+
+      // Create a throwaway key so we don't revoke one used by other tests
+      const keyName = `Test-Key-Revoke-${Date.now()}`;
+      const createResult = await runCommand(
+        [
+          "auth",
+          "keys",
+          "create",
+          keyName,
+          "--app",
+          testAppId,
+          "--capabilities",
+          '{"[*]*":["*"]}',
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
+        },
+      );
+
+      const created = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      const createdKey = created.key as Record<string, unknown>;
+      const keyId = createdKey.id as string;
+      expect(keyId).toBeTruthy();
+
+      const revokeResult = await runCommand(
+        [
+          "auth",
+          "keys",
+          "revoke",
+          `${testAppId}.${keyId}`,
+          "--force",
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
+        },
+      );
+
+      expect(revokeResult.exitCode).toBe(0);
+      const result = parseNdjsonLines(revokeResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty("success", true);
+      expect(result.key as Record<string, unknown>).toHaveProperty(
+        "keyName",
+        `${testAppId}.${keyId}`,
+      );
+      expect(result.key as Record<string, unknown>).toHaveProperty(
+        "message",
+        "Key has been revoked",
+      );
+    });
+
+    it("should reject publish attempts using a revoked API key", async () => {
+      setupTestFailureHandler(
+        "should reject publish attempts using a revoked API key",
+      );
+
+      if (shouldSkip) return;
+
+      // 1. Create a throwaway key with publish capability
+      const keyName = `Test-Key-RevokedUsable-${Date.now()}`;
+      const createResult = await runCommand(
+        [
+          "auth",
+          "keys",
+          "create",
+          keyName,
+          "--app",
+          testAppId,
+          "--capabilities",
+          '{"*":["*"]}',
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
+        },
+      );
+
+      const created = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      const createdKey = created.key as Record<string, unknown>;
+      const keyId = createdKey.id as string;
+      const fullKey = createdKey.key as string;
+      expect(keyId).toBeTruthy();
+      expect(fullKey).toBeTruthy();
+
+      const channel = `revoked-key-test-${Date.now()}`;
+
+      // 2. Sanity check: key works before revocation
+      const preRevokePublish = await runCommand(
+        ["channels", "publish", channel, "hello-before-revoke", "--json"],
+        { env: { ABLY_API_KEY: fullKey } },
+      );
+      expect(preRevokePublish.exitCode).toBe(0);
+
+      // 3. Revoke the key via the CLI
+      const revokeResult = await runCommand(
+        [
+          "auth",
+          "keys",
+          "revoke",
+          `${testAppId}.${keyId}`,
+          "--force",
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
+        },
+      );
+      expect(revokeResult.exitCode).toBe(0);
+
+      // Wait for revocation to propagate.
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const postRevokePublish = await runCommand(
+        ["channels", "publish", channel, "hello-after-revoke", "--json"],
+        { env: { ABLY_API_KEY: fullKey } },
+      );
+
+      // `channels publish` reports per-message errors inline, not via fail().
+      const result = parseNdjsonLines(postRevokePublish.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      expect(result).toBeDefined();
+      const publish = result.publish as {
+        errors: number;
+        published: number;
+        allSucceeded: boolean;
+        results: Array<{ success: boolean; error?: { message: string } }>;
+      };
+      expect(publish.errors).toBeGreaterThanOrEqual(1);
+      expect(publish.published).toBe(0);
+      expect(publish.allSucceeded).toBe(false);
+      expect(publish.results[0].success).toBe(false);
+      expect(publish.results[0].error?.message).toBeTruthy();
     });
   });
 
   describe("Queue Management Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Queue Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } =
+        await createTestApp("e2e-queue-test"));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it("should create a new queue", async () => {
@@ -357,28 +569,35 @@ describe("Control API E2E Workflow Tests", () => {
         [
           "queues",
           "create",
+          queueName,
           "--app",
           testAppId,
-          "--name",
-          queueName,
           "--max-length",
           "5000",
           "--ttl",
-          "1800",
+          "60",
           "--region",
           "eu-west-1-a",
           "--json",
         ],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
-      expect(result.queue).toHaveProperty("name", queueName);
-      expect(result.queue).toHaveProperty("maxLength", 5000);
-      expect(result.queue).toHaveProperty("ttl", 1800);
+      expect(result.queue as Record<string, unknown>).toHaveProperty(
+        "name",
+        queueName,
+      );
+      expect(result.queue as Record<string, unknown>).toHaveProperty(
+        "maxLength",
+        5000,
+      );
+      expect(result.queue as Record<string, unknown>).toHaveProperty("ttl", 60);
     });
 
     it("should list queues", async () => {
@@ -389,11 +608,13 @@ describe("Control API E2E Workflow Tests", () => {
       const listResult = await runCommand(
         ["queues", "list", "--app", testAppId, "--json"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
-      const result = JSON.parse(listResult.stdout);
+      const result = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
       expect(Array.isArray(result.queues)).toBe(true);
     });
@@ -404,18 +625,24 @@ describe("Control API E2E Workflow Tests", () => {
       if (shouldSkip) return;
 
       const queueName = `test-delete-queue-${Date.now()}`;
-      // First create a queue
-      await runCommand(
-        ["queues", "create", "--app", testAppId, "--name", queueName, "--json"],
+      // First create a queue and capture its ID
+      const createResult = await runCommand(
+        ["queues", "create", queueName, "--app", testAppId, "--json"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
+      const createOutput = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      const queueId = (createOutput.queue as Record<string, unknown>)
+        .id as string;
+
       const deleteResult = await runCommand(
-        ["queues", "delete", queueName, "--app", testAppId, "--force"],
+        ["queues", "delete", queueId, "--app", testAppId, "--force"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
@@ -432,35 +659,17 @@ describe("Control API E2E Workflow Tests", () => {
   describe("Integration Rules Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Integration Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } = await createTestApp(
+        "e2e-integration-test",
+      ));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it("should create a new integration rule", async () => {
@@ -485,15 +694,21 @@ describe("Control API E2E Workflow Tests", () => {
           "--json",
         ],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
-      const result = JSON.parse(createResult.stdout);
+      const result = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
-      expect(result.rule).toHaveProperty("ruleType", "http");
-      expect(result.rule).toHaveProperty("source");
-      expect(result.rule.source).toHaveProperty("channelFilter", "e2e-test-*");
+      const integration = result.integration as Record<string, unknown>;
+      expect(integration).toHaveProperty("ruleType", "http");
+      expect(integration).toHaveProperty("source");
+      expect(integration.source as Record<string, unknown>).toHaveProperty(
+        "channelFilter",
+        "e2e-test-*",
+      );
     });
 
     it("should list integration rules", async () => {
@@ -504,49 +719,32 @@ describe("Control API E2E Workflow Tests", () => {
       const listResult = await runCommand(
         ["integrations", "list", "--app", testAppId, "--json"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
-      const result = JSON.parse(listResult.stdout);
+      const result = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(result).toHaveProperty("success", true);
-      expect(Array.isArray(result.rules)).toBe(true);
-      expect(result.rules.length).toBeGreaterThan(0);
+      expect(Array.isArray(result.integrations)).toBe(true);
+      expect((result.integrations as unknown[]).length).toBeGreaterThan(0);
     });
   });
 
   describe("Rules Workflow", () => {
     let testAppId: string;
 
+    let teardownApp: (() => Promise<void>) | undefined;
+
     beforeAll(async () => {
       if (shouldSkip) return;
-
-      // Create a test app first
-      const appName = `E2E Rules Test App ${Date.now()}`;
-      const createResult = await runCommand(
-        ["apps", "create", "--name", appName, "--json"],
-        {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-        },
-      );
-
-      const result = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      testAppId = (result.app as Record<string, unknown>).id as string;
+      ({ appId: testAppId, teardown: teardownApp } =
+        await createTestApp("e2e-rules-test"));
     });
 
     afterAll(async () => {
-      // Clean up test app if created
-      if (testAppId) {
-        try {
-          await runCommand(["apps", "delete", testAppId, "--force"], {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
-          });
-        } catch (error) {
-          console.log("Error cleaning up test app:", error);
-        }
-      }
+      await teardownApp?.();
     });
 
     it(
@@ -565,47 +763,50 @@ describe("Control API E2E Workflow Tests", () => {
             "apps",
             "rules",
             "create",
+            ruleName,
             "--app",
             testAppId,
-            "--name",
-            ruleName,
             "--persisted",
             "--push-enabled",
             "--authenticated",
             "--json",
           ],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
         expect(createResult.stderr).toBe("");
-        const createOutput = JSON.parse(createResult.stdout);
+        const createOutput = parseNdjsonLines(createResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(createOutput).toHaveProperty("rule");
-        expect(createOutput.rule).toHaveProperty("id");
-        expect(createOutput.rule).toHaveProperty("name", ruleName);
-        expect(createOutput.rule).toHaveProperty("persisted", true);
-        expect(createOutput.rule).toHaveProperty("pushEnabled", true);
-        expect(createOutput.rule).toHaveProperty("authenticated", true);
+        const rule = createOutput.rule as Record<string, unknown>;
+        expect(rule).toHaveProperty("id", ruleName);
+        expect(rule).toHaveProperty("persisted", true);
+        expect(rule).toHaveProperty("pushEnabled", true);
+        expect(rule).toHaveProperty("authenticated", true);
 
-        const namespaceId = createOutput.rule.id;
+        const namespaceId = rule.id as string;
         createdResources.namespaces.push(namespaceId);
 
         // 2. List rules and verify our rule is included
         const listResult = await runCommand(
           ["apps", "rules", "list", "--app", testAppId, "--json"],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
         expect(listResult.stderr).toBe("");
-        const listOutput = JSON.parse(listResult.stdout);
+        const listOutput = parseNdjsonLines(listResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(listOutput).toHaveProperty("rules");
         expect(Array.isArray(listOutput.rules)).toBe(true);
 
-        const foundRule = listOutput.rules.find(
-          (ns: { id: string }) => ns.id === namespaceId,
+        const foundRule = (listOutput.rules as Array<{ id: string }>).find(
+          (ns) => ns.id === namespaceId,
         );
         expect(foundRule).toBeDefined();
         expect(foundRule).toHaveProperty("persisted", true);
@@ -626,25 +827,27 @@ describe("Control API E2E Workflow Tests", () => {
           "apps",
           "rules",
           "create",
+          ruleName,
           "--app",
           testAppId,
-          "--name",
-          ruleName,
           "--persisted",
           "--json",
         ],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
       expect(createResult.stderr).toBe("");
-      const createOutput = JSON.parse(createResult.stdout);
+      const createOutput = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(createOutput).toHaveProperty("success", true);
-      expect(createOutput.rule).toHaveProperty("persisted", true);
-      expect(createOutput.rule).toHaveProperty("pushEnabled", false);
+      const createRule = createOutput.rule as Record<string, unknown>;
+      expect(createRule).toHaveProperty("persisted", true);
+      expect(createRule).toHaveProperty("pushEnabled", false);
 
-      const namespaceId = createOutput.rule.id;
+      const namespaceId = createRule.id as string;
       createdResources.namespaces.push(namespaceId);
 
       // 2. Update rule - enable push, disable persisted
@@ -661,21 +864,24 @@ describe("Control API E2E Workflow Tests", () => {
           "--json",
         ],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
       expect(updateResult.stderr).toBe("");
-      const updateOutput = JSON.parse(updateResult.stdout);
+      const updateOutput = parseNdjsonLines(updateResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(updateOutput).toHaveProperty("success", true);
-      expect(updateOutput.rule).toHaveProperty("id", namespaceId);
-      expect(updateOutput.rule).toHaveProperty("pushEnabled", true);
-      expect(updateOutput.rule).toHaveProperty("persisted", false);
+      const updatedRule = updateOutput.rule as Record<string, unknown>;
+      expect(updatedRule).toHaveProperty("id", namespaceId);
+      expect(updatedRule).toHaveProperty("pushEnabled", true);
+      expect(updatedRule).toHaveProperty("persisted", false);
 
       // Verify null batchingInterval/conflationInterval don't cause errors
       // These fields may be null in the response
-      expect(updateOutput.rule).toHaveProperty("batchingInterval");
-      expect(updateOutput.rule).toHaveProperty("conflationInterval");
+      expect(updatedRule).toHaveProperty("batchingInterval");
+      expect(updatedRule).toHaveProperty("conflationInterval");
     });
 
     it("should delete a rule through CLI", { timeout: 20000 }, async () => {
@@ -687,32 +893,26 @@ describe("Control API E2E Workflow Tests", () => {
 
       // 1. Create rule
       const createResult = await runCommand(
-        [
-          "apps",
-          "rules",
-          "create",
-          "--app",
-          testAppId,
-          "--name",
-          ruleName,
-          "--json",
-        ],
+        ["apps", "rules", "create", ruleName, "--app", testAppId, "--json"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
       expect(createResult.stderr).toBe("");
-      const createOutput = JSON.parse(createResult.stdout);
+      const createOutput = parseNdjsonLines(createResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
       expect(createOutput).toHaveProperty("success", true);
-      const namespaceId = createOutput.rule.id;
+      const namespaceId = (createOutput.rule as Record<string, unknown>)
+        .id as string;
       createdResources.namespaces.push(namespaceId);
 
       // 2. Delete rule with --force
       const deleteResult = await runCommand(
         ["apps", "rules", "delete", namespaceId, "--app", testAppId, "--force"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
@@ -722,13 +922,15 @@ describe("Control API E2E Workflow Tests", () => {
       const listResult = await runCommand(
         ["apps", "rules", "list", "--app", testAppId, "--json"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
-      const listOutput = JSON.parse(listResult.stdout);
-      const deletedRule = listOutput.rules.find(
-        (ns: { id: string }) => ns.id === namespaceId,
+      const listOutput = parseNdjsonLines(listResult.stdout).find(
+        (r) => r.type === "result",
+      ) as Record<string, unknown>;
+      const deletedRule = (listOutput.rules as Array<{ id: string }>).find(
+        (ns) => ns.id === namespaceId,
       );
       expect(deletedRule).toBeUndefined();
     });
@@ -763,12 +965,12 @@ describe("Control API E2E Workflow Tests", () => {
       const result = await runCommand(
         ["apps", "update", "non-existent-app-id", "--name", "Test", "--json"],
         {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr + result.stdout).toContain("404");
+      expect(result.stderr + result.stdout).toContain("not found");
     });
 
     it("should validate required parameters", { timeout: 10000 }, async () => {
@@ -777,11 +979,13 @@ describe("Control API E2E Workflow Tests", () => {
       if (shouldSkip) return;
 
       const result = await runCommand(["apps", "create"], {
-        env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+        env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
       });
 
       expect(result.exitCode).not.toBe(0);
-      expect(result.stderr + result.stdout).toContain("Missing required flag");
+      expect(result.stderr + result.stdout).toMatch(
+        /Missing (1 )?required (arg|flag)/,
+      );
     });
   });
 
@@ -796,14 +1000,14 @@ describe("Control API E2E Workflow Tests", () => {
 
         const timestamp = Date.now();
         const appName = `E2E Complete Workflow ${timestamp}`;
-        const keyName = `E2E Workflow Key ${timestamp}`;
+        const keyName = `E2E-Workflow-Key-${timestamp}`;
         const queueName = `e2e-workflow-queue-${timestamp}`;
 
         // 1. Create app
         const createAppResult = await runCommand(
-          ["apps", "create", "--name", appName, "--json"],
+          ["apps", "create", appName, "--json"],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
@@ -819,14 +1023,15 @@ describe("Control API E2E Workflow Tests", () => {
             "auth",
             "keys",
             "create",
+            keyName,
             "--app",
             appId,
-            "--name",
-            keyName,
+            "--capabilities",
+            '{"[*]*":["*"]}',
             "--json",
           ],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
@@ -838,14 +1043,17 @@ describe("Control API E2E Workflow Tests", () => {
 
         // 3. Create queue
         const createQueueResult = await runCommand(
-          ["queues", "create", "--app", appId, "--name", queueName, "--json"],
+          ["queues", "create", queueName, "--app", appId, "--json"],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
-        const queueOutput = JSON.parse(createQueueResult.stdout);
-        expect(queueOutput).toHaveProperty("name", queueName);
+        const queueOutput = parseNdjsonLines(createQueueResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
+        const queue = queueOutput.queue as Record<string, unknown>;
+        expect(queue).toHaveProperty("name", queueName);
         createdResources.queues.push(queueName);
 
         // 4. Create integration
@@ -866,61 +1074,77 @@ describe("Control API E2E Workflow Tests", () => {
             "--json",
           ],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
-        const integrationOutput = JSON.parse(createIntegrationResult.stdout);
-        const ruleId = integrationOutput.id;
+        const integrationOutput = parseNdjsonLines(
+          createIntegrationResult.stdout,
+        ).find((r) => r.type === "result") as Record<string, unknown>;
+        const ruleId = (
+          integrationOutput.integration as Record<string, unknown>
+        ).id as string;
         createdResources.rules.push(ruleId);
 
         // 5. Verify all resources exist by listing them
         const listAppsResult = await runCommand(["apps", "list", "--json"], {
-          env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         });
 
-        const appsOutput = JSON.parse(listAppsResult.stdout);
+        const appsOutput = parseNdjsonLines(listAppsResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(
-          appsOutput.apps.find((app: { id: string }) => app.id === appId),
+          (appsOutput.apps as Array<{ id: string }>).find(
+            (app) => app.id === appId,
+          ),
         ).toBeDefined();
 
         const listKeysResult = await runCommand(
           ["auth", "keys", "list", "--app", appId, "--json"],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
-        const keysOutput = JSON.parse(listKeysResult.stdout);
+        const keysOutput = parseNdjsonLines(listKeysResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(
-          keysOutput.keys.find((key: { id: string }) => key.id === keyId),
+          (keysOutput.keys as Array<{ id: string }>).find(
+            (key) => key.id === keyId,
+          ),
         ).toBeDefined();
 
         const listQueuesResult = await runCommand(
           ["queues", "list", "--app", appId, "--json"],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
-        const queuesOutput = JSON.parse(listQueuesResult.stdout);
+        const queuesOutput = parseNdjsonLines(listQueuesResult.stdout).find(
+          (r) => r.type === "result",
+        ) as Record<string, unknown>;
         expect(
-          queuesOutput.queues.find(
-            (queue: { name: string }) => queue.name === queueName,
+          (queuesOutput.queues as Array<{ name: string }>).find(
+            (q) => q.name === queueName,
           ),
         ).toBeDefined();
 
         const listIntegrationsResult = await runCommand(
           ["integrations", "list", "--app", appId, "--json"],
           {
-            env: { ABLY_ACCESS_TOKEN: process.env.E2E_ABLY_ACCESS_TOKEN },
+            env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
           },
         );
 
-        const integrationsOutput = JSON.parse(listIntegrationsResult.stdout);
+        const integrationsOutput = parseNdjsonLines(
+          listIntegrationsResult.stdout,
+        ).find((r) => r.type === "result") as Record<string, unknown>;
         expect(
-          integrationsOutput.rules.find(
-            (rule: { id: string }) => rule.id === ruleId,
+          (integrationsOutput.integrations as Array<{ id: string }>).find(
+            (rule) => rule.id === ruleId,
           ),
         ).toBeDefined();
       },

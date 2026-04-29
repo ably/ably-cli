@@ -1,16 +1,7 @@
-import {
-  describe,
-  it,
-  beforeEach,
-  afterEach,
-  beforeAll,
-  afterAll,
-  expect,
-} from "vitest";
+import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import { runCommand } from "../../helpers/command-helpers.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 import {
-  forceExit,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -21,14 +12,6 @@ import { spawn } from "node:child_process";
 import { join } from "node:path";
 
 describe("Connections E2E Tests", () => {
-  beforeAll(() => {
-    process.on("SIGINT", forceExit);
-  });
-
-  afterAll(() => {
-    process.removeListener("SIGINT", forceExit);
-  });
-
   beforeEach(() => {
     resetTestTracking();
     // Clear tracked output files and commands for this test

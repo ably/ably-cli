@@ -7,8 +7,9 @@ import { formatResource } from "../../utils/output.js";
 
 export default class StatsAppCommand extends StatsBaseCommand {
   static args = {
-    appId: Args.string({
-      description: "App ID to get stats for (uses default app if not provided)",
+    appNameOrId: Args.string({
+      description:
+        "App name or ID to get stats for (uses default app if not provided)",
       required: false,
     }),
   };
@@ -17,12 +18,14 @@ export default class StatsAppCommand extends StatsBaseCommand {
 
   static examples = [
     "$ ably stats app",
+    '$ ably stats app "My App"',
     "$ ably stats app app-id",
     "$ ably stats app --unit hour",
     "$ ably stats app app-id --unit hour",
     '$ ably stats app app-id --start "2023-01-01T00:00:00Z" --end "2023-01-02T00:00:00Z"',
     "$ ably stats app app-id --start 1h",
     "$ ably stats app app-id --limit 10",
+    '$ ably stats app "My App" --start 1h --limit 10',
     "$ ably stats app app-id --json",
     "$ ably stats app app-id --pretty-json",
     "$ ably stats app --live",
@@ -49,10 +52,18 @@ export default class StatsAppCommand extends StatsBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(StatsAppCommand);
 
-    this.appId = args.appId || this.configManager.getCurrentAppId() || "";
+    // The appNameOrId arg accepts two formats:
+    //   1. App name  — e.g. "My App"  (human-readable, may contain spaces)
+    //   2. App ID    — e.g. "s57drg"  (the Ably-assigned app ID)
+    if (args.appNameOrId) {
+      this.appId = await this.resolveAppIdFromNameOrId(args.appNameOrId, flags);
+    } else {
+      this.appId = this.configManager.getCurrentAppId() || "";
+    }
+
     if (!this.appId) {
       this.fail(
-        'No app ID provided and no default app selected. Please specify an app ID or select a default app with "ably apps switch".',
+        'No app specified and no default app selected. Please specify an app name or ID, or select a default app with "ably apps switch".',
         flags,
         "statsApp",
       );
