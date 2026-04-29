@@ -64,6 +64,10 @@ Authenticate data plane commands with an Ably API key. Bypasses the login workfl
 - No `ably accounts login` required.
 - Used as a fallback when no account, app, or key is configured locally.
 
+**Obtaining an API key:**
+
+Create and manage API keys from the [API Keys](https://ably.com/accounts/any/apps/any/app_keys) tab in the Ably dashboard, or programmatically via the [Control API](https://ably.com/docs/platform/account/control-api). Each key has configurable [capabilities](https://ably.com/docs/auth/capabilities) (publish, subscribe, history, presence, channel metadata, push, statistics, privileged headers) and optional resource restrictions to limit access to specific channels or queues. See the [API keys documentation](https://ably.com/docs/platform/account/app/api) for full details, and the [authentication overview](https://ably.com/docs/auth) for key format breakdown and security guidance.
+
 **Key format validation:**
 
 The expected format is `APP_ID.KEY_ID:KEY_SECRET` (exactly one colon and one period separator). In local CLI mode, keys are accepted without format validation. In web CLI mode, a malformed key produces a warning but is still attempted. In both cases, the Ably SDK returns error code 40100 at connection time if the key is invalid. Keys stored in local config (not env vars) are automatically removed after a failed connection (auto-removed in JSON mode; user-prompted in interactive mode).
@@ -103,6 +107,10 @@ Authenticate data plane commands with an Ably token or JWT. Has the **highest pr
 - `--client-id` is **ignored** when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed.
 - No `ably accounts login` required.
 - Silently overrides `ABLY_API_KEY` and any configured API key (no conflict warning).
+
+**Obtaining a token:**
+
+Issue tokens using the CLI itself or any Ably SDK. The CLI provides two commands: `ably auth issue-ably-token` for native Ably tokens and `ably auth issue-jwt-token` for JWTs. Both support `--capability`, `--client-id`, and `--ttl` options, and `--token-only` for piping into other commands. JWTs are the [recommended token format](https://ably.com/docs/auth/token) for most applications — they are stateless, require no Ably SDK on the server, and support [channel-scoped claims](https://ably.com/docs/auth/token/jwt#channel-claims). Ably tokens are the [legacy alternative](https://ably.com/docs/auth/token/ably-tokens) when JWTs are not suitable. See the [token authentication documentation](https://ably.com/docs/auth/token) for TTL limits (max 24 hours; max 1 hour for revocable tokens), token refresh flows, and security guidance.
 
 **Accepted formats:**
 
@@ -155,6 +163,10 @@ Authenticate Control API commands with an access token. Used for account-level o
 - Token is sent as `Authorization: Bearer <token>` in HTTP headers.
 - Suppresses the "You are not logged in" help prompt.
 - No `ably accounts login` required.
+
+**Obtaining an access token:**
+
+Create and manage access tokens from the [Access tokens](https://ably.com/users/access_tokens) page in the Ably dashboard, or use `ably accounts login` which creates one automatically. Tokens have configurable capabilities (read/write permissions for apps, keys, rules, queues, namespaces, and statistics) and expiration periods (30, 60, 90 days, or no expiration). See the [Access tokens documentation](https://ably.com/docs/platform/account/access-tokens) for details on capabilities, expiration, rotation, and revocation.
 
 **No format validation:**
 
@@ -775,3 +787,14 @@ Any data plane command when no API key is configured triggers the interactive ap
 - [Exit Codes](Exit-Codes.md) — Exit codes used in interactive mode and wrapper script behavior
 - [Project Structure](Project-Structure.md) — Repository layout and source file organization
 - [Auto-completion](Auto-completion.md) — Shell tab completion setup (`ABLY_SHOW_DEV_FLAGS` affects hidden flag visibility)
+
+**Related Ably documentation:**
+
+- [Authentication overview](https://ably.com/docs/auth) — API key format, basic vs token auth, and security guidance
+- [API keys](https://ably.com/docs/platform/account/app/api) — Create and manage API keys in the dashboard
+- [Token authentication](https://ably.com/docs/auth/token) — Token auth flows, TTL limits, and token refresh
+- [JWTs](https://ably.com/docs/auth/token/jwt) — JWT creation, claims, channel-scoped claims, and per-connection rate limits
+- [Capabilities](https://ably.com/docs/auth/capabilities) — Capability operations and wildcard syntax for keys and tokens
+- [Access tokens](https://ably.com/docs/platform/account/access-tokens) — Create, manage, rotate, and revoke access tokens for the Control API and CLI
+- [Control API](https://ably.com/docs/platform/account/control-api) — Control API authentication and usage reference
+- [Ably CLI](https://ably.com/docs/platform/tools/cli) — Official CLI documentation including authentication setup
