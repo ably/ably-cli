@@ -172,7 +172,7 @@ This document outlines the directory structure of the Ably CLI project.
 
 ## Related
 
-- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all 25 environment variables used across the source files listed above
+- [General Usage](Environment-Variables/General-Usage.md) and [Development Stage](Environment-Variables/Development-Usage.md) Env Variables — Development, testing, debugging, and internal env variables
 - [Testing Guide](Testing.md) — Test layers and directory layout (`test/unit/`, `test/e2e/`, `test/tty/`, `test/integration/`)
 - [Debugging Guide](Debugging.md) — Debugging tips for CLI development
 - [Interactive REPL](Interactive-REPL.md) — Architecture of `src/commands/interactive.ts` and `bin/ably-interactive`

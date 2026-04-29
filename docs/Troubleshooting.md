@@ -224,7 +224,7 @@ Property 'x' does not exist on type 'Y'
 **Problem**: The interactive mode exits with unexpected error codes.
 
 **Solution**:
-- Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md) and [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md#ably_interactive_mode) for interactive mode env vars)
+- Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md) and [Development Stage Env Variables](Environment-Variables/Development-Usage.md#ably_interactive_mode) for interactive mode env vars)
 - Common exit codes:
   - Exit code 0: Wrapper (`ably-interactive`) terminated normally
   - Exit code 42: User typed 'exit' in interactive mode (signals wrapper to terminate)
@@ -247,7 +247,7 @@ Property 'x' does not exist on type 'Y'
 
 **Solution**:
 - Check that `~/.ably/history` file exists and is writable
-- Verify the `ABLY_HISTORY_FILE` environment variable if using custom location (see [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md#ably_history_file))
+- Verify the `ABLY_HISTORY_FILE` environment variable if using custom location (see [General Usage Env Variables](Environment-Variables/General-Usage.md#ably_history_file))
 - Ensure the history file isn't exceeding size limits (default: 1000 commands, auto-trimmed at 2000 lines)
 
 ---
@@ -262,7 +262,7 @@ See `AGENTS.md` for more details on the development workflow.
 
 ## Related
 
-- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all 25 environment variables, including authentication resolution order, login bypass behavior, and host overrides
+- [General Usage](Environment-Variables/General-Usage.md) and [Development Stage](Environment-Variables/Development-Usage.md) Env Variables — Development, testing, debugging, and internal env variables
 - [Debugging Guide](Debugging.md) — Debugging tips including `DEBUG`, `TERMINAL_DIAGNOSTICS`, and Node inspector
 - [Testing Guide](Testing.md) — Test layers, running tests, and debugging failures
 - [Exit Codes](Exit-Codes.md) — Exit codes used by the CLI, particularly in interactive mode

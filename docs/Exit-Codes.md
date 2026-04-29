@@ -60,6 +60,5 @@ Exit codes are handled in:
 
 ## Related
 
-- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — `ABLY_INTERACTIVE_MODE`, `ABLY_WRAPPER_MODE`, and `ABLY_SUPPRESS_WELCOME` control interactive mode behavior
 - [Interactive-REPL.md](Interactive-REPL.md) — Architecture and wrapper script design
 - [Troubleshooting.md](Troubleshooting.md#interactive-mode-issues) — Common interactive mode issues

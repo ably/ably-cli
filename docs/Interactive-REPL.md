@@ -414,7 +414,6 @@ This plan delivers a responsive interactive shell with natural Ctrl+C handling a
 
 ## Related
 
-- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — The wrapper script uses several environment variables (`ABLY_WRAPPER_MODE`, `ABLY_SUPPRESS_WELCOME`, `ABLY_HISTORY_FILE`, `ABLY_INTERACTIVE_MODE`) to coordinate between restarts; see [interactive mode variables](ENV_VARIABLES_USAGE.md#ably_interactive_mode) for the full list and behavioral effects
 - [Exit Codes](Exit-Codes.md) — Exit codes used in interactive mode and wrapper script behavior
 - [Troubleshooting](Troubleshooting.md#interactive-mode-issues) — Common interactive mode issues (unexpected exits, Ctrl+C, history)
 - [Auto-completion](Auto-completion.md) — Shell tab completion setup for commands and flags

@@ -69,7 +69,7 @@ Refer to [Testing.md](Testing.md) for how to run specific tests.
 
 ## Related
 
-- [ENV_VARIABLES_USAGE.md](ENV_VARIABLES_USAGE.md) — Complete reference of all 25 environment variables, including `DEBUG`, `TERMINAL_DIAGNOSTICS`, and `ABLY_SHOW_DEV_FLAGS`
+- [General Usage](Environment-Variables/General-Usage.md) and [Development Stage](Environment-Variables/Development-Usage.md) Env Variables — Development, testing, debugging, and internal env variables
 - [Testing Guide](Testing.md) — Test layers, running tests, and debugging E2E failures
 - [E2E Testing CLI Runner](E2E-Testing-CLI-Runner.md) — E2E test runner debugging flags (`E2E_DEBUG`, `ABLY_CLI_TEST_SHOW_OUTPUT`)
 - [Troubleshooting](Troubleshooting.md) — Solutions for common build, test, and runtime issues
