@@ -17,6 +17,7 @@ import { CommandError } from "./errors/command-error.js";
 import { getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
+import { promptForConfirmation } from "./utils/prompt-confirmation.js";
 import { BaseFlags, CommandConfig } from "./types/cli.js";
 import {
   JsonRecordType,
@@ -1368,7 +1369,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           "The configured API key appears to be invalid or revoked.",
         );
 
-        const shouldRemove = await this.interactiveHelper.confirm(
+        const shouldRemove = await promptForConfirmation(
           "Would you like to remove this invalid key from your configuration?",
         );
 

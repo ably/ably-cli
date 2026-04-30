@@ -1,4 +1,8 @@
+import { randomUUID } from "node:crypto";
+
 import { describe, it, beforeEach, afterEach, expect } from "vitest";
+import jwt from "jsonwebtoken";
+import { runCommand } from "../../helpers/command-helpers.js";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
@@ -6,7 +10,6 @@ import {
   setupTestFailureHandler,
   resetTestTracking,
 } from "../../helpers/e2e-test-helper.js";
-import { runCommand } from "../../helpers/command-helpers.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Auth Tokens E2E Tests", () => {
@@ -107,17 +110,15 @@ describe.skipIf(SHOULD_SKIP_E2E)("Auth Tokens E2E Tests", () => {
       const issuedToken = issueResultRecord!.token as Record<string, unknown>;
       expect(issuedToken.value).toBeDefined();
 
-      const tokenValue = issuedToken.value as string;
-
-      // Step 2: Revoke the token using its client ID
+      // Step 2: Revoke tokens for the client ID (token positional arg removed — API revokes by target specifier)
       const revokeResult = await runCommand(
         [
           "auth",
           "revoke-token",
-          tokenValue,
           "--client-id",
           "e2e-revoke-test",
           "--json",
+          "--force",
         ],
         {
           env: { ABLY_API_KEY: E2E_API_KEY || "" },
@@ -132,6 +133,114 @@ describe.skipIf(SHOULD_SKIP_E2E)("Auth Tokens E2E Tests", () => {
 
       expect(revokeResultRecord).toBeDefined();
       expect(revokeResultRecord!.success).toBe(true);
+      expect(revokeResultRecord!.revocation).toBeDefined();
+      expect(
+        (revokeResultRecord!.revocation as Record<string, unknown>).target,
+      ).toBe("clientId:e2e-revoke-test");
+    });
+
+    it("should issue a JWT with revocation key, then revoke by that key", async () => {
+      setupTestFailureHandler(
+        "should issue a JWT with revocation key, then revoke by that key",
+      );
+
+      const apiKey = E2E_API_KEY || "";
+      const [keyId, keySecret] = apiKey.split(":");
+      const appId = keyId!.split(".")[0];
+      const revocationKey = `e2e-revoke-group-${Date.now()}`;
+
+      // Step 1: Manually create a JWT with the x-ably-revocation-key claim
+      const jwtToken = jwt.sign(
+        {
+          "x-ably-appId": appId,
+          "x-ably-capability": { "*": ["*"] },
+          "x-ably-clientId": `e2e-revoke-key-client-${randomUUID().slice(0, 8)}`,
+          "x-ably-revocation-key": revocationKey,
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + 3600,
+          jti: randomUUID(),
+        },
+        keySecret!,
+        { algorithm: "HS256", keyid: keyId },
+      );
+
+      // Step 2: Verify the JWT is valid by subscribing briefly with it
+      const subscribeResult = await runCommand(
+        ["channels", "subscribe", "e2e-revoke-key-test", "--json"],
+        {
+          env: { ABLY_TOKEN: jwtToken },
+          timeoutMs: 5000,
+        },
+      );
+
+      // The subscribe auto-exits via ABLY_CLI_DEFAULT_DURATION or timeout;
+      // we just need it to have connected (exit 0 or timeout is fine)
+      expect([0, null]).toContain(subscribeResult.exitCode);
+
+      // Step 3: Revoke by revocation key
+      const revokeResult = await runCommand(
+        [
+          "auth",
+          "revoke-token",
+          "--revocation-key",
+          revocationKey,
+          "--json",
+          "--force",
+        ],
+        {
+          env: { ABLY_API_KEY: apiKey },
+          timeoutMs: 30000,
+        },
+      );
+
+      expect(revokeResult.exitCode).toBe(0);
+
+      const revokeRecords = parseNdjsonLines(revokeResult.stdout);
+      const revokeResultRecord = revokeRecords.find((r) => r.type === "result");
+
+      expect(revokeResultRecord).toBeDefined();
+      expect(revokeResultRecord!.success).toBe(true);
+      expect(revokeResultRecord!.revocation).toBeDefined();
+      expect(
+        (revokeResultRecord!.revocation as Record<string, unknown>).target,
+      ).toBe(`revocationKey:${revocationKey}`);
+    });
+
+    it("should revoke tokens with --allow-reauth-margin", async () => {
+      setupTestFailureHandler(
+        "should revoke tokens with --allow-reauth-margin",
+      );
+
+      const revokeResult = await runCommand(
+        [
+          "auth",
+          "revoke-token",
+          "--client-id",
+          "e2e-reauth-test",
+          "--allow-reauth-margin",
+          "--json",
+          "--force",
+        ],
+        {
+          env: { ABLY_API_KEY: E2E_API_KEY || "" },
+          timeoutMs: 30000,
+        },
+      );
+
+      expect(revokeResult.exitCode).toBe(0);
+
+      const revokeRecords = parseNdjsonLines(revokeResult.stdout);
+      const revokeResultRecord = revokeRecords.find((r) => r.type === "result");
+
+      expect(revokeResultRecord).toBeDefined();
+      expect(revokeResultRecord!.success).toBe(true);
+
+      const revocation = revokeResultRecord!.revocation as Record<
+        string,
+        unknown
+      >;
+      expect(revocation.target).toBe("clientId:e2e-reauth-test");
+      expect(revocation.allowReauthMargin).toBe(true);
     });
   });
 });
