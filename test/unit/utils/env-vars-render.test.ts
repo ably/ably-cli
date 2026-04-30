@@ -44,18 +44,13 @@ describe("env-vars-render", () => {
       expect(renderMinimalReference()).not.toContain("Quick Reference");
     });
 
-    it("contains an example block with description and shell prompt for every variable", () => {
+    it("contains an example block with the intro tagline and a shell prompt for every variable", () => {
       const out = renderMinimalReference();
       for (const v of ENV_VARS_DATA.variables) {
         const idx = out.indexOf(v.name);
         expect(idx).toBeGreaterThan(-1);
-        // Description text appears in the same block.
-        // Use a fragment to tolerate inline markup processing.
-        const descFragment = v.example.description
-          .replaceAll(/[`*]/g, "")
-          .slice(0, 20);
-        expect(out).toContain(descFragment);
-        // At least one shell prompt follows the heading.
+        const introFragment = v.intro.replaceAll(/[`*]/g, "").slice(0, 20);
+        expect(out).toContain(introFragment);
         const tail = out.slice(idx);
         expect(tail).toMatch(/\$ /);
       }
@@ -113,6 +108,74 @@ describe("env-vars-render", () => {
       const out = renderSingleVar("ABLY_API_KEY");
       expect(out).toContain("APP_ID.KEY_ID:KEY_SECRET");
       expect(out).not.toContain("custom-endpoint.example.com");
+    });
+
+    it("renders an Example: block with at least one shell prompt for every variable", () => {
+      for (const v of ENV_VARS_DATA.variables) {
+        const out = renderSingleVar(v.name);
+        expect(out).toContain("Example:");
+        expect(out).toMatch(/\$ /);
+      }
+    });
+
+    it("every variable section is at most 20 lines long", () => {
+      for (const v of ENV_VARS_DATA.variables) {
+        const lineCount = renderSingleVar(v.name).split("\n").length;
+        expect(lineCount).toBeLessThanOrEqual(20);
+      }
+    });
+
+    it("contains at most one https:// URL per variable section", () => {
+      for (const v of ENV_VARS_DATA.variables) {
+        const out = renderSingleVar(v.name);
+        const matches = out.match(/https:\/\//g) ?? [];
+        expect(matches.length).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it("ABLY_API_KEY section surfaces the dashboard URL", () => {
+      expect(renderSingleVar("ABLY_API_KEY")).toContain(
+        "https://ably.com/accounts/any/apps/any/app_keys",
+      );
+    });
+
+    it("ABLY_ACCESS_TOKEN section surfaces the access-tokens URL", () => {
+      expect(renderSingleVar("ABLY_ACCESS_TOKEN")).toContain(
+        "https://ably.com/users/access_tokens",
+      );
+    });
+
+    it("ABLY_TOKEN section contains the unset-before-issuing footgun callout", () => {
+      expect(renderSingleVar("ABLY_TOKEN")).toContain("unset ABLY_TOKEN");
+    });
+
+    it("ABLY_HISTORY_FILE section explains the wrapper auto-set behavior", () => {
+      expect(renderSingleVar("ABLY_HISTORY_FILE")).toContain(
+        "ably-interactive",
+      );
+    });
+
+    it("does not surface deleted detail-section content (Behavior, Obtaining, etc.)", () => {
+      for (const name of [
+        "ABLY_API_KEY",
+        "ABLY_TOKEN",
+        "ABLY_ACCESS_TOKEN",
+        "ABLY_APP_ID",
+        "ABLY_CLI_CONFIG_DIR",
+        "ABLY_CLI_DEFAULT_DURATION",
+        "ABLY_CLI_NON_INTERACTIVE",
+        "ABLY_ENDPOINT",
+      ]) {
+        const out = renderSingleVar(name);
+        expect(out).not.toContain("Behavior:");
+        expect(out).not.toContain("Obtaining ");
+        expect(out).not.toContain("Token display");
+        expect(out).not.toContain("App name caching");
+        expect(out).not.toContain("Crossover usage");
+        expect(out).not.toContain("Specifically affects");
+        expect(out).not.toContain("28 long-running");
+        expect(out).not.toContain("Examples:");
+      }
     });
 
     it("throws for an unknown name", () => {

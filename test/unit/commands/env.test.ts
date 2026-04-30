@@ -114,7 +114,7 @@ describe("env command", () => {
       expect(result.relatedLinks).toHaveLength(8);
     });
 
-    it("--json with a var name emits envVar singular envelope with rich details", async () => {
+    it("--json with a var name emits envVar singular envelope", async () => {
       const { stdout } = await runCommand(
         ["env", "ABLY_API_KEY", "--json"],
         import.meta.url,
@@ -126,7 +126,20 @@ describe("env command", () => {
       expect(result.envVar.format).toBe("APP_ID.KEY_ID:KEY_SECRET");
       expect(result.envVar.intro).toBeDefined();
       expect(result.envVar.example).toBeDefined();
-      expect(result.envVar.details.length).toBeGreaterThan(0);
+      expect(result.envVar.example.lines.length).toBeGreaterThan(0);
+      expect(result.envVar.details).toEqual([]);
+    });
+
+    it("--json envelope for ABLY_TOKEN includes the issue-token footgun callout", async () => {
+      const { stdout } = await runCommand(
+        ["env", "ABLY_TOKEN", "--json"],
+        import.meta.url,
+      );
+      const result = parseJsonOutput(stdout);
+      expect(result.envVar.details).toHaveLength(1);
+      expect(JSON.stringify(result.envVar.details)).toContain(
+        "unset ABLY_TOKEN",
+      );
     });
 
     it("var name matches case-insensitively", async () => {

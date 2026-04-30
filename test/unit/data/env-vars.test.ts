@@ -49,21 +49,45 @@ describe("ENV_VARS_DATA", () => {
   it("every variable has all required fields populated", () => {
     for (const v of ENV_VARS_DATA.variables) {
       expect(v.category.length).toBeGreaterThan(0);
-      expect(v.purpose.length).toBeGreaterThan(0);
       expect(v.format.length).toBeGreaterThan(0);
       expect(v.default_.length).toBeGreaterThan(0);
       expect(v.intro.length).toBeGreaterThan(0);
-      expect(v.details.length).toBeGreaterThan(0);
     }
   });
 
-  it("every variable has a description and at least one example shell line (minimal-view contract)", () => {
+  it("every variable has at least one example shell line (minimal-view contract)", () => {
     for (const v of ENV_VARS_DATA.variables) {
-      expect(v.example.description.length).toBeGreaterThan(0);
       expect(v.example.lines.length).toBeGreaterThanOrEqual(1);
       for (const line of v.example.lines) {
         expect(line.length).toBeGreaterThan(0);
       }
+    }
+  });
+
+  it("details arrays are streamlined per the trim spec", () => {
+    const byName = Object.fromEntries(
+      ENV_VARS_DATA.variables.map((v) => [v.name, v]),
+    );
+    expect(byName.ABLY_API_KEY.details).toHaveLength(0);
+    expect(byName.ABLY_TOKEN.details).toHaveLength(1);
+    expect(byName.ABLY_ACCESS_TOKEN.details).toHaveLength(0);
+    expect(byName.ABLY_APP_ID.details).toHaveLength(0);
+    expect(byName.ABLY_CLI_CONFIG_DIR.details).toHaveLength(0);
+    expect(byName.ABLY_HISTORY_FILE.details).toHaveLength(1);
+    expect(byName.ABLY_CLI_DEFAULT_DURATION.details).toHaveLength(0);
+    expect(byName.ABLY_CLI_NON_INTERACTIVE.details).toHaveLength(0);
+    expect(byName.ABLY_ENDPOINT.details).toHaveLength(0);
+  });
+
+  it("only the documented primary URLs appear inline in variable entries", () => {
+    const allowedUrls = new Set([
+      "https://ably.com/accounts/any/apps/any/app_keys",
+      "https://ably.com/users/access_tokens",
+    ]);
+    const serializedVars = JSON.stringify(ENV_VARS_DATA.variables);
+    const found = serializedVars.match(/https:\/\/[^\s")]+/g) ?? [];
+    for (const url of found) {
+      expect(allowedUrls.has(url)).toBe(true);
     }
   });
 

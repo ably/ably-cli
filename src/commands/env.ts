@@ -13,21 +13,9 @@ import {
 
 const { get: levenshteinDistance } = pkg;
 
-const SUPPORTED_VAR_NAMES = ENV_VARS_DATA.variables.map((v) => v.name);
-
-const PREREQUISITES_TEXT = ENV_VARS_DATA.meta.prerequisites
-  .map(
-    (p) =>
-      `- ${p.label} (${p.commands.join(", ")}) authenticate via ${p.authVars.join(" or ")}.`,
-  )
-  .join("\n");
-
 export default class EnvCommand extends AblyBaseCommand {
   static override description =
-    "Show the reference for environment variables supported by the Ably CLI\n\n" +
-    "The Ably CLI supports environment variables for authentication. These are useful in scripts, CI/CD pipelines, and automated workflows where interactive login is not possible. When any of these variables are set, the CLI bypasses the `ably login` workflow entirely.\n\n" +
-    `Prerequisites:\n${PREREQUISITES_TEXT}\n\n` +
-    "Run without arguments for an overview of all variables with examples, or pass a variable name for the full per-variable reference.";
+    "Show the reference and usage for environment variables supported by the Ably CLI";
 
   static override examples = [
     {
@@ -63,8 +51,9 @@ export default class EnvCommand extends AblyBaseCommand {
   ];
 
   static override args = {
-    varName: Args.string({
-      description: `Name of an environment variable (case-insensitive). One of: ${SUPPORTED_VAR_NAMES.join(", ")}. Omit to print the overview with examples.`,
+    envVarName: Args.string({
+      description:
+        "Environment variable name (case-insensitive). Run `ably env --list` for the full list.",
       required: false,
     }),
   };
@@ -78,7 +67,7 @@ export default class EnvCommand extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(EnvCommand);
-    const requested = args.varName?.toUpperCase();
+    const requested = args.envVarName?.toUpperCase();
 
     if (flags.list && requested) {
       this.fail(
@@ -105,7 +94,7 @@ export default class EnvCommand extends AblyBaseCommand {
           ? `Did you mean ${suggestion}? Run \`ably env --list\` to see all supported variables.`
           : "Run `ably env --list` to see all supported variables.";
         this.fail(
-          `Unknown environment variable: ${args.varName}. ${hint}`,
+          `Unknown environment variable: ${args.envVarName}. ${hint}`,
           flags as BaseFlags,
           "env",
         );

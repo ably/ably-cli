@@ -134,6 +134,10 @@ function renderVarSection(v: EnvVarEntry): string {
   const tbl = renderPropertyTable(buildPropertyTable(v));
   if (tbl) parts.push(tbl);
   for (const section of v.details) parts.push(renderDetailSection(section));
+  parts.push(
+    c.bold("Example:"),
+    v.example.lines.map((line) => `  ${chalk.green("$ ")}${line}`).join("\n"),
+  );
   return parts.join("\n\n");
 }
 
@@ -156,7 +160,7 @@ function renderHeader(): string {
 }
 
 function renderExampleBlock(v: EnvVarEntry): string {
-  const heading = `${c.varHeading(v.name)} — ${applyInlineMarkup(v.example.description)}`;
+  const heading = `${c.varHeading(v.name)} — ${applyInlineMarkup(v.intro)}`;
   const codeLines = v.example.lines.map(
     (line) => `    ${chalk.green("$ ")}${line}`,
   );
@@ -170,7 +174,7 @@ export function renderMinimalReference(): string {
     renderPrerequisites(),
     c.category("Examples"),
     ENV_VARS_DATA.variables.map((v) => renderExampleBlock(v)).join("\n\n"),
-    c.dim("TIP: Run `ably env <NAME>` for a focused single-variable view."),
+    c.bold("TIP: Run `ably env --help` for more information."),
   ];
   return parts.join("\n\n") + "\n";
 }
