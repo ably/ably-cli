@@ -24,7 +24,7 @@ describe("auth:revoke-token command", () => {
 
   standardHelpTests("auth:revoke-token", import.meta.url);
 
-  describe("flag validation", () => {
+  describe("argument validation", () => {
     it("should fail when neither --client-id nor --revocation-key is provided", async () => {
       const { error } = await runCommand(
         ["auth:revoke-token", "--force"],
@@ -57,93 +57,163 @@ describe("auth:revoke-token command", () => {
     });
   });
 
-  describe("token revocation by client ID", () => {
-    it("should successfully revoke tokens for a client ID", async () => {
-      const mockConfig = getMockConfigManager();
-      const keyId = mockConfig.getKeyId()!;
-      nock("https://rest.ably.io")
-        .post(`/keys/${keyId}/revokeTokens`, {
-          targets: [`clientId:${mockClientId}`],
-        })
-        .reply(200, {});
+  describe("functionality", () => {
+    describe("token revocation by client ID", () => {
+      it("should successfully revoke tokens for a client ID", async () => {
+        const mockConfig = getMockConfigManager();
+        const keyId = mockConfig.getKeyId()!;
+        nock("https://rest.ably.io")
+          .post(`/keys/${keyId}/revokeTokens`, {
+            targets: [`clientId:${mockClientId}`],
+          })
+          .reply(200, {});
 
-      const { stderr } = await runCommand(
-        ["auth:revoke-token", "--client-id", mockClientId, "--force"],
-        import.meta.url,
-      );
+        const { stderr } = await runCommand(
+          ["auth:revoke-token", "--client-id", mockClientId, "--force"],
+          import.meta.url,
+        );
 
-      expect(stderr).toContain("have been revoked");
+        expect(stderr).toContain("have been revoked");
+      });
+
+      it("should include allowReauthMargin when --allow-reauth-margin is provided", async () => {
+        const mockConfig = getMockConfigManager();
+        const keyId = mockConfig.getKeyId()!;
+        nock("https://rest.ably.io")
+          .post(`/keys/${keyId}/revokeTokens`, {
+            targets: [`clientId:${mockClientId}`],
+            allowReauthMargin: true,
+          })
+          .reply(200, {});
+
+        const { stderr } = await runCommand(
+          [
+            "auth:revoke-token",
+            "--client-id",
+            mockClientId,
+            "--allow-reauth-margin",
+            "--force",
+          ],
+          import.meta.url,
+        );
+
+        expect(stderr).toContain("have been revoked");
+      });
+
+      it("should output JSON format when --json flag is used", async () => {
+        const mockConfig = getMockConfigManager();
+        const keyId = mockConfig.getKeyId()!;
+        nock("https://rest.ably.io")
+          .post(`/keys/${keyId}/revokeTokens`, {
+            targets: [`clientId:${mockClientId}`],
+          })
+          .reply(200, { issuedBefore: 1234567890 });
+
+        const { stdout } = await runCommand(
+          [
+            "auth:revoke-token",
+            "--client-id",
+            mockClientId,
+            "--json",
+            "--force",
+          ],
+          import.meta.url,
+        );
+
+        const result = parseNdjsonLines(stdout).find(
+          (r) => r.type === "result",
+        )!;
+        expect(result).toHaveProperty("success", true);
+        expect(result).toHaveProperty("revocation");
+        expect(result.revocation).toHaveProperty(
+          "message",
+          `Tokens matching client id ${mockClientId} have been revoked.`,
+        );
+        expect(result.revocation).toHaveProperty(
+          "target",
+          `clientId:${mockClientId}`,
+        );
+        expect(result.revocation).toHaveProperty("response");
+      });
     });
 
-    it("should include allowReauthMargin when --allow-reauth-margin is provided", async () => {
-      const mockConfig = getMockConfigManager();
-      const keyId = mockConfig.getKeyId()!;
-      nock("https://rest.ably.io")
-        .post(`/keys/${keyId}/revokeTokens`, {
-          targets: [`clientId:${mockClientId}`],
-          allowReauthMargin: true,
-        })
-        .reply(200, {});
+    describe("token revocation by revocation key", () => {
+      it("should successfully revoke tokens for a revocation key", async () => {
+        const mockConfig = getMockConfigManager();
+        const keyId = mockConfig.getKeyId()!;
+        nock("https://rest.ably.io")
+          .post(`/keys/${keyId}/revokeTokens`, {
+            targets: [`revocationKey:${mockRevocationKey}`],
+          })
+          .reply(200, {});
 
-      const { stderr } = await runCommand(
-        [
-          "auth:revoke-token",
-          "--client-id",
-          mockClientId,
-          "--allow-reauth-margin",
-          "--force",
-        ],
-        import.meta.url,
-      );
+        const { stderr } = await runCommand(
+          [
+            "auth:revoke-token",
+            "--revocation-key",
+            mockRevocationKey,
+            "--force",
+          ],
+          import.meta.url,
+        );
 
-      expect(stderr).toContain("have been revoked");
+        expect(stderr).toContain("have been revoked");
+      });
     });
 
-    it("should output JSON format when --json flag is used", async () => {
-      const mockConfig = getMockConfigManager();
-      const keyId = mockConfig.getKeyId()!;
-      nock("https://rest.ably.io")
-        .post(`/keys/${keyId}/revokeTokens`, {
-          targets: [`clientId:${mockClientId}`],
-        })
-        .reply(200, { issuedBefore: 1234567890 });
+    describe("confirmation prompt", () => {
+      const originalStdin = process.stdin;
 
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--client-id", mockClientId, "--json", "--force"],
-        import.meta.url,
-      );
+      function mockStdinAnswer(answer: string) {
+        const readable = new Readable({ read() {} });
+        Object.defineProperty(process, "stdin", {
+          value: readable,
+          writable: true,
+          configurable: true,
+        });
+        queueMicrotask(() => {
+          for (const chunk of [`${answer}\n`, null]) readable.push(chunk);
+        });
+      }
 
-      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
-      expect(result).toHaveProperty("success", true);
-      expect(result).toHaveProperty("revocation");
-      expect(result.revocation).toHaveProperty(
-        "message",
-        `Tokens matching client id ${mockClientId} have been revoked.`,
-      );
-      expect(result.revocation).toHaveProperty(
-        "target",
-        `clientId:${mockClientId}`,
-      );
-      expect(result.revocation).toHaveProperty("response");
-    });
-  });
+      afterEach(() => {
+        Object.defineProperty(process, "stdin", {
+          value: originalStdin,
+          writable: true,
+          configurable: true,
+        });
+      });
 
-  describe("token revocation by revocation key", () => {
-    it("should successfully revoke tokens for a revocation key", async () => {
-      const mockConfig = getMockConfigManager();
-      const keyId = mockConfig.getKeyId()!;
-      nock("https://rest.ably.io")
-        .post(`/keys/${keyId}/revokeTokens`, {
-          targets: [`revocationKey:${mockRevocationKey}`],
-        })
-        .reply(200, {});
+      it("should require --force in JSON mode", async () => {
+        const { stdout } = await runCommand(
+          ["auth:revoke-token", "--client-id", mockClientId, "--json"],
+          import.meta.url,
+        );
 
-      const { stderr } = await runCommand(
-        ["auth:revoke-token", "--revocation-key", mockRevocationKey, "--force"],
-        import.meta.url,
-      );
+        const lines = parseNdjsonLines(stdout);
+        const errorLine = lines.find((r) => r.type === "error");
+        expect(errorLine).toBeDefined();
+        const errorPayload = errorLine!.error as { message: string };
+        expect(errorPayload.message).toContain(
+          "The --force flag is required when using --json to confirm revocation",
+        );
+      });
 
-      expect(stderr).toContain("have been revoked");
+      it("should cancel when user declines confirmation", async () => {
+        mockStdinAnswer("n");
+
+        const revokeNock = nock("https://rest.ably.io")
+          .post(/\/keys\/.*\/revokeTokens/)
+          .reply(200, {});
+
+        const { stderr } = await runCommand(
+          ["auth:revoke-token", "--client-id", mockClientId],
+          import.meta.url,
+        );
+
+        expect(stderr).toContain("Revocation cancelled");
+        expect(revokeNock.isDone()).toBe(false);
+      });
     });
   });
 
@@ -195,60 +265,6 @@ describe("auth:revoke-token command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(/500|error|revoking/i);
-    });
-  });
-
-  describe("confirmation prompt", () => {
-    const originalStdin = process.stdin;
-
-    function mockStdinAnswer(answer: string) {
-      const readable = new Readable({ read() {} });
-      Object.defineProperty(process, "stdin", {
-        value: readable,
-        writable: true,
-        configurable: true,
-      });
-      queueMicrotask(() => {
-        for (const chunk of [`${answer}\n`, null]) readable.push(chunk);
-      });
-    }
-
-    afterEach(() => {
-      Object.defineProperty(process, "stdin", {
-        value: originalStdin,
-        writable: true,
-        configurable: true,
-      });
-    });
-
-    it("should require --force in JSON mode", async () => {
-      const { stdout } = await runCommand(
-        ["auth:revoke-token", "--client-id", mockClientId, "--json"],
-        import.meta.url,
-      );
-
-      const lines = parseNdjsonLines(stdout);
-      const errorLine = lines.find((r) => r.type === "error");
-      expect(errorLine).toBeDefined();
-      expect(errorLine!.error.message).toContain(
-        "The --force flag is required when using --json to confirm revocation",
-      );
-    });
-
-    it("should cancel when user declines confirmation", async () => {
-      mockStdinAnswer("n");
-
-      const revokeNock = nock("https://rest.ably.io")
-        .post(/\/keys\/.*\/revokeTokens/)
-        .reply(200, {});
-
-      const { stderr } = await runCommand(
-        ["auth:revoke-token", "--client-id", mockClientId],
-        import.meta.url,
-      );
-
-      expect(stderr).toContain("Revocation cancelled");
-      expect(revokeNock.isDone()).toBe(false);
     });
   });
 

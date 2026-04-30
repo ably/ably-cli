@@ -244,10 +244,23 @@ export default class AccountsSwitch extends ControlBaseCommand {
       this.configManager.storeEndpoint(flags.endpoint as string);
     }
 
-    this.log(
-      `Switched to account: ${formatResource(remoteAccount.name)} (${remoteAccount.id})`,
-    );
-    this.log(`Saved as alias: ${formatResource(newAlias)}`);
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult(
+        {
+          account: {
+            alias: newAlias,
+            id: remoteAccount.id,
+            name: remoteAccount.name,
+          },
+        },
+        flags,
+      );
+    } else {
+      this.logSuccessMessage(
+        `Switched to account ${formatResource(remoteAccount.name)} (${remoteAccount.id}). Saved as alias ${formatResource(newAlias)}.`,
+        flags,
+      );
+    }
   }
 
   private async switchToLocalAccount(
@@ -292,20 +305,14 @@ export default class AccountsSwitch extends ControlBaseCommand {
       }
     } catch {
       // The account switch already happened above, so this is non-fatal.
-      // Warn the user but still report success with a warning field.
+      // Report the switch success, then surface the verification failure as
+      // a separate warning record (consistent with other commands' JSON shape).
       const warningMessage =
         "Access token may have expired or is invalid. The account was switched, but token verification failed.";
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult(
-          {
-            account: { alias },
-            warning: warningMessage,
-          },
-          flags,
-        );
-      } else {
-        this.logWarning(warningMessage, flags);
+        this.logJsonResult({ account: { alias } }, flags);
       }
+      this.logWarning(warningMessage, flags);
     }
   }
 }

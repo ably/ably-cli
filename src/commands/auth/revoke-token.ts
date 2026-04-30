@@ -1,5 +1,6 @@
 import { Flags } from "@oclif/core";
 import * as https from "node:https";
+import stripAnsi from "strip-ansi";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { forceFlag, productApiFlags } from "../../flags.js";
@@ -135,7 +136,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
             {
               revocation: {
                 allowReauthMargin: flags["allow-reauth-margin"],
-                message: successMessage,
+                message: stripAnsi(successMessage),
                 target: targetSpecifier,
                 response,
               },
@@ -146,16 +147,15 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
           this.logSuccessMessage(successMessage, flags);
         }
       } catch (requestError: unknown) {
-        const error = requestError as Error;
-        if (error.message && error.message.includes("token_not_found")) {
+        const error = requestError as Error & { statusCode?: number };
+        if (error.statusCode === 404) {
           this.fail(
             "No matching tokens found or already revoked",
             flags,
             "revokeToken",
           );
-        } else {
-          throw requestError;
         }
+        throw requestError;
       }
     } catch (error) {
       this.fail(error, flags, "revokeToken");
@@ -204,11 +204,11 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
               resolve(data);
             }
           } else {
-            reject(
-              new Error(
-                `Request failed with status code ${res.statusCode}: ${data}`,
-              ),
-            );
+            const err = new Error(
+              `Request failed with status code ${res.statusCode}: ${data}`,
+            ) as Error & { statusCode?: number };
+            err.statusCode = res.statusCode;
+            reject(err);
           }
         });
       });
