@@ -136,7 +136,7 @@ Exempt: `interactive.test.ts`, `interactive-sigint.test.ts`, `bench/*.test.ts`.
 
 ### Auth in tests
 
-Authentication in tests uses different mechanisms depending on the layer. See [General Usage Env Variables](Environment-Variables/General-Usage.md) for full details on `ABLY_API_KEY`, `ABLY_TOKEN`, `ABLY_ACCESS_TOKEN`, and other auth env vars.
+Authentication in tests uses different mechanisms depending on the layer. Run `ably env` for the full reference on `ABLY_API_KEY`, `ABLY_TOKEN`, `ABLY_ACCESS_TOKEN`, and other auth env vars.
 
 **Unit tests** — `MockConfigManager` provides auth automatically. No env vars or flags needed:
 
@@ -163,7 +163,7 @@ runCommand(["channels", "publish", "my-channel", "hello"], {
 
 ### Duration in tests
 
-Unit and integration tests set `ABLY_CLI_DEFAULT_DURATION: "0.25"` in `vitest.config.ts`, so subscribe/long-running commands auto-exit after 250ms. Do NOT pass `--duration` to `runCommand()` — it overrides the fast default. See [General Usage Env Variables](Environment-Variables/General-Usage.md#ably_cli_default_duration) for full details on this variable and the 28 commands it affects.
+Unit and integration tests set `ABLY_CLI_DEFAULT_DURATION: "0.25"` in `vitest.config.ts`, so subscribe/long-running commands auto-exit after 250ms. Do NOT pass `--duration` to `runCommand()` — it overrides the fast default. Run `ably env ABLY_CLI_DEFAULT_DURATION` for full details on this variable and the 28 commands it affects.
 
 Exceptions: `test:wait` command tests (required flag), `interactive-sigint.test.ts` (needs longer for SIGINT), and help output checks.
 

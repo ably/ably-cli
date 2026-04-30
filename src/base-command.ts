@@ -63,6 +63,11 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
   // config only applicable to local env
   "config*",
 
+  // env documents local-CLI environment variables (auth, config dirs, history
+  // files) that don't apply in web CLI mode where auth and config are managed
+  // by the surrounding web UI
+  "env",
+
   // File-reading commands can expose server filesystem contents in web CLI mode
   "push:config:set-apns",
   "push:config:set-fcm",

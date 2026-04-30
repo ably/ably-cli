@@ -247,7 +247,7 @@ Property 'x' does not exist on type 'Y'
 
 **Solution**:
 - Check that `~/.ably/history` file exists and is writable
-- Verify the `ABLY_HISTORY_FILE` environment variable if using custom location (see [General Usage Env Variables](Environment-Variables/General-Usage.md#ably_history_file))
+- Verify the `ABLY_HISTORY_FILE` environment variable if using custom location (run `ably env ABLY_HISTORY_FILE` for details)
 - Ensure the history file isn't exceeding size limits (default: 1000 commands, auto-trimmed at 2000 lines)
 
 ---
@@ -262,7 +262,7 @@ See `AGENTS.md` for more details on the development workflow.
 
 ## Related
 
-- [General Usage](Environment-Variables/General-Usage.md) and [Development Stage](Environment-Variables/Development-Usage.md) Env Variables — Development, testing, debugging, and internal env variables
+- [Development Stage](Environment-Variables/Development-Usage.md) Env Variables — Development, testing, debugging, and internal env variables. For user-facing variables, run `ably env`.
 - [Debugging Guide](Debugging.md) — Debugging tips including `DEBUG`, `TERMINAL_DIAGNOSTICS`, and Node inspector
 - [Testing Guide](Testing.md) — Test layers, running tests, and debugging failures
 - [Exit Codes](Exit-Codes.md) — Exit codes used by the CLI, particularly in interactive mode

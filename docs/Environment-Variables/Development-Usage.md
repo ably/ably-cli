@@ -2,7 +2,7 @@
 
 These variables are for CLI contributors, development, testing, and internal modes. They are **not intended for end-user configuration** unless explicitly noted.
 
-> For user-facing environment variables (authentication, configuration, behavioral control, host overrides), see [General Usage](General-Usage.md).
+> For user-facing environment variables (authentication, configuration, behavioral control, host overrides), run `ably env` in your terminal.
 
 ---
 
@@ -324,7 +324,7 @@ Only set when `DEBUG` is not active.
 
 ## Related
 
-- [General Usage](General-Usage.md) — User-facing environment variables for authentication, configuration, and behavioral control
+- Run `ably env` — User-facing environment variables for authentication, configuration, and behavioral control
 - [Debugging Guide](../Debugging.md) — Debugging tips including `DEBUG` and terminal diagnostics
 - [Testing Guide](../Testing.md) — Test layers, auth in tests, duration defaults, and test-specific env vars
 - [Troubleshooting](../Troubleshooting.md) — Common issues with env vars, history, and configuration
