@@ -33,7 +33,7 @@ describe("auth:revoke-token command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toContain(
-        "Either --client-id or --revocation-key is required",
+        "Either --client-id or --revocation-key must be provided",
       );
     });
 

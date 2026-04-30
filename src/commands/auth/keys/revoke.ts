@@ -72,7 +72,7 @@ export default class KeysRevokeCommand extends ControlBaseCommand {
 
       if (!flags.force && !this.shouldOutputJson(flags)) {
         const confirmed = await promptForConfirmation(
-          "\nThis will permanently revoke this key and any applications using it will stop working. Are you sure?",
+          "\nThis will permanently revoke this key and any applications using it will stop working. Are you sure you want to continue?",
         );
 
         if (!confirmed) {

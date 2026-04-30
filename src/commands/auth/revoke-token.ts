@@ -25,12 +25,10 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
       env: "ABLY_APP_ID",
     }),
     "client-id": Flags.string({
-      char: "c",
       description: "Revoke all tokens issued to this client ID",
       exclusive: ["revocation-key"],
     }),
     "revocation-key": Flags.string({
-      char: "r",
       description:
         "Revoke all tokens matching this revocation key (JWT tokens only)",
       exclusive: ["client-id"],
@@ -38,7 +36,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     "allow-reauth-margin": Flags.boolean({
       default: false,
       description:
-        "[default: false] Delay enforcement by 30s so connected clients can obtain a new token before disconnection.",
+        "Delay enforcement by 30s so connected clients can obtain a new token before disconnection.",
     }),
   };
 
@@ -51,7 +49,7 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
     // Require at least one target specifier
     if (!clientId && !revocationKey) {
       this.fail(
-        "Either --client-id or --revocation-key is required. See https://ably.com/docs/auth/revocation for details.",
+        "Either --client-id or --revocation-key must be provided",
         flags,
         "revokeToken",
       );
