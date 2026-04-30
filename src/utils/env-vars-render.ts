@@ -41,11 +41,9 @@ const BORDERLESS_TABLE_CHARS = {
   middle: "  ",
 };
 
-// Inline-markup post-processor: applies the small editing convention used in
-// data.ts so authors can write plain strings.
-//   - `code-spans`     → cyan
-//   - **bold-spans**   → bold
-//   - URLs             → dim wrapped in parentheses when standalone
+// Inline-markup post-processor for plain strings authored in env-vars.ts:
+//   `code-spans`   → cyan
+//   **bold-spans** → bold
 function applyInlineMarkup(text: string): string {
   return text
     .replaceAll(/\*\*([^*]+)\*\*/g, (_m, inner: string) => c.bold(inner))

@@ -37,27 +37,27 @@ export default class EnvCommand extends AblyBaseCommand {
     },
     {
       description:
-        "Reference for authenticating data plane commands with an API key",
+        "Display the reference and usage examples for `ABLY_API_KEY`",
       command: "<%= config.bin %> <%= command.id %> ABLY_API_KEY",
     },
     {
       description:
-        "Reference for authenticating data plane commands with an Ably token or JWT (highest auth priority)",
+        "Display the reference and usage examples for `ABLY_TOKEN` (highest auth priority)",
       command: "<%= config.bin %> <%= command.id %> ABLY_TOKEN",
     },
     {
       description:
-        "Reference for authenticating Control API commands with an access token",
+        "Display the reference and usage examples for `ABLY_ACCESS_TOKEN`",
       command: "<%= config.bin %> <%= command.id %> ABLY_ACCESS_TOKEN",
     },
     {
       description:
-        "Reference for overriding the Realtime/REST API endpoint for data plane commands",
+        "Display the reference and usage examples for `ABLY_ENDPOINT` (Realtime/REST API endpoint override)",
       command: "<%= config.bin %> <%= command.id %> ABLY_ENDPOINT",
     },
     {
       description:
-        "Emit a single variable's reference as a JSON envelope (machine-readable, useful in scripts)",
+        "Display the reference for `ABLY_API_KEY` in JSON format (machine-readable, useful in scripts)",
       command: "<%= config.bin %> <%= command.id %> ABLY_API_KEY --json",
     },
   ];
