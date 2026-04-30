@@ -3,7 +3,6 @@ import Table from "cli-table3";
 
 import {
   type Block,
-  type CrossCuttingSection,
   type DetailSection,
   type EnvVarEntry,
   ENV_VARS_DATA,
@@ -140,11 +139,6 @@ function renderVarSection(v: EnvVarEntry): string {
   return parts.join("\n\n");
 }
 
-function renderCrossCutting(s: CrossCuttingSection): string {
-  const head = c.category(s.heading);
-  return [head, ...s.blocks.map((b) => renderBlock(b))].join("\n\n");
-}
-
 function renderPrerequisites(): string {
   const lines = ENV_VARS_DATA.meta.prerequisites.map((p) => {
     const cmds = p.commands.map((cmd) => c.code(cmd)).join(", ");
@@ -194,6 +188,3 @@ export function renderSingleVar(name: string): string {
 export function listVarNames(): string[] {
   return ENV_VARS_DATA.variables.map((v) => v.name);
 }
-
-// Re-exports used by env command (cross-cutting JSON payload).
-export { renderCrossCutting };

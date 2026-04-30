@@ -82,9 +82,7 @@ export default class EnvCommand extends AblyBaseCommand {
 
     if (flags.list && requested) {
       this.fail(
-        new Error(
-          "Pass either --list or a variable name, not both. Use --list for the names, or `ably env <NAME>` for one variable.",
-        ),
+        "Pass either --list or a variable name, not both. Use --list for the names, or `ably env <NAME>` for one variable.",
         flags as BaseFlags,
         "env",
       );
@@ -107,7 +105,7 @@ export default class EnvCommand extends AblyBaseCommand {
           ? `Did you mean ${suggestion}? Run \`ably env --list\` to see all supported variables.`
           : "Run `ably env --list` to see all supported variables.";
         this.fail(
-          new Error(`Unknown environment variable: ${args.varName}. ${hint}`),
+          `Unknown environment variable: ${args.varName}. ${hint}`,
           flags as BaseFlags,
           "env",
         );

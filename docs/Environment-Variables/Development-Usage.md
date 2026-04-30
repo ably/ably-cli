@@ -278,7 +278,7 @@ Signals the CLI is running in a web browser terminal. See [Interactive REPL](../
 
 **Restricted commands (14 patterns):**
 
-`accounts:current`, `accounts:list`, `accounts:login`, `login`, `accounts:logout`, `accounts:switch`, `apps:create`, `apps:switch`, `apps:delete`, `auth:keys:switch`, `autocomplete*`, `config*`, `push:config:set-apns`, `push:config:set-fcm`
+`accounts:current`, `accounts:list`, `accounts:login`, `login`, `accounts:logout`, `accounts:switch`, `apps:create`, `apps:switch`, `apps:delete`, `auth:keys:switch`, `autocomplete*`, `config*`, `env`, `push:config:set-apns`, `push:config:set-fcm`
 
 These commands are blocked because auth and app context are managed by the web UI, not the CLI.
 

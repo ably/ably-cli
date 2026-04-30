@@ -18,7 +18,7 @@ describe("env command (integration)", () => {
   });
 
   it(
-    "prints the minimal reference with every var name and Quick Reference heading",
+    "prints the minimal reference with every var name plus Prerequisites and Examples sections",
     async () => {
       const { stdout } = await execAsync(`NO_COLOR=1 node ${binPath} env`, {
         env: { ...process.env, NO_COLOR: "1" },
