@@ -18,7 +18,7 @@ describe("env command (integration)", () => {
   });
 
   it(
-    "prints the minimal reference with every var name plus Prerequisites and Examples sections",
+    "prints the minimal reference with every var name and the help-page footer",
     async () => {
       const { stdout } = await execAsync(`NO_COLOR=1 node ${binPath} env`, {
         env: { ...process.env, NO_COLOR: "1" },
@@ -34,9 +34,12 @@ describe("env command (integration)", () => {
         "ABLY_CLI_DEFAULT_DURATION",
         "ABLY_CLI_NON_INTERACTIVE",
       ];
-      for (const name of expected) expect(stdout).toContain(name);
-      expect(stdout).toContain("Prerequisites");
-      expect(stdout).toContain("Examples");
+      for (const name of expected) {
+        expect(stdout).toContain(name);
+        expect(stdout).toContain(`ably env ${name}`);
+      }
+      expect(stdout).toContain("Ably Environment variables");
+      expect(stdout).toContain("ably env --help");
     },
     timeout,
   );
