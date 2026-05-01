@@ -4,11 +4,7 @@ import {
   JsonRecordType,
   formatJsonString,
 } from "../../utils/output.js";
-import {
-  getVersionInfo,
-  formatVersionString,
-  formatReleaseStatus,
-} from "../../utils/version.js";
+import { getVersionInfo, formatVersionString } from "../../utils/version.js";
 
 /**
  * Helper function to handle exit or throw based on interactive mode
@@ -61,9 +57,7 @@ const hook: Hook<"init"> = async function (opts) {
       console.log(jsonOutput);
       handleVersionExit();
     } else {
-      // Non-JSON output: show standard version string and release status
       console.log(formatVersionString(config));
-      console.log(formatReleaseStatus(config.version, true));
       handleVersionExit();
     }
   }

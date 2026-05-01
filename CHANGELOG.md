@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-05-01
+
+First stable release. This is a large release that overhauls authentication, command argument conventions, output formatting, and adds several new command groups. Key user-facing changes are summarised below; review the migration notes before upgrading.
+
+### Added
+
+- **OAuth Device Authorization login** — `ably login` now uses the OAuth 2.0 Device Authorization Grant for browser-based sign-in. Works in SSH sessions, containers, and headless CI without a localhost callback. Multi-account is built in: sign in once per account, switch contexts with `ably accounts switch`, and tokens refresh transparently in the background.
+- **`--force` flag for destructive operations** — unified across delete/revoke/wipe commands. Interactive use prompts for confirmation; non-interactive use (scripts, agents) refuses to run unless `--force` is passed explicitly. Prevents accidental destruction by automation that has general CLI access.
+- **Error hints** — fatal errors now include a `hint` field naming a specific next-step command (e.g. "run `ably login`" for auth errors). Surfaced in both human-readable output and the JSON error envelope, so agents can self-heal in fewer turns.
+- **Chat message mutations** — `ably rooms messages update`, `delete`, and reactions/annotations support
+- **Push notification publish** — `ably push publish` for sending push notifications via channels
+- **Annotations** — new `ably channels annotations` command group with publish/subscribe/get/count/delete
+- **Spaces commands** — expanded coverage including locks acquire/release, locations set, cursors set, members enter, and `get`/`get-all` queries
+- **Integrations** — first-class command group for managing integration rules (`ably integrations list/get/create/update/delete`)
+- **Channel rules for mutable messages** — flags for configuring update/delete/annotation policies on channel rules
+- **Stats top-level command** — `ably stats` (moved out of `apps`)
+
+### Changed
+
+- **BREAKING: Auth flags removed** — `--api-key`, `--token`, and `--access-token` no longer accepted on commands. Use `ably login` or env vars `ABLY_API_KEY` / `ABLY_TOKEN` / `ABLY_ACCESS_TOKEN`.
+- **BREAKING: Primary entity identifiers are now positional arguments** — flags like `--name`, `--channel`, `--location`, and `--key` that named the entity being acted on have been replaced with positional args (POSIX/docopt convention). Affects `apps`, `keys`, `queues`, `rules`, `push`, `channels`, `rooms`, `spaces locations`, and others.
+- **BREAKING: Standardized argument naming** — argument names in errors and help output are snake_case; commands use camelCase identifiers consistently (`appId`, `keyName`, `channelName`).
+- **BREAKING: Flexible name-or-ID lookup** — `apps`, `keys`, `queues`, and `rules` commands now resolve either name or ID. Behaviour for ambiguous lookups may differ from previous versions.
+- **BREAKING: `auth revoke-token`** no longer accepts a `TOKEN` positional; pass `--client-id` or `--revocation-key`. Adds confirmation prompt and `--force`.
+- **Unified JSON output envelope** — every command now emits `{type, command, success, ...}` with domain data nested under singular/plural domain keys. Streaming commands emit NDJSON with `status: "listening"` / `"holding"` signals and a final `status: "completed"` event.
+- **Unified output helpers** — `logProgress`, `logSuccessMessage`, `logListening`, `logHolding`, `logWarning` replace ad-hoc `chalk` usage; non-JSON output uses labeled multi-line blocks (no ASCII tables).
+- **Unified time-range flags** — `--start` / `--end` accept ISO 8601, Unix ms, or relative (`"1h"`, `"30m"`) across all history and stats commands.
+- **Unified pagination** — cursor-based pagination with `formatPaginationLog` warnings when multiple pages are fetched, and `next` hints in JSON output.
+- **Help theme** — colour-coded help via oclif theme (commands cyan, flags whiteBright, headers bold, defaults yellow, required red).
+- **Error handling** — fatal errors now flow through a single `this.fail()` funnel that preserves Ably error codes/HTTP status and emits structured JSON error envelopes.
+
+### Fixed
+
+- Many fixes around JSON output consistency, timestamp formatting, error envelopes, billable message warnings, channel-rule handling, push message shape, batch publish, room messages subscribe across multiple rooms, presence flows, and exit codes.
+- Web CLI: file-read security hardening, auto-connect detection with signed config, domain-scoped credential clearing.
+- Spaces `enter` no longer triggers on read-only commands (subscribe/get are now passive observers).
+- Duplicated "Press Ctrl+C to exit" suffixes removed from holding messages.
+
+### Removed
+
+- **BREAKING: Auth CLI flags** (see Changed section above)
+
+### Migration Notes
+
+If you have scripts targeting v0.x, the most likely breakages are:
+
+1. **Replace `--api-key`/`--token`/`--access-token`** flags with environment variables (`ABLY_API_KEY`, `ABLY_TOKEN`, `ABLY_ACCESS_TOKEN`) or run `ably login` once on the host.
+2. **Move primary entity identifiers from flags to positional args**, e.g.:
+   - `ably apps update --name my-app …` → `ably apps update my-app …`
+   - `ably channels publish --channel foo --message bar` → `ably channels publish foo bar`
+   - `ably spaces locations set --location ./path …` → `ably spaces locations set ./path …`
+3. **Update JSON consumers** — top-level shape now includes `type`, `command`, and `success` fields, with payload nested under a domain key (`message`, `cursor`, `lock`, `rules`, etc.).
+4. **Rename argument references** in any error-handling code that matched on previous arg names.
+5. **`ably auth revoke-token <TOKEN>`** → `ably auth revoke-token --client-id <ID>` or `--revocation-key <KEY>` (the positional `TOKEN` arg is no longer accepted).
+
 ## [0.17.0] - 2026-03-08
 
 ### Added
