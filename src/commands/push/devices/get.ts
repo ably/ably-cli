@@ -2,7 +2,6 @@ import { Args } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import {
   formatDeviceState,
   formatLabel,
@@ -33,7 +32,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
     const deviceId = args.deviceId;
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       this.logProgress(`Fetching device ${formatResource(deviceId)}`, flags);
@@ -86,7 +85,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushDeviceGet");
+      this.fail(error, flags, "pushDeviceGet");
     }
   }
 }

@@ -911,13 +911,7 @@ export default class Interactive extends Command {
         const manifestCommand = this._manifestCache.commands[commandId];
         if (manifestCommand?.flags) {
           for (const [name, flag] of Object.entries(manifestCommand.flags)) {
-            const flagDef = flag as {
-              name: string;
-              char?: string;
-              description?: string;
-              type?: string;
-              hidden?: boolean;
-            };
+            const flagDef = flag;
             // Skip hidden flags unless in dev mode
             if (flagDef.hidden && process.env.ABLY_SHOW_DEV_FLAGS !== "true") {
               continue;
@@ -995,13 +989,7 @@ export default class Interactive extends Command {
           if (manifestCommand?.flags) {
             // Find flag by name or char
             for (const [name, flag] of Object.entries(manifestCommand.flags)) {
-              const flagDef = flag as {
-                name: string;
-                char?: string;
-                description?: string;
-                type?: string;
-                hidden?: boolean;
-              };
+              const flagDef = flag;
               if (
                 name === flagName ||
                 (flagDef.char && flagDef.char === flagName)

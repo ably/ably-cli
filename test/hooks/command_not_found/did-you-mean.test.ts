@@ -64,7 +64,7 @@ async function createTestConfig(): Promise<Config> {
       hidden: false,
       hiddenAliases: [],
       load: async () => ({ async run() {} }) as unknown as Command.Class,
-    } as Command.Loadable,
+    },
     {
       id: "channels:list",
       // Add minimum required properties for Command.Loadable type
@@ -74,7 +74,7 @@ async function createTestConfig(): Promise<Config> {
       hiddenAliases: [],
       args: {},
       load: async () => ({ async run() {} }) as unknown as Command.Class,
-    } as Command.Loadable,
+    },
     {
       id: "help",
       // Add minimum required properties for Command.Loadable type
@@ -84,7 +84,7 @@ async function createTestConfig(): Promise<Config> {
       hiddenAliases: [],
       args: {},
       load: async () => ({ async run() {} }) as unknown as Command.Class,
-    } as Command.Loadable,
+    },
   );
   config.commandIDs.push(
     "channels:subscribe",
@@ -95,7 +95,7 @@ async function createTestConfig(): Promise<Config> {
   config.topics.push({
     description: "Channel commands",
     name: "channels",
-  } as unknown as (typeof config.topics)[number]);
+  });
   return config;
 }
 

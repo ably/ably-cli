@@ -3,7 +3,7 @@ import * as Ably from "ably";
 import chalk from "chalk";
 import Table from "cli-table3";
 
-import { AblyBaseCommand, type BaseFlags } from "../../base-command.js";
+import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../flags.js";
 import { formatHeading, formatResource } from "../../utils/output.js";
 import type { BenchMessageData, BenchPresenceData } from "../../types/bench.js";
@@ -790,7 +790,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
   ): Promise<void> {
     // Wait until the user interrupts or the optional duration elapses
     const exitReason = await this.waitAndTrackCleanup(
-      flags as BaseFlags,
+      flags,
       "benchSubscriber",
       flags.duration as number | undefined,
     );

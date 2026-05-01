@@ -130,15 +130,15 @@ export abstract class ChatBaseCommand extends AblyBaseCommand {
       switch (statusChange.current) {
         case RoomStatus.Attached: {
           if (options.successMessage) {
-            this.logSuccessMessage(options.successMessage, flags as BaseFlags);
+            this.logSuccessMessage(options.successMessage, flags);
           }
           if (options.listeningMessage) {
-            this.logListening(options.listeningMessage, flags as BaseFlags);
+            this.logListening(options.listeningMessage, flags);
           }
           break;
         }
         case RoomStatus.Detached: {
-          this.logWarning("Disconnected from Ably", flags as BaseFlags);
+          this.logWarning("Disconnected from Ably", flags);
           break;
         }
         case RoomStatus.Failed: {

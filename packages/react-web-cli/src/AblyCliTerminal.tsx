@@ -3053,9 +3053,7 @@ const AblyCliTerminalInner = (
                   secondaryTerm.current.writeln(
                     `\r\n--- ${message.payload === "error" ? "Error" : "Session Ended (from server)"}: ${reason} ---`,
                   );
-                updateSecondaryConnectionStatus(
-                  message.payload as ConnectionStatus,
-                );
+                updateSecondaryConnectionStatus(message.payload);
 
                 if (
                   secondaryTerm.current &&

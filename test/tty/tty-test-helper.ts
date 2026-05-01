@@ -52,7 +52,7 @@ export function spawnTty(
     name: "xterm-256color",
     cols: 120,
     rows: 30,
-    env: childEnv as Record<string, string>,
+    env: childEnv,
   });
 
   let resolveExit: (value: { code: number }) => void;

@@ -2,7 +2,6 @@ import { Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
 export default class PushDevicesRemoveWhere extends AblyBaseCommand {
@@ -32,13 +31,13 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
     if (!flags["device-id"] && !flags["client-id"]) {
       this.fail(
         "At least one filter is required: --device-id or --client-id",
-        flags as BaseFlags,
+        flags,
         "pushDeviceRemoveWhere",
       );
     }
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       const params: Record<string, string> = {};
@@ -82,7 +81,7 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
         this.logSuccessMessage("Matching device registrations removed.", flags);
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushDeviceRemoveWhere");
+      this.fail(error, flags, "pushDeviceRemoveWhere");
     }
   }
 }

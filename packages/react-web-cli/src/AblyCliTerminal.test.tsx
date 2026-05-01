@@ -812,7 +812,7 @@ describe("AblyCliTerminal - Connection Status and Animation", () => {
 
     // Provide countdown callback and verify it's hooked
     const callback = vi.mocked(GlobalReconnect.setCountdownCallback).mock
-      .calls[0][0] as (remaining: number) => void;
+      .calls[0][0];
     act(() => {
       callback(2000);
     });
