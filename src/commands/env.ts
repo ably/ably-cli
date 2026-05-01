@@ -31,7 +31,7 @@ const ENV_VAR_HELP_EXAMPLES: string[] = [
 
 export default class EnvCommand extends AblyBaseCommand {
   static override description =
-    "Environment variables for authentication and configuration of default settings\n\nExplicitly set environment variables in your shell, CI/CD, or inline — they are not auto-loaded.";
+    "Environment variables for authentication and configuration of default settings\n\nExplicitly set environment variables in your shell, CI/CD, or inline. They are not auto-loaded.";
 
   static override examples = ENV_VAR_HELP_EXAMPLES;
 

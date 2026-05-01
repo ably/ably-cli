@@ -224,7 +224,7 @@ Property 'x' does not exist on type 'Y'
 **Problem**: The interactive mode exits with unexpected error codes.
 
 **Solution**:
-- Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md) and [Development Stage Env Variables](Environment-Variables/Development-Usage.md#ably_interactive_mode) for interactive mode env vars)
+- Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md) and [Development Stage Env Variables](Environment-Variables/Development-Usage.md) for interactive mode env vars)
 - Common exit codes:
   - Exit code 0: Wrapper (`ably-interactive`) terminated normally
   - Exit code 42: User typed 'exit' in interactive mode (signals wrapper to terminate)
