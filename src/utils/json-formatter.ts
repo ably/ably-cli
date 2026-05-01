@@ -21,7 +21,10 @@ export function formatJson(data: unknown): string {
   } catch {
     // If JSON serialization fails (e.g. circular reference), return a safe string representation
     if (typeof data !== "object") {
-      return String(data as string | number | boolean | bigint | symbol);
+      if (typeof data === "string") return data;
+      if (typeof data === "number" || typeof data === "boolean")
+        return String(data);
+      return "[non-serializable]";
     }
 
     try {
@@ -86,9 +89,10 @@ function colorValue(value: unknown): string {
     }
 
     default: {
-      return typeof value === "object"
-        ? JSON.stringify(value)
-        : String(value as string | number | boolean | bigint | symbol);
+      if (typeof value === "object") return JSON.stringify(value);
+      if (typeof value === "bigint" || typeof value === "symbol")
+        return value.toString();
+      return "[unprintable]";
     }
   }
 }

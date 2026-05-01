@@ -4,7 +4,6 @@ import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import { formatResource } from "../../../utils/output.js";
 
 export default class PushDevicesSave extends AblyBaseCommand {
@@ -71,7 +70,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
     const { flags } = await this.parse(PushDevicesSave);
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       let deviceData: Record<string, unknown>;
@@ -82,28 +81,28 @@ export default class PushDevicesSave extends AblyBaseCommand {
         if (!flags.id) {
           this.fail(
             "--id is required when not using --data",
-            flags as BaseFlags,
+            flags,
             "pushDeviceSave",
           );
         }
         if (!flags.platform) {
           this.fail(
             "--platform is required when not using --data",
-            flags as BaseFlags,
+            flags,
             "pushDeviceSave",
           );
         }
         if (!flags["form-factor"]) {
           this.fail(
             "--form-factor is required when not using --data",
-            flags as BaseFlags,
+            flags,
             "pushDeviceSave",
           );
         }
         if (!flags["transport-type"]) {
           this.fail(
             "--transport-type is required when not using --data",
-            flags as BaseFlags,
+            flags,
             "pushDeviceSave",
           );
         }
@@ -115,21 +114,21 @@ export default class PushDevicesSave extends AblyBaseCommand {
           if (!flags["target-url"]) {
             this.fail(
               "--target-url is required for web transport",
-              flags as BaseFlags,
+              flags,
               "pushDeviceSave",
             );
           }
           if (!flags["p256dh-key"]) {
             this.fail(
               "--p256dh-key is required for web transport",
-              flags as BaseFlags,
+              flags,
               "pushDeviceSave",
             );
           }
           if (!flags["auth-secret"]) {
             this.fail(
               "--auth-secret is required for web transport",
-              flags as BaseFlags,
+              flags,
               "pushDeviceSave",
             );
           }
@@ -145,7 +144,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
           if (!flags["device-token"]) {
             this.fail(
               "--device-token is required for apns/fcm transport",
-              flags as BaseFlags,
+              flags,
               "pushDeviceSave",
             );
           }
@@ -172,7 +171,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
           deviceData.metadata = this.parseJsonObjectFlag(
             flags.metadata,
             "--metadata",
-            flags as BaseFlags,
+            flags,
           );
         }
       }
@@ -195,7 +194,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushDeviceSave");
+      this.fail(error, flags, "pushDeviceSave");
     }
   }
 
@@ -208,11 +207,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
     if (data.startsWith("@")) {
       const filePath = path.resolve(data.slice(1));
       if (!fs.existsSync(filePath)) {
-        this.fail(
-          `File not found: ${filePath}`,
-          flags as BaseFlags,
-          "pushDeviceSave",
-        );
+        this.fail(`File not found: ${filePath}`, flags, "pushDeviceSave");
       }
       jsonString = fs.readFileSync(filePath, "utf8");
     }
@@ -223,17 +218,13 @@ export default class PushDevicesSave extends AblyBaseCommand {
     } catch {
       this.fail(
         "--data must be valid JSON or a path to a JSON file (prefixed with @)",
-        flags as BaseFlags,
+        flags,
         "pushDeviceSave",
       );
     }
 
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      this.fail(
-        "--data must be a JSON object",
-        flags as BaseFlags,
-        "pushDeviceSave",
-      );
+      this.fail("--data must be a JSON object", flags, "pushDeviceSave");
     }
 
     return parsed as Record<string, unknown>;

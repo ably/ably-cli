@@ -2,7 +2,6 @@ import { Args } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import { formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
@@ -32,7 +31,7 @@ export default class PushDevicesRemove extends AblyBaseCommand {
     const deviceId = args.deviceId;
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       // In JSON mode, require --force to prevent accidental destructive actions
@@ -68,7 +67,7 @@ export default class PushDevicesRemove extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushDeviceRemove");
+      this.fail(error, flags, "pushDeviceRemove");
     }
   }
 }

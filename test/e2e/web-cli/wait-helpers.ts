@@ -64,17 +64,11 @@ export async function waitForTerminalReady(
 
   // Handle different states
   while (Date.now() - startTime < effectiveTimeout) {
-    currentState = (await page.evaluate(() => {
+    currentState = await page.evaluate(() => {
       return (
         window as Window & { getAblyCliTerminalReactState?: () => unknown }
       ).getAblyCliTerminalReactState?.();
-    })) as
-      | {
-          componentConnectionStatus?: string;
-          isSessionActive?: boolean;
-          showManualReconnectPrompt?: boolean;
-        }
-      | undefined;
+    });
 
     if (
       currentState?.componentConnectionStatus === "connected" &&

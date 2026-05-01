@@ -53,7 +53,7 @@ const hook: Hook<"init"> = async function (opts) {
       const jsonOutput = formatJsonString(record, {
         json: !hasPrettyJsonFlag,
         prettyJson: hasPrettyJsonFlag,
-      } as Record<string, unknown>);
+      });
       console.log(jsonOutput);
       handleVersionExit();
     } else {

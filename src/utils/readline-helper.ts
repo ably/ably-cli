@@ -42,7 +42,7 @@ export async function runInquirerWithReadlineRestore<T>(
 
     // Restore line listeners
     lineListeners.forEach((listener) => {
-      interactiveReadline.on("line", listener as (line: string) => void);
+      interactiveReadline.on("line", listener);
     });
 
     // Resume readline with a small delay to ensure terminal is ready
