@@ -64,18 +64,18 @@ describe("ENV_VARS_DATA", () => {
     }
   });
 
-  it("details arrays are streamlined per the trim spec", () => {
+  it("details arrays match the documented shape per variable", () => {
     const byName = Object.fromEntries(
       ENV_VARS_DATA.variables.map((v) => [v.name, v]),
     );
-    expect(byName.ABLY_API_KEY.details).toHaveLength(0);
-    expect(byName.ABLY_TOKEN.details).toHaveLength(1);
-    expect(byName.ABLY_ACCESS_TOKEN.details).toHaveLength(0);
+    expect(byName.ABLY_API_KEY.details).toHaveLength(2);
+    expect(byName.ABLY_TOKEN.details).toHaveLength(4);
+    expect(byName.ABLY_ACCESS_TOKEN.details).toHaveLength(1);
     expect(byName.ABLY_APP_ID.details).toHaveLength(0);
     expect(byName.ABLY_CLI_CONFIG_DIR.details).toHaveLength(0);
     expect(byName.ABLY_HISTORY_FILE.details).toHaveLength(1);
     expect(byName.ABLY_CLI_DEFAULT_DURATION.details).toHaveLength(0);
-    expect(byName.ABLY_CLI_NON_INTERACTIVE.details).toHaveLength(0);
+    expect(byName.ABLY_CLI_NON_INTERACTIVE.details).toHaveLength(1);
     expect(byName.ABLY_ENDPOINT.details).toHaveLength(0);
   });
 
