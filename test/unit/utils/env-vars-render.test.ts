@@ -2,34 +2,64 @@ import { describe, expect, it } from "vitest";
 
 import { ENV_VARS_DATA } from "../../../src/data/env-vars.js";
 import {
+  listVarNames,
   renderMinimalReference,
   renderSingleVar,
 } from "../../../src/utils/env-vars-render.js";
 
 describe("env-vars-render", () => {
+  describe("listVarNames", () => {
+    it("returns exactly the 9 expected names in canonical order", () => {
+      expect(listVarNames()).toEqual([
+        "ABLY_API_KEY",
+        "ABLY_TOKEN",
+        "ABLY_ACCESS_TOKEN",
+        "ABLY_ENDPOINT",
+        "ABLY_APP_ID",
+        "ABLY_CLI_CONFIG_DIR",
+        "ABLY_HISTORY_FILE",
+        "ABLY_CLI_DEFAULT_DURATION",
+        "ABLY_CLI_NON_INTERACTIVE",
+      ]);
+    });
+  });
+
   describe("renderMinimalReference", () => {
     it("contains every variable name", () => {
       const out = renderMinimalReference();
       for (const v of ENV_VARS_DATA.variables) expect(out).toContain(v.name);
     });
 
-    it("has a descriptive header about environment variables", () => {
-      expect(renderMinimalReference()).toContain("Ably Environment variables");
+    it("contains a Prerequisites section covering data plane and Control API auth", () => {
+      const out = renderMinimalReference();
+      expect(out).toContain("Prerequisites");
+      expect(out).toContain("Data plane commands");
+      expect(out).toContain("Control API commands");
+      expect(out).toContain("ABLY_API_KEY");
+      expect(out).toContain("ABLY_TOKEN");
+      expect(out).toContain("ABLY_ACCESS_TOKEN");
     });
 
     it("does not render a Quick Reference section", () => {
       expect(renderMinimalReference()).not.toContain("Quick Reference");
     });
 
-    it("renders each variable with the ably env prefix", () => {
+    it("contains an example block with the intro tagline and a shell prompt for every variable", () => {
       const out = renderMinimalReference();
       for (const v of ENV_VARS_DATA.variables) {
-        expect(out).toContain(`ably env ${v.name}`);
+        const idx = out.indexOf(v.name);
+        expect(idx).toBeGreaterThan(-1);
+        const introFragment = v.intro.replaceAll(/[`*]/g, "").slice(0, 20);
+        expect(out).toContain(introFragment);
+        const tail = out.slice(idx);
+        expect(tail).toMatch(/\$ /);
       }
     });
 
-    it("ends with a reference to ably env --help", () => {
-      expect(renderMinimalReference()).toContain("ably env --help");
+    it("contains the TIP footer", () => {
+      expect(renderMinimalReference()).toContain(
+        "TIP: Run `ably env <NAME>` for a focused single-variable view.",
+      );
     });
 
     it("does not render the cross-cutting headings (minimal view drops them)", () => {

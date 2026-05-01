@@ -29,12 +29,12 @@ describe("env command", () => {
       for (const name of CANONICAL_NAMES) expect(stdout).toContain(name);
     });
 
-    it("shows a summary table with ably env prefix for all variables", async () => {
+    it("contains the Prerequisites and Examples headings", async () => {
       const { stdout } = await runCommand(["env"], import.meta.url);
-      expect(stdout).toContain("Ably Environment variables");
-      for (const name of CANONICAL_NAMES) {
-        expect(stdout).toContain(`ably env ${name}`);
-      }
+      expect(stdout).toContain("Prerequisites");
+      expect(stdout).toContain("Data plane commands");
+      expect(stdout).toContain("Control API commands");
+      expect(stdout).toContain("Examples");
       expect(stdout).not.toContain("Quick Reference");
     });
 
@@ -56,10 +56,11 @@ describe("env command", () => {
       expect(stdout).not.toContain("Testing note:");
     });
 
-    it("contains the help-page footer", async () => {
+    it("contains the TIP footer", async () => {
       const { stdout } = await runCommand(["env"], import.meta.url);
-      expect(stdout).toContain("ably env --help");
-      expect(stdout).toContain("for more information.");
+      expect(stdout).toContain(
+        "TIP: Run `ably env <NAME>` for a focused single-variable view.",
+      );
     });
 
     it("renders only the requested var when name is passed", async () => {
@@ -75,6 +76,23 @@ describe("env command", () => {
   });
 
   describe("flags", () => {
+    it("--list prints exactly 9 names, one per line", async () => {
+      const { stdout } = await runCommand(["env", "--list"], import.meta.url);
+      expect(stdout.trim().split("\n")).toEqual(CANONICAL_NAMES);
+    });
+
+    it("--list combined with --json emits envVarNames envelope", async () => {
+      const { stdout } = await runCommand(
+        ["env", "--list", "--json"],
+        import.meta.url,
+      );
+      const result = parseJsonOutput(stdout);
+      expect(result).toHaveProperty("type", "result");
+      expect(result).toHaveProperty("command", "env");
+      expect(result).toHaveProperty("success", true);
+      expect(result.envVarNames).toEqual(CANONICAL_NAMES);
+    });
+
     it("--json (no args) emits envVars + crossCutting + relatedLinks envelope", async () => {
       const { stdout } = await runCommand(["env", "--json"], import.meta.url);
       const result = parseJsonOutput(stdout);
@@ -148,6 +166,14 @@ describe("env command", () => {
       const { error } = await runCommand(["env", "DEBUG"], import.meta.url);
       expect(error?.message).toContain("Unknown environment variable");
       expect(error?.message).not.toContain("Did you mean");
+    });
+
+    it("rejects --list combined with a positional var name", async () => {
+      const { error } = await runCommand(
+        ["env", "ABLY_API_KEY", "--list"],
+        import.meta.url,
+      );
+      expect(error?.message).toContain("Pass either --list or a variable name");
     });
   });
 });

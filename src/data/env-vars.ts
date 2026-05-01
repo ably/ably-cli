@@ -119,7 +119,20 @@ const ABLY_API_KEY = new EnvVarEntry(
     `export ABLY_API_KEY="your-app-id.key-id:key-secret"`,
     `ably channels publish my-channel "Hello"`,
   ]),
-  [],
+  [
+    new DetailSection("Login bypass", [
+      {
+        kind: "paragraph",
+        text: "Bypasses the `ably login` workflow and skips interactive app/key selection. Useful in scripts and CI/CD pipelines.",
+      },
+    ]),
+    new DetailSection("Client ID", [
+      {
+        kind: "paragraph",
+        text: "Auto-generates a default client ID in the format `ably-cli-{uuid}`. Override with `--client-id <value>`, or pass `--client-id none` to send no client ID.",
+      },
+    ]),
+  ],
 );
 
 const ABLY_TOKEN = new EnvVarEntry(
@@ -136,6 +149,24 @@ const ABLY_TOKEN = new EnvVarEntry(
     `ably channels subscribe my-channel`,
   ]),
   [
+    new DetailSection("Login bypass", [
+      {
+        kind: "paragraph",
+        text: "Bypasses the `ably login` workflow and skips interactive app/key selection. Useful in scripts and CI/CD pipelines.",
+      },
+    ]),
+    new DetailSection("Client ID", [
+      {
+        kind: "paragraph",
+        text: "`--client-id` is ignored when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed.",
+      },
+    ]),
+    new DetailSection("Token expiry", [
+      {
+        kind: "paragraph",
+        text: "The CLI does not refresh tokens. If the token expires during a long-running command (e.g. `channels subscribe`), the connection fails. Prefer `ABLY_API_KEY` for long-running commands.",
+      },
+    ]),
     new DetailSection("", [
       {
         kind: "important",
@@ -158,7 +189,14 @@ const ABLY_ACCESS_TOKEN = new EnvVarEntry(
     `export ABLY_ACCESS_TOKEN="your-access-token"`,
     `ably apps list --json`,
   ]),
-  [],
+  [
+    new DetailSection("Login bypass", [
+      {
+        kind: "paragraph",
+        text: "Bypasses the `ably login` workflow and skips account config lookup. Useful in scripts and CI/CD pipelines.",
+      },
+    ]),
+  ],
 );
 
 const ABLY_APP_ID = new EnvVarEntry(
@@ -241,7 +279,18 @@ const ABLY_CLI_NON_INTERACTIVE = new EnvVarEntry(
     `export ABLY_CLI_NON_INTERACTIVE=true`,
     `ably chanels publish my-channel "Hello"`,
   ]),
-  [],
+  [
+    new DetailSection("Scope", [
+      {
+        kind: "paragraph",
+        text: "Only auto-confirms `Did you mean...?` suggestions for mistyped commands and topic-command disambiguation.",
+      },
+      {
+        kind: "important",
+        text: "Does **not** skip prompts for destructive operations — those still require the `--force` flag. Output formatting, spinners, and other interactive features are also unaffected.",
+      },
+    ]),
+  ],
 );
 
 const ABLY_ENDPOINT = new EnvVarEntry(
@@ -330,16 +379,16 @@ const ONE_SHOT_USAGE = new CrossCuttingSection(
     {
       kind: "code",
       lines: [
-        "# Data plane: publish with no setup",
+        "# Data plane — publish with no setup",
         `ABLY_API_KEY="appId.keyId:keySecret" ably channels publish my-channel "Hello"`,
         "",
-        "# Token auth: issue and use in one line",
+        "# Token auth — issue and use in one line",
         `ABLY_TOKEN="$(ABLY_API_KEY='appId.keyId:keySecret' ably auth issue-ably-token --token-only)" ably channels subscribe my-channel`,
         "",
-        "# Control API: manage apps with no login",
+        "# Control API — manage apps with no login",
         `ABLY_ACCESS_TOKEN="your-access-token" ably apps list --json`,
         "",
-        "# Fully contextless: combine auth + app + non-interactive",
+        "# Fully contextless — combine auth + app + non-interactive",
         `export ABLY_ACCESS_TOKEN="your-access-token"`,
         `export ABLY_APP_ID="your-app-id"`,
         `export ABLY_CLI_NON_INTERACTIVE=true`,
@@ -357,7 +406,7 @@ const CICD_USAGE = new CrossCuttingSection("CI/CD Usage", [
   {
     kind: "code",
     lines: [
-      "# GitHub Actions: store secrets in repository settings",
+      "# GitHub Actions — store secrets in repository settings",
       `ABLY_API_KEY="\${{ secrets.ABLY_API_KEY }}" ably channels publish deploy-notifications "Deployment v1.2.3 complete"`,
       `ABLY_ACCESS_TOKEN="\${{ secrets.ABLY_ACCESS_TOKEN }}" ably apps list --json`,
       "",
@@ -415,7 +464,7 @@ const COMMANDS_BY_AUTH_TYPE = new CrossCuttingSection("Commands by Auth Type", [
 export const ENV_VARS_DATA: EnvVarsData = new EnvVarsData(
   {
     lede: "The Ably CLI supports environment variables for authentication and configuration. These bypass the `ably login` workflow and are useful in scripts, CI/CD pipelines, and automated workflows.",
-    note: "The CLI does not automatically load `.env` files. Set them in your shell or CI.",
+    note: "The CLI does not automatically load `.env` files — set them in your shell or CI.",
     prerequisites: [
       {
         label: "Data plane commands",
