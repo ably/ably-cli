@@ -10,21 +10,24 @@ export class PromptHelper {
     const ac = new AbortController();
     const { signal } = ac;
 
-    const confirmation = confirm({
-      default: true,
-      message: `Did you mean ${chalk.blueBright(suggestion)}?`,
-      theme: {
-        prefix: "",
-        style: {
-          message: (text: string) => chalk.reset(text),
+    const confirmation = confirm(
+      {
+        default: true,
+        message: `Did you mean ${chalk.blueBright(suggestion)}?`,
+        theme: {
+          prefix: "",
+          style: {
+            message: (text: string) => chalk.reset(text),
+          },
         },
       },
-    });
+      { signal },
+    );
 
     // Timeout the prompt after 10 seconds
     void setTimeout(10_000, "timeout", { signal })
-      .catch(() => false) // Ignore timeout errors, treat as 'No'
-      .then(() => confirmation.cancel());
+      .catch(() => false) // Ignore abort errors when prompt already answered
+      .then(() => ac.abort());
 
     try {
       const value = await confirmation;
