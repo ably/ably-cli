@@ -20,11 +20,11 @@ describe("version command", () => {
       expect(stdout).toContain(process.version);
     });
 
-    it("should display Public Preview status", async () => {
+    it("should display version info without Public Preview text", async () => {
       const { stdout } = await runCommand(["version"], import.meta.url);
 
-      expect(stdout).toContain("Public Preview");
-      expect(stdout).toContain("Version");
+      expect(stdout).not.toContain("Public Preview");
+      expect(stdout).toContain("@ably/cli");
     });
 
     it("should output JSON when --json flag is used", async () => {

@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { HistoryManager } from "../services/history-manager.js";
 import { displayLogo } from "../utils/logo.js";
-import { formatReleaseStatus } from "../utils/version.js";
 import {
   WEB_CLI_RESTRICTED_COMMANDS,
   WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS,
@@ -137,8 +136,7 @@ export default class Interactive extends Command {
         // Display logo
         displayLogo(console.log);
 
-        // Show release status
-        console.log(`   ${formatReleaseStatus(this.config.version, true)}\n`);
+        console.log(`   ${chalk.dim(`Version ${this.config.version}`)}\n`);
 
         // Show appropriate tagline based on mode
         let tagline = "ably.com ";

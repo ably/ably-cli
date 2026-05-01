@@ -7,7 +7,6 @@ import {
   createConfigManager,
 } from "./services/config-manager.js";
 import { displayLogo } from "./utils/logo.js";
-import { formatReleaseStatus } from "./utils/version.js";
 
 /** Convert camelCase arg name to snake_case so oclif's toUpperCase() produces UPPER_SNAKE_CASE */
 export function camelToSnake(name: string): string {
@@ -229,7 +228,7 @@ export default class CustomHelp extends Help {
     const headerLines = [
       chalk.bold(titleText),
       "",
-      formatReleaseStatus(config.version, true),
+      chalk.dim(`Version ${config.version}`),
       "",
       `${chalk.bold("USAGE")}`,
       `  ${this.interactiveMode ? "ably> " : chalk.green("$") + " " + chalk.cyan(config.bin) + " "}[COMMAND]`,
@@ -325,7 +324,7 @@ export default class CustomHelp extends Help {
     lines.push(
       chalk.bold("ably.com browser-based CLI for Pub/Sub, Chat and Spaces"),
       "",
-      formatReleaseStatus(this.config.version, true),
+      chalk.dim(`Version ${this.config.version}`),
       "",
     );
 

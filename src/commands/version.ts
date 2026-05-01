@@ -1,10 +1,6 @@
 import { AblyBaseCommand } from "../base-command.js";
 import { coreGlobalFlags } from "../flags.js";
-import {
-  getVersionInfo,
-  formatVersionString,
-  formatReleaseStatus,
-} from "../utils/version.js";
+import { getVersionInfo, formatVersionString } from "../utils/version.js";
 
 export default class Version extends AblyBaseCommand {
   static description = "Display CLI version information";
@@ -31,9 +27,7 @@ export default class Version extends AblyBaseCommand {
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult({ version: versionInfo }, flags);
     } else {
-      // Use shared string formatting and display release status
       this.log(formatVersionString(this.config));
-      this.log(formatReleaseStatus(this.config.version, true));
     }
   }
 }
