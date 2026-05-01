@@ -29,7 +29,7 @@ There are some relevant Node.js projects we can draw inspiration from:
 [oclif](https://oclif.io/) does not appear to have any plugins to support an interactive/embedded CLI mode.
 However, a [REPL plugin](https://github.com/sisou/oclif-plugin-repl) exists, although that's unlikely to share much with the goals of interactive CLI.
 
-If there are any existing libraries that we can depend on to enable this functionality, taht that should be our preference to keep the CLI complexity low. However, any dependencies used should be well maintained and popular. If the additional dependencies to support this functionality add any material bloat, we should consider how this functionality can be added as an optional plugin so that the standard locally installed CLI has minimal dependencies.
+If there are any existing libraries that we can depend on to enable this functionality, that should be our preference to keep the CLI complexity low. However, any dependencies used should be well maintained and popular. If the additional dependencies to support this functionality add any material bloat, we should consider how this functionality can be added as an optional plugin so that the standard locally installed CLI has minimal dependencies.
 
 ## Execution Plan
 
@@ -43,7 +43,7 @@ The chosen approach runs commands inline (no spawning/forking) with a bash wrapp
 
 - **Inline execution**: Commands run in the same process, eliminating spawn overhead
 - **Natural Ctrl+C**: Interrupting commands exits the process, wrapper restarts seamlessly
-- **Persistent history**: Command history saved to `~/.ably/history` across restarts
+- **Persistent history**: Command history saved to `~/.ably/history` across restarts (configurable via `ABLY_HISTORY_FILE`)
 - **Special exit handling**: Typing 'exit' uses exit code 42 to signal wrapper to terminate (see [Exit Codes documentation](Exit-Codes.md) for details)
 
 **Expected Performance**:
@@ -409,3 +409,13 @@ private getAvailableCommands(): string[] {
 5. **Reliability**: Leverages OS-level process management
 
 This plan delivers a responsive interactive shell with natural Ctrl+C handling and seamless user experience through the bash wrapper approach.
+
+---
+
+## Related
+
+- [Exit Codes](Exit-Codes.md) — Exit codes used in interactive mode and wrapper script behavior
+- [Troubleshooting](Troubleshooting.md#interactive-mode-issues) — Common interactive mode issues (unexpected exits, Ctrl+C, history)
+- [Auto-completion](Auto-completion.md) — Shell tab completion setup for commands and flags
+- [Testing Guide](Testing.md) — Subprocess and TTY test layers for interactive mode
+- [Project Structure](Project-Structure.md) — Repository layout including `src/commands/interactive.ts` and `bin/ably-interactive`

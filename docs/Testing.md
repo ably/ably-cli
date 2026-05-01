@@ -68,7 +68,7 @@ Unit tests for commands with `--json` support should test all three output modes
 
 ## Choosing the right layer
 
-```
+```text
 What are you testing?
 │
 ├─ Flag parsing, help output, error messages, output format?
@@ -99,7 +99,7 @@ Explicit rules:
 |---------|-------------|
 | `pnpm test:unit` | All unit tests |
 | `pnpm test:integration` | Subprocess/interactive tests |
-| `pnpm test:e2e` | E2E tests (needs `ABLY_API_KEY` etc.) |
+| `pnpm test:e2e` | E2E tests (needs `E2E_ABLY_API_KEY` etc.) |
 | `pnpm test:tty` | TTY tests (local only, needs real terminal) |
 | `pnpm test` | Unit + integration + E2E |
 | `pnpm test test/unit/commands/foo.test.ts` | Specific test file |
@@ -113,6 +113,8 @@ Set `E2E_DEBUG=true` and/or `ABLY_CLI_TEST_SHOW_OUTPUT=true` for verbose output:
 ```bash
 E2E_DEBUG=true ABLY_CLI_TEST_SHOW_OUTPUT=true pnpm test:e2e
 ```
+
+See [E2E-Testing-CLI-Runner.md](E2E-Testing-CLI-Runner.md) for the full E2E debugging guide.
 
 ---
 
@@ -133,6 +135,8 @@ Do NOT use variants like `"command arguments and flags"`, `"command flags"`, `"f
 Exempt: `interactive.test.ts`, `interactive-sigint.test.ts`, `bench/*.test.ts`.
 
 ### Auth in tests
+
+Authentication in tests uses different mechanisms depending on the layer. Run `ably env` for the full reference on `ABLY_API_KEY`, `ABLY_TOKEN`, `ABLY_ACCESS_TOKEN`, and other auth env vars.
 
 **Unit tests** — `MockConfigManager` provides auth automatically. No env vars or flags needed:
 
@@ -159,7 +163,7 @@ runCommand(["channels", "publish", "my-channel", "hello"], {
 
 ### Duration in tests
 
-Unit and integration tests set `ABLY_CLI_DEFAULT_DURATION: "0.25"` in `vitest.config.ts`, so subscribe/long-running commands auto-exit after 250ms. Do NOT pass `--duration` to `runCommand()` — it overrides the fast default.
+Unit and integration tests set `ABLY_CLI_DEFAULT_DURATION: "0.25"` in `vitest.config.ts`, so subscribe/long-running commands auto-exit after 250ms. Do NOT pass `--duration` to `runCommand()` — it overrides the fast default. Run `ably env ABLY_CLI_DEFAULT_DURATION` for full details on this variable and the 28 commands it affects.
 
 Exceptions: `test:wait` command tests (required flag), `interactive-sigint.test.ts` (needs longer for SIGINT), and help output checks.
 
@@ -247,3 +251,11 @@ Each accepts an optional `Partial<T>` to override fields:
 | `killTty()` | Kill the PTY process (async) |
 | `PROMPT_PATTERN` | `"ably>"` |
 | `DEFAULT_WAIT_TIMEOUT` | 8000ms |
+
+---
+
+## Related
+
+- [Debugging Guide](Debugging.md) — Debugging tips for CLI development, including `DEBUG` and Node inspector
+- [E2E Testing CLI Runner](E2E-Testing-CLI-Runner.md) — E2E test runner system, debugging flags, and process management
+- [Troubleshooting](Troubleshooting.md) — Solutions for common build and test errors

@@ -55,3 +55,10 @@ Exit codes are handled in:
 - `src/commands/interactive.ts`: Sets exit code 42 for user exit
 - `src/utils/sigint-exit.ts`: Handles SIGINT behavior and exit code 130
 - `bin/ably-interactive`: Wrapper script that interprets exit codes
+
+---
+
+## Related
+
+- [Interactive-REPL.md](Interactive-REPL.md) — Architecture and wrapper script design
+- [Troubleshooting.md](Troubleshooting.md#interactive-mode-issues) — Common interactive mode issues
