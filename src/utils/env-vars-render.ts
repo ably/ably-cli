@@ -50,6 +50,12 @@ function applyInlineMarkup(text: string): string {
     .replaceAll(/`([^`]+)`/g, (_m, inner: string) => c.code(inner));
 }
 
+function stripInlineMarkup(text: string): string {
+  return text
+    .replaceAll(/\*\*([^*]+)\*\*/g, "$1")
+    .replaceAll(/`([^`]+)`/g, "$1");
+}
+
 function renderParagraph(text: string): string {
   return applyInlineMarkup(text);
 }
@@ -141,42 +147,31 @@ function renderVarSection(v: EnvVarEntry): string {
   return parts.join("\n\n");
 }
 
-function renderPrerequisites(): string {
-  const lines = ENV_VARS_DATA.meta.prerequisites.map((p) => {
-    const cmds = p.commands.map((cmd) => c.code(cmd)).join(", ");
-    const vars = p.authVars
-      .map((v) => c.code(v))
-      .join(p.authVars.length > 1 ? " or " : "");
-    return c.bullet(`${c.bold(p.label)} (${cmds}) authenticate via ${vars}.`);
-  });
-  return lines.join("\n");
-}
-
-function renderHeader(): string {
-  return [
-    applyInlineMarkup(ENV_VARS_DATA.meta.lede),
-    c.callout.note(applyInlineMarkup(ENV_VARS_DATA.meta.note)),
-  ].join("\n\n");
-}
-
-function renderExampleBlock(v: EnvVarEntry): string {
-  const heading = `${c.varHeading(v.name)} — ${applyInlineMarkup(v.intro)}`;
-  const codeLines = v.example.lines.map(
-    (line) => `    ${chalk.green("$ ")}${line}`,
-  );
-  return [heading, ...codeLines].join("\n");
+export function getEnvVarSummaries(): Array<{ name: string; summary: string }> {
+  return ENV_VARS_DATA.variables.map((v) => ({
+    name: v.name,
+    summary: stripInlineMarkup(v.summary),
+  }));
 }
 
 export function renderMinimalReference(): string {
-  const parts: string[] = [
-    renderHeader(),
-    c.category("Prerequisites"),
-    renderPrerequisites(),
-    c.category("Examples"),
-    ENV_VARS_DATA.variables.map((v) => renderExampleBlock(v)).join("\n\n"),
-    c.bold("TIP: Run `ably env --help` for more information."),
+  const entries = getEnvVarSummaries();
+  const maxNameLength = Math.max(...entries.map((e) => e.name.length));
+  const prefix = "ably env ";
+  const padTarget = prefix.length + maxNameLength + 2;
+
+  const lines: string[] = [
+    "Ably Environment variables for authentication and configuration of default settings",
+    "",
   ];
-  return parts.join("\n\n") + "\n";
+  for (const e of entries) {
+    const left = `${prefix}${e.name}`;
+    const padded = left.padEnd(padTarget);
+    const colored = c.code(padded);
+    lines.push(`  ${colored} - ${e.summary}`);
+  }
+  lines.push("", `Run \`${c.code("ably env --help")}\` for more information.`);
+  return lines.join("\n") + "\n";
 }
 
 export function renderSingleVar(name: string): string {
@@ -185,8 +180,4 @@ export function renderSingleVar(name: string): string {
     throw new Error(`No section defined for env var: ${name}`);
   }
   return renderVarSection(section) + "\n";
-}
-
-export function listVarNames(): string[] {
-  return ENV_VARS_DATA.variables.map((v) => v.name);
 }

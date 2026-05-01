@@ -46,6 +46,7 @@ export class EnvVarEntry {
   constructor(
     public readonly name: string,
     public readonly category: EnvVarCategory,
+    public readonly summary: string,
     public readonly format: string,
     public readonly default_: string,
     public readonly precedence: string | null,
@@ -98,6 +99,7 @@ export class EnvVarsData {
 const ABLY_API_KEY = new EnvVarEntry(
   "ABLY_API_KEY",
   "Authentication",
+  "API key for data plane commands",
   "APP_ID.KEY_ID:KEY_SECRET",
   "None",
   "`ABLY_TOKEN` > **`ABLY_API_KEY`** > config file > interactive prompt",
@@ -117,12 +119,26 @@ const ABLY_API_KEY = new EnvVarEntry(
     `export ABLY_API_KEY="your-app-id.key-id:key-secret"`,
     `ably channels publish my-channel "Hello"`,
   ]),
-  [],
+  [
+    new DetailSection("Login bypass", [
+      {
+        kind: "paragraph",
+        text: "Bypasses the `ably login` workflow and skips interactive app/key selection. Useful in scripts and CI/CD pipelines.",
+      },
+    ]),
+    new DetailSection("Client ID", [
+      {
+        kind: "paragraph",
+        text: "Auto-generates a default client ID in the format `ably-cli-{uuid}`. Override with `--client-id <value>`, or pass `--client-id none` to send no client ID.",
+      },
+    ]),
+  ],
 );
 
 const ABLY_TOKEN = new EnvVarEntry(
   "ABLY_TOKEN",
   "Authentication",
+  "Token/JWT for data plane commands",
   "Ably token string or JWT string",
   "None",
   "**`ABLY_TOKEN`** > `ABLY_API_KEY` > config file > interactive prompt",
@@ -133,6 +149,24 @@ const ABLY_TOKEN = new EnvVarEntry(
     `ably channels subscribe my-channel`,
   ]),
   [
+    new DetailSection("Login bypass", [
+      {
+        kind: "paragraph",
+        text: "Bypasses the `ably login` workflow and skips interactive app/key selection. Useful in scripts and CI/CD pipelines.",
+      },
+    ]),
+    new DetailSection("Client ID", [
+      {
+        kind: "paragraph",
+        text: "`--client-id` is ignored when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed.",
+      },
+    ]),
+    new DetailSection("Token expiry", [
+      {
+        kind: "paragraph",
+        text: "The CLI does not refresh tokens. If the token expires during a long-running command (e.g. `channels subscribe`), the connection fails. Prefer `ABLY_API_KEY` for long-running commands.",
+      },
+    ]),
     new DetailSection("", [
       {
         kind: "important",
@@ -145,6 +179,7 @@ const ABLY_TOKEN = new EnvVarEntry(
 const ABLY_ACCESS_TOKEN = new EnvVarEntry(
   "ABLY_ACCESS_TOKEN",
   "Authentication",
+  "Access token for Control API commands",
   "OAuth 2.0 bearer token string",
   "None",
   "**`ABLY_ACCESS_TOKEN`** > config file access token",
@@ -154,12 +189,20 @@ const ABLY_ACCESS_TOKEN = new EnvVarEntry(
     `export ABLY_ACCESS_TOKEN="your-access-token"`,
     `ably apps list --json`,
   ]),
-  [],
+  [
+    new DetailSection("Login bypass", [
+      {
+        kind: "paragraph",
+        text: "Bypasses the `ably login` workflow and skips account config lookup. Useful in scripts and CI/CD pipelines.",
+      },
+    ]),
+  ],
 );
 
 const ABLY_APP_ID = new EnvVarEntry(
   "ABLY_APP_ID",
   "App Selection",
+  "Default app for `--app` flag",
   "App ID (e.g., `abc123`) or app name (e.g., `My App`)",
   "None",
   "`--app` CLI flag > **`ABLY_APP_ID`** > current app config > interactive prompt",
@@ -172,6 +215,7 @@ const ABLY_APP_ID = new EnvVarEntry(
 const ABLY_CLI_CONFIG_DIR = new EnvVarEntry(
   "ABLY_CLI_CONFIG_DIR",
   "Configuration",
+  "Custom config directory",
   "Directory path",
   "~/.ably",
   null,
@@ -187,6 +231,7 @@ const ABLY_CLI_CONFIG_DIR = new EnvVarEntry(
 const ABLY_HISTORY_FILE = new EnvVarEntry(
   "ABLY_HISTORY_FILE",
   "Configuration",
+  "Custom history file location",
   "File path",
   "~/.ably/history",
   null,
@@ -209,6 +254,7 @@ const ABLY_HISTORY_FILE = new EnvVarEntry(
 const ABLY_CLI_DEFAULT_DURATION = new EnvVarEntry(
   "ABLY_CLI_DEFAULT_DURATION",
   "Behavioral Control",
+  "Auto-exit long-running commands (seconds)",
   'Number (seconds). Value <= 0 is treated as "run forever".',
   "None (forever)",
   "`--duration` flag > **`ABLY_CLI_DEFAULT_DURATION`** > run forever",
@@ -223,6 +269,7 @@ const ABLY_CLI_DEFAULT_DURATION = new EnvVarEntry(
 const ABLY_CLI_NON_INTERACTIVE = new EnvVarEntry(
   "ABLY_CLI_NON_INTERACTIVE",
   "Behavioral Control",
+  'Auto-confirm "Did you mean?" prompts',
   '`"true"`',
   "Not set",
   null,
@@ -232,12 +279,24 @@ const ABLY_CLI_NON_INTERACTIVE = new EnvVarEntry(
     `export ABLY_CLI_NON_INTERACTIVE=true`,
     `ably chanels publish my-channel "Hello"`,
   ]),
-  [],
+  [
+    new DetailSection("Scope", [
+      {
+        kind: "paragraph",
+        text: "Only auto-confirms `Did you mean...?` suggestions for mistyped commands and topic-command disambiguation.",
+      },
+      {
+        kind: "important",
+        text: "Does **not** skip prompts for destructive operations — those still require the `--force` flag. Output formatting, spinners, and other interactive features are also unaffected.",
+      },
+    ]),
+  ],
 );
 
 const ABLY_ENDPOINT = new EnvVarEntry(
   "ABLY_ENDPOINT",
   "Host Override",
+  "Override Realtime/REST API endpoint",
   "Hostname or URL (passed as-is, no normalization)",
   "SDK default",
   "**`ABLY_ENDPOINT`** > account config endpoint > SDK default",
