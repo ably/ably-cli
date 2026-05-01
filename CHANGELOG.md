@@ -28,11 +28,11 @@ First stable release. This is a large release that overhauls authentication, com
 - **BREAKING: Primary entity identifiers are now positional arguments** — flags like `--name`, `--channel`, `--location`, and `--key` that named the entity being acted on have been replaced with positional args (POSIX/docopt convention). Affects `apps`, `keys`, `queues`, `rules`, `push`, `channels`, `rooms`, `spaces locations`, and others.
 - **BREAKING: Standardized argument naming** — argument names in errors and help output are snake_case; commands use camelCase identifiers consistently (`appId`, `keyName`, `channelName`).
 - **BREAKING: Flexible name-or-ID lookup** — `apps`, `keys`, `queues`, and `rules` commands now resolve either name or ID. Behaviour for ambiguous lookups may differ from previous versions.
+- **BREAKING: `auth revoke-token`** no longer accepts a `TOKEN` positional; pass `--client-id` or `--revocation-key`. Adds confirmation prompt and `--force`.
 - **Unified JSON output envelope** — every command now emits `{type, command, success, ...}` with domain data nested under singular/plural domain keys. Streaming commands emit NDJSON with `status: "listening"` / `"holding"` signals and a final `status: "completed"` event.
 - **Unified output helpers** — `logProgress`, `logSuccessMessage`, `logListening`, `logHolding`, `logWarning` replace ad-hoc `chalk` usage; non-JSON output uses labeled multi-line blocks (no ASCII tables).
 - **Unified time-range flags** — `--start` / `--end` accept ISO 8601, Unix ms, or relative (`"1h"`, `"30m"`) across all history and stats commands.
 - **Unified pagination** — cursor-based pagination with `formatPaginationLog` warnings when multiple pages are fetched, and `next` hints in JSON output.
-- **Auth keys revoke** — redesigned to use `--client-id` and `--revocation-key` flags with confirmation prompt and `--force`.
 - **Help theme** — colour-coded help via oclif theme (commands cyan, flags whiteBright, headers bold, defaults yellow, required red).
 - **Error handling** — fatal errors now flow through a single `this.fail()` funnel that preserves Ably error codes/HTTP status and emits structured JSON error envelopes.
 
@@ -58,6 +58,7 @@ If you have scripts targeting v0.x, the most likely breakages are:
    - `ably spaces locations set --location ./path …` → `ably spaces locations set ./path …`
 3. **Update JSON consumers** — top-level shape now includes `type`, `command`, and `success` fields, with payload nested under a domain key (`message`, `cursor`, `lock`, `rules`, etc.).
 4. **Rename argument references** in any error-handling code that matched on previous arg names.
+5. **`ably auth revoke-token <TOKEN>`** → `ably auth revoke-token --client-id <ID>` or `--revocation-key <KEY>` (the positional `TOKEN` arg is no longer accepted).
 
 ## [0.17.0] - 2026-03-08
 
