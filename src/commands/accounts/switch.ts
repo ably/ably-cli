@@ -1,11 +1,14 @@
 import { Args } from "@oclif/core";
 import chalk from "chalk";
-import inquirer from "inquirer";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
 import { type AccountSummary } from "../../services/control-api.js";
 import { formatResource } from "../../utils/output.js";
+import {
+  promptForSelection,
+  type SelectionChoice,
+} from "../../utils/prompt-selection.js";
 import { pickUniqueAlias, slugifyAccountName } from "../../utils/slugify.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
@@ -120,18 +123,15 @@ export default class AccountsSwitch extends ControlBaseCommand {
     // Remote accounts not already configured locally
     const remoteOnly = remoteAccounts.filter((r) => !localAccountIds.has(r.id));
 
-    type Choice = {
-      name: string;
-      value:
-        | { type: "local"; alias: string }
-        | { type: "remote"; account: AccountSummary };
-    };
+    type SelectedAccount =
+      | { type: "local"; alias: string }
+      | { type: "remote"; account: AccountSummary };
 
-    const choices: Array<Choice | inquirer.Separator> = [];
+    const choices: Array<SelectionChoice<SelectedAccount>> = [];
 
     // Local accounts section
     if (localAccounts.length > 0) {
-      choices.push(new inquirer.Separator("── Local accounts ──"));
+      choices.push({ separator: "── Local accounts ──" });
       for (const { account, alias } of localAccounts) {
         const isCurrent = alias === currentAlias;
         const name = account.accountName || account.accountId || "Unknown";
@@ -142,9 +142,9 @@ export default class AccountsSwitch extends ControlBaseCommand {
 
     // Remote-only accounts section
     if (remoteOnly.length > 0) {
-      choices.push(
-        new inquirer.Separator("── Other accounts (no login required) ──"),
-      );
+      choices.push({
+        separator: "── Other accounts (no login required) ──",
+      });
       for (const account of remoteOnly) {
         const label = `  ${account.name} ${chalk.dim(`(${account.id})`)}`;
         choices.push({ name: label, value: { type: "remote", account } });
@@ -156,18 +156,11 @@ export default class AccountsSwitch extends ControlBaseCommand {
       return false;
     }
 
-    const { selected } = (await inquirer.prompt([
-      {
-        choices,
-        message: "Select an account:",
-        name: "selected",
-        type: "list",
-      },
-    ])) as {
-      selected:
-        | { type: "local"; alias: string }
-        | { type: "remote"; account: AccountSummary };
-    };
+    const selected = await promptForSelection("Select an account:", choices);
+
+    if (!selected) {
+      return false;
+    }
 
     if (selected.type === "local") {
       await this.switchToLocalAccount(selected.alias, flags);

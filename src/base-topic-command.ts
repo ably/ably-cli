@@ -1,10 +1,8 @@
 import chalk from "chalk";
-import inquirer from "inquirer";
 import pkg from "fast-levenshtein";
 import { InteractiveBaseCommand } from "./interactive-base-command.js";
-import { runInquirerWithReadlineRestore } from "./utils/readline-helper.js";
+import { promptForConfirmation } from "./utils/prompt-confirmation.js";
 import { formatWarning } from "./utils/output.js";
-import * as readline from "node:readline";
 import {
   WEB_CLI_RESTRICTED_COMMANDS,
   WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS,
@@ -121,25 +119,12 @@ export abstract class BaseTopicCommand extends InteractiveBaseCommand {
           if (skipConfirmation) {
             confirmed = true;
           } else {
-            // In interactive mode, we need to handle readline carefully
-            const interactiveReadline = isInteractiveMode
-              ? (globalThis as Record<string, unknown>)
-                  .__ablyInteractiveReadline
-              : null;
-
-            const result = await runInquirerWithReadlineRestore(
-              async () =>
-                inquirer.prompt<{ confirmed: boolean }>([
-                  {
-                    name: "confirmed",
-                    type: "confirm",
-                    message: `Did you mean ${chalk.green(displaySuggestion)}?`,
-                    default: true,
-                  },
-                ]),
-              interactiveReadline as readline.Interface | null,
+            // promptForConfirmation handles REPL readline state restoration
+            // internally when ABLY_INTERACTIVE_MODE is active.
+            confirmed = await promptForConfirmation(
+              `Did you mean ${chalk.green(displaySuggestion)}?`,
+              true,
             );
-            confirmed = result.confirmed;
           }
 
           if (confirmed) {

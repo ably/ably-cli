@@ -106,7 +106,7 @@ describe("Did You Mean Functionality", () => {
 
           child.stdout!.on("data", (data) => {
             if (
-              data.toString().includes("(Y/n)") ||
+              data.toString().includes("[Y/n]") ||
               data.toString().includes("Did you mean accounts current?")
             ) {
               foundPrompt = true;
@@ -138,7 +138,7 @@ describe("Did You Mean Functionality", () => {
 
           const fullOutput = (result.stdout || "") + (result.stderr || "");
           expect(fullOutput).toContain("Did you mean accounts current?");
-          expect(fullOutput).toContain("(Y/n)");
+          expect(fullOutput).toContain("[Y/n]");
         },
         timeout,
       );
@@ -180,7 +180,7 @@ describe("Did You Mean Functionality", () => {
           child.stdout!.on("data", (data) => {
             if (
               data.toString().includes("Did you mean accounts current?") ||
-              data.toString().includes("(Y/n)")
+              data.toString().includes("[Y/n]")
             ) {
               foundPrompt = true;
               setTimeout(() => child.stdin!.write("n\n"), 100);
@@ -217,7 +217,7 @@ describe("Did You Mean Functionality", () => {
           child.stdout!.on("data", (data) => {
             if (
               data.toString().includes("Did you mean accounts current?") ||
-              data.toString().includes("(Y/n)")
+              data.toString().includes("[Y/n]")
             ) {
               foundPrompt = true;
               setTimeout(() => child.stdin!.write("y\n"), 100);
@@ -276,7 +276,7 @@ describe("Did You Mean Functionality", () => {
 
           const fullOutput = (result.stdout || "") + (result.stderr || "");
           expect(fullOutput).toContain("Did you mean accounts current?");
-          expect(fullOutput).toContain("(Y/n)");
+          expect(fullOutput).toContain("[Y/n]");
         },
         timeout,
       );
@@ -345,7 +345,7 @@ describe("Did You Mean Functionality", () => {
           expect(foundCommandsList).toBe(true);
           expect(fullOutput).toContain("Command accounts xyz not found");
           expect(fullOutput).toContain("Ably accounts management commands:");
-          expect(fullOutput).not.toContain("(Y/n)");
+          expect(fullOutput).not.toContain("[Y/n]");
         });
       },
       timeout,
@@ -360,12 +360,12 @@ describe("Did You Mean Functionality", () => {
         const result1 = await execAsync(`node ${binPath} account current`, {
           timeout: 2000,
         }).catch((error) => error);
-        expect(result1.stdout + result1.stderr).toContain("(Y/n)");
+        expect(result1.stdout + result1.stderr).toContain("[Y/n]");
 
         const result2 = await execAsync(`node ${binPath} accounts curren`, {
           timeout: 2000,
         }).catch((error) => error);
-        expect(result2.stdout + result2.stderr).toContain("(Y/n)");
+        expect(result2.stdout + result2.stderr).toContain("[Y/n]");
       },
       timeout,
     );

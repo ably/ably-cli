@@ -1,10 +1,8 @@
 import { Hook } from "@oclif/core";
 import chalk from "chalk";
-import inquirer from "inquirer";
 import pkg from "fast-levenshtein";
-import { runInquirerWithReadlineRestore } from "../../utils/readline-helper.js";
+import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import { formatWarning } from "../../utils/output.js";
-import * as readline from "node:readline";
 const { get: levenshteinDistance } = pkg;
 
 /**
@@ -111,24 +109,12 @@ const hook: Hook<"command_not_found"> = async function (opts) {
       // Important: We still proceed to *try* running the command, but tests assert it *fails* correctly
       confirmed = true;
     } else {
-      // In interactive mode, we need to handle readline carefully
-      const interactiveReadline = isInteractiveMode
-        ? (globalThis as Record<string, unknown>).__ablyInteractiveReadline
-        : null;
-
-      const result = await runInquirerWithReadlineRestore(
-        async () =>
-          inquirer.prompt<{ confirmed: boolean }>([
-            {
-              name: "confirmed",
-              type: "confirm",
-              message: `Did you mean ${chalk.green(displaySuggestion)}?`,
-              default: true,
-            },
-          ]),
-        interactiveReadline as readline.Interface | null,
+      // promptForConfirmation handles REPL readline state restoration internally
+      // when ABLY_INTERACTIVE_MODE is active.
+      confirmed = await promptForConfirmation(
+        `Did you mean ${chalk.green(displaySuggestion)}?`,
+        true,
       );
-      confirmed = result.confirmed;
     }
 
     if (confirmed) {
