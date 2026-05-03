@@ -38,9 +38,7 @@ export function promptForConfirmation(
     const finish = (result: boolean) => {
       if (settled) return;
       settled = true;
-      if (!rl.closed) {
-        rl.close();
-      }
+      rl.close();
       resolve(result);
     };
 

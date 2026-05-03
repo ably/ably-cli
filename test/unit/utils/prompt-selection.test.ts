@@ -187,4 +187,78 @@ describe("promptForSelection", () => {
     const result = await promptForSelection("Select:", choices);
     expect(result).toBeNull();
   });
+
+  describe("separators", () => {
+    it("renders separator entries un-numbered with single-space prefix", async () => {
+      mockQuestion = (_query, callback) => callback("1");
+      await promptForSelection("Select an account:", [
+        { separator: "── Local accounts ──" },
+        { name: "prod", value: "prod" },
+        { name: "staging", value: "staging" },
+        { separator: "── Other accounts ──" },
+        { name: "external", value: "external" },
+      ]);
+
+      // Separators: single leading space, no [N] marker (matches inquirer's render)
+      expect(mockWrite).toHaveBeenCalledWith(" ── Local accounts ──\n");
+      expect(mockWrite).toHaveBeenCalledWith(" ── Other accounts ──\n");
+      // Selectable items numbered sequentially, ignoring separators
+      expect(mockWrite).toHaveBeenCalledWith("  [1] prod\n");
+      expect(mockWrite).toHaveBeenCalledWith("  [2] staging\n");
+      expect(mockWrite).toHaveBeenCalledWith("  [3] external\n");
+    });
+
+    it("numbers only selectable items so '1' picks the first selectable", async () => {
+      mockQuestion = (_query, callback) => callback("1");
+      const result = await promptForSelection<string>("Pick:", [
+        { separator: "── Section ──" },
+        { name: "first", value: "first" },
+        { name: "second", value: "second" },
+      ]);
+      expect(result).toBe("first");
+    });
+
+    it("rejects out-of-range numbers based on selectable count, not total entries", async () => {
+      // 2 selectables + 2 separators = 4 entries. "3" must be rejected.
+      let callCount = 0;
+      mockQuestion = (_query, callback) => {
+        callCount++;
+        if (callCount === 1) {
+          callback("3");
+        } else {
+          callback("2");
+        }
+      };
+      const result = await promptForSelection<string>("Pick:", [
+        { separator: "── A ──" },
+        { name: "first", value: "first" },
+        { separator: "── B ──" },
+        { name: "second", value: "second" },
+      ]);
+      expect(result).toBe("second");
+      expect(callCount).toBe(2);
+      expect(mockWrite).toHaveBeenCalledWith(
+        "Invalid selection. Enter a number between 1 and 2.\n",
+      );
+    });
+
+    it("returns null when choices contain only separators (no selectables)", async () => {
+      const result = await promptForSelection("Pick:", [
+        { separator: "── A ──" },
+        { separator: "── B ──" },
+      ]);
+      expect(result).toBeNull();
+      expect(mockWrite).not.toHaveBeenCalled();
+    });
+
+    it("supports separators interleaved at any position", async () => {
+      mockQuestion = (_query, callback) => callback("2");
+      const result = await promptForSelection<string>("Pick:", [
+        { name: "alpha", value: "alpha" },
+        { separator: "── divider ──" },
+        { name: "beta", value: "beta" },
+      ]);
+      expect(result).toBe("beta");
+    });
+  });
 });

@@ -1,20 +1,39 @@
 import * as readline from "node:readline";
 
 /**
+ * A choice item is either selectable (has a value) or a separator (header line, not selectable).
+ */
+export type SelectionChoice<T> =
+  | { name: string; value: T }
+  | { separator: string };
+
+function isSeparator<T>(
+  choice: SelectionChoice<T>,
+): choice is { separator: string } {
+  return "separator" in choice;
+}
+
+/**
  * Prompts the user to select an item from a numbered list.
  * Displays choices as "[1] Choice one", "[2] Choice two", etc.
+ * Separator entries render as un-numbered header lines and cannot be selected.
  * Re-prompts on invalid input (out-of-range, non-numeric).
- * Returns null if the user enters empty input, stdin closes, or choices is empty.
+ * Returns null if the user enters empty input, stdin closes, the choices list
+ * has no selectable entries, or SIGINT is received.
  *
  * @param message - The prompt message displayed above the list
- * @param choices - Array of { name, value } pairs (same format as inquirer list choices)
+ * @param choices - Array of selectable items or separators
  * @returns Promise<T | null> - The selected item's value, or null if cancelled
  */
 export function promptForSelection<T>(
   message: string,
-  choices: Array<{ name: string; value: T }>,
+  choices: Array<SelectionChoice<T>>,
 ): Promise<T | null> {
-  if (choices.length === 0) {
+  const selectable = choices.filter(
+    (c): c is { name: string; value: T } => !isSeparator(c),
+  );
+
+  if (selectable.length === 0) {
     return Promise.resolve(null);
   }
 
@@ -23,10 +42,18 @@ export function promptForSelection<T>(
     output: process.stdout,
   });
 
-  // Display the list
+  // Display the list. Selectable items get sequential numbers; separators render as plain
+  // headers with a single leading space (matches inquirer's separator rendering in
+  // @inquirer/select, which prints ` ${separator}` so headers visually outdent from items).
   rl.write(`${message}\n`);
-  for (let i = 0; i < choices.length; i++) {
-    rl.write(`  [${i + 1}] ${choices[i]!.name}\n`);
+  let index = 0;
+  for (const choice of choices) {
+    if (isSeparator(choice)) {
+      rl.write(` ${choice.separator}\n`);
+    } else {
+      index += 1;
+      rl.write(`  [${index}] ${choice.name}\n`);
+    }
   }
 
   return new Promise<T | null>((resolve) => {
@@ -35,9 +62,7 @@ export function promptForSelection<T>(
     const finish = (result: T | null) => {
       if (settled) return;
       settled = true;
-      if (!rl.closed) {
-        rl.close();
-      }
+      rl.close();
       resolve(result);
     };
 
@@ -62,7 +87,7 @@ export function promptForSelection<T>(
         // Require the entire input to be a base-10 integer string
         if (!/^\d+$/.test(trimmed)) {
           rl.write(
-            `Invalid selection. Enter a number between 1 and ${choices.length}.\n`,
+            `Invalid selection. Enter a number between 1 and ${selectable.length}.\n`,
           );
           ask();
           return;
@@ -71,15 +96,15 @@ export function promptForSelection<T>(
         const num = Number.parseInt(trimmed, 10);
 
         // Out of range → re-prompt
-        if (num < 1 || num > choices.length) {
+        if (num < 1 || num > selectable.length) {
           rl.write(
-            `Invalid selection. Enter a number between 1 and ${choices.length}.\n`,
+            `Invalid selection. Enter a number between 1 and ${selectable.length}.\n`,
           );
           ask();
           return;
         }
 
-        finish(choices[num - 1]!.value);
+        finish(selectable[num - 1]!.value);
       });
     };
 

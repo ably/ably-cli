@@ -290,10 +290,7 @@ describe("Did You Mean Hook - Interactive Mode", function () {
         expect(mockReadline.removeAllListeners).toHaveBeenCalledWith("line");
         expect(mockReadline.on.mock.calls.length).toBe(lineListeners.length);
         lineListeners.forEach((listener, index) => {
-          expect(mockReadline.on.mock.calls[index]).toEqual([
-            "line",
-            listener,
-          ]);
+          expect(mockReadline.on.mock.calls[index]).toEqual(["line", listener]);
         });
 
         // Verify terminal state was restored

@@ -71,19 +71,12 @@ export class InteractiveHelper {
         return null;
       }
 
-      const { selectedAccount } = (await inquirer.prompt([
-        {
-          choices: accounts.map((account) => ({
-            name: `${account.name} (${account.id})`,
-            value: account,
-          })),
-          message: "Select an account:",
-          name: "selectedAccount",
-          type: "list",
-        },
-      ])) as { selectedAccount: AccountSummary };
+      const choices = accounts.map((account) => ({
+        name: `${account.name} (${account.id})`,
+        value: account,
+      }));
 
-      return selectedAccount;
+      return await promptForSelection("Select an account:", choices);
     } catch (error) {
       if (this.logErrors) {
         this.log(
