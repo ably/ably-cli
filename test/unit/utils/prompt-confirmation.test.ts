@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 let mockQuestion: (query: string, callback: (answer: string) => void) => void;
 let mockOnHandlers: Record<string, (() => void)[]>;
@@ -108,6 +108,67 @@ describe("promptForConfirmation", () => {
       };
       await promptForConfirmation("Continue? [Y/n]", true);
       expect(capturedQuery).toBe("Continue? [Y/n]");
+    });
+  });
+
+  describe("interactive REPL state restoration", () => {
+    const originalIsRaw = process.stdin.isRaw;
+    const originalIsTTY = process.stdin.isTTY;
+    const originalSetRawMode = process.stdin.setRawMode;
+
+    afterEach(() => {
+      delete (globalThis as Record<string, unknown>).__ablyInteractiveReadline;
+      process.stdin.isRaw = originalIsRaw;
+      process.stdin.isTTY = originalIsTTY;
+      process.stdin.setRawMode = originalSetRawMode;
+    });
+
+    it("pauses, restores listeners, and resumes the REPL readline when active", async () => {
+      mockQuestion = (_query, callback) => callback("y");
+
+      const lineListeners = [vi.fn(), vi.fn()];
+      const replReadline = {
+        pause: vi.fn(),
+        resume: vi.fn(),
+        listeners: vi.fn().mockReturnValue(lineListeners),
+        removeAllListeners: vi.fn(),
+        on: vi.fn(),
+        _refreshLine: vi.fn(),
+      };
+      (globalThis as Record<string, unknown>).__ablyInteractiveReadline =
+        replReadline;
+
+      process.stdin.isRaw = false;
+      process.stdin.isTTY = true;
+      process.stdin.setRawMode = vi.fn().mockReturnValue(process.stdin);
+
+      const result = await promptForConfirmation("Continue?", true);
+      expect(result).toBe(true);
+
+      // Pause + listener removal happen before the prompt runs
+      expect(replReadline.pause).toHaveBeenCalled();
+      expect(replReadline.removeAllListeners).toHaveBeenCalledWith("line");
+
+      // Resume is scheduled via setTimeout(20ms); wait for it to fire
+      await vi.waitFor(() => {
+        expect(replReadline.resume).toHaveBeenCalled();
+      });
+
+      // Line listeners reattached
+      expect(replReadline.on.mock.calls.length).toBe(lineListeners.length);
+      lineListeners.forEach((listener, index) => {
+        expect(replReadline.on.mock.calls[index]).toEqual(["line", listener]);
+      });
+
+      // Terminal raw mode restored to its prior value
+      expect(process.stdin.setRawMode).toHaveBeenCalledWith(false);
+    });
+
+    it("runs without REPL interaction when no interactive readline is registered", async () => {
+      mockQuestion = (_query, callback) => callback("n");
+      // No __ablyInteractiveReadline set → no pause/resume should happen
+      const result = await promptForConfirmation("Continue?");
+      expect(result).toBe(false);
     });
   });
 

@@ -1,6 +1,18 @@
 import * as readline from "node:readline";
 
 /**
+ * Returns the interactive REPL's readline interface if one is registered on
+ * `globalThis.__ablyInteractiveReadline`, otherwise `null`. The interactive
+ * command (`src/commands/interactive.ts`) sets this global when the REPL is
+ * active so that nested prompts can pause and restore its state.
+ */
+export function getInteractiveReadline(): readline.Interface | null {
+  const value = (globalThis as Record<string, unknown>)
+    .__ablyInteractiveReadline;
+  return (value as readline.Interface | null | undefined) ?? null;
+}
+
+/**
  * Helper function to safely run prompt functions in interactive REPL mode
  * while preserving readline state and terminal settings.
  *

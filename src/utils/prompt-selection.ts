@@ -1,5 +1,10 @@
 import * as readline from "node:readline";
 
+import {
+  getInteractiveReadline,
+  runWithReadlineRestore,
+} from "./readline-helper.js";
+
 /**
  * A choice item is either selectable (has a value) or a separator (header line, not selectable).
  */
@@ -21,6 +26,11 @@ function isSeparator<T>(
  * Returns null if the user enters empty input, stdin closes, the choices list
  * has no selectable entries, or SIGINT is received.
  *
+ * When invoked from the interactive REPL (`ABLY_INTERACTIVE_MODE=true`), this
+ * function automatically pauses the REPL's readline, removes its line
+ * listeners, runs the prompt, and restores everything afterwards — so callers
+ * never need to wrap it in `runWithReadlineRestore` themselves.
+ *
  * @param message - The prompt message displayed above the list
  * @param choices - Array of selectable items or separators
  * @returns Promise<T | null> - The selected item's value, or null if cancelled
@@ -37,6 +47,17 @@ export function promptForSelection<T>(
     return Promise.resolve(null);
   }
 
+  return runWithReadlineRestore(
+    () => promptForSelectionInternal(message, choices, selectable),
+    getInteractiveReadline(),
+  );
+}
+
+function promptForSelectionInternal<T>(
+  message: string,
+  choices: Array<SelectionChoice<T>>,
+  selectable: Array<{ name: string; value: T }>,
+): Promise<T | null> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,

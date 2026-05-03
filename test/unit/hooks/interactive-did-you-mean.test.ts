@@ -235,76 +235,9 @@ describe("Did You Mean Hook - Interactive Mode", function () {
     });
   });
 
-  describe("readline restoration", function () {
-    it("should properly restore readline state in interactive mode", async function () {
-      const context = {
-        config,
-        warn: warnStub,
-        error: errorStub,
-        log: logStub,
-        exit: vi.fn(),
-        debug: vi.fn(),
-      };
-
-      // Mock the global readline instance with detailed state tracking
-      const lineListeners = [vi.fn(), vi.fn()];
-      const mockReadline = {
-        pause: vi.fn(),
-        resume: vi.fn(),
-        prompt: vi.fn(),
-        listeners: vi.fn().mockReturnValue(lineListeners),
-        removeAllListeners: vi.fn(),
-        on: vi.fn(),
-        _refreshLine: vi.fn(),
-      };
-      (
-        globalThis as unknown as Record<string, unknown>
-      ).__ablyInteractiveReadline = mockReadline;
-
-      // Mock process.stdin for terminal state
-      const originalIsRaw = process.stdin.isRaw;
-      const originalIsTTY = process.stdin.isTTY;
-      const originalSetRawMode = process.stdin.setRawMode;
-
-      process.stdin.isRaw = false;
-      process.stdin.isTTY = true;
-      process.stdin.setRawMode = vi.fn().mockReturnValue(process.stdin);
-
-      try {
-        await hook.call(context, {
-          id: "channels:pubish",
-          argv: [],
-          config,
-          context,
-        });
-
-        // Wait for async restoration
-        await vi.waitFor(() => {
-          expect(mockReadline.resume).toHaveBeenCalled();
-        });
-
-        // Verify readline was paused during prompt
-        expect(mockReadline.pause).toHaveBeenCalled();
-
-        // Verify line listeners were temporarily removed and restored
-        expect(mockReadline.removeAllListeners).toHaveBeenCalledWith("line");
-        expect(mockReadline.on.mock.calls.length).toBe(lineListeners.length);
-        lineListeners.forEach((listener, index) => {
-          expect(mockReadline.on.mock.calls[index]).toEqual(["line", listener]);
-        });
-
-        // Verify terminal state was restored
-        expect(process.stdin.setRawMode).toHaveBeenCalledWith(false);
-      } finally {
-        // Clean up
-        delete (globalThis as unknown as Record<string, unknown>)
-          .__ablyInteractiveReadline;
-        process.stdin.isRaw = originalIsRaw;
-        process.stdin.isTTY = originalIsTTY;
-        process.stdin.setRawMode = originalSetRawMode;
-      }
-    });
-  });
+  // REPL readline restoration is now centralized inside promptForConfirmation
+  // (see src/utils/prompt-confirmation.ts), so it is exercised by
+  // test/unit/utils/prompt-confirmation.test.ts rather than at the hook level.
 
   describe("normal mode comparison", function () {
     it("should use normal error handling when not in interactive mode", async function () {

@@ -1,9 +1,19 @@
 import * as readline from "node:readline";
 
+import {
+  getInteractiveReadline,
+  runWithReadlineRestore,
+} from "./readline-helper.js";
+
 /**
  * Prompts the user for confirmation with a yes/no question.
  * Automatically appends a "[y/n]" or "[Y/n]" suffix based on the default value.
  * Accepts both "y" and "yes" as affirmative responses (case-insensitive).
+ *
+ * When invoked from the interactive REPL (`ABLY_INTERACTIVE_MODE=true`), this
+ * function automatically pauses the REPL's readline, removes its line
+ * listeners, runs the prompt, and restores everything afterwards — so callers
+ * never need to wrap it in `runWithReadlineRestore` themselves.
  *
  * @param message - The confirmation message to display to the user
  * @param defaultValue - The value returned when the user presses Enter without typing (default: false).
@@ -13,6 +23,16 @@ import * as readline from "node:readline";
 export function promptForConfirmation(
   message: string,
   defaultValue: boolean = false,
+): Promise<boolean> {
+  return runWithReadlineRestore(
+    () => promptForConfirmationInternal(message, defaultValue),
+    getInteractiveReadline(),
+  );
+}
+
+function promptForConfirmationInternal(
+  message: string,
+  defaultValue: boolean,
 ): Promise<boolean> {
   const rl = readline.createInterface({
     input: process.stdin,

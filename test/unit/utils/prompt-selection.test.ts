@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 let mockQuestion: (query: string, callback: (answer: string) => void) => void;
 let mockWrite: ReturnType<typeof vi.fn>;
@@ -186,6 +186,64 @@ describe("promptForSelection", () => {
     };
     const result = await promptForSelection("Select:", choices);
     expect(result).toBeNull();
+  });
+
+  describe("interactive REPL state restoration", () => {
+    const originalIsRaw = process.stdin.isRaw;
+    const originalIsTTY = process.stdin.isTTY;
+    const originalSetRawMode = process.stdin.setRawMode;
+
+    afterEach(() => {
+      delete (globalThis as Record<string, unknown>).__ablyInteractiveReadline;
+      process.stdin.isRaw = originalIsRaw;
+      process.stdin.isTTY = originalIsTTY;
+      process.stdin.setRawMode = originalSetRawMode;
+    });
+
+    it("pauses, restores listeners, and resumes the REPL readline when active", async () => {
+      mockQuestion = (_query, callback) => callback("1");
+
+      const lineListeners = [vi.fn(), vi.fn()];
+      const replReadline = {
+        pause: vi.fn(),
+        resume: vi.fn(),
+        listeners: vi.fn().mockReturnValue(lineListeners),
+        removeAllListeners: vi.fn(),
+        on: vi.fn(),
+        _refreshLine: vi.fn(),
+      };
+      (globalThis as Record<string, unknown>).__ablyInteractiveReadline =
+        replReadline;
+
+      process.stdin.isRaw = false;
+      process.stdin.isTTY = true;
+      process.stdin.setRawMode = vi.fn().mockReturnValue(process.stdin);
+
+      const result = await promptForSelection("Pick:", choices);
+      expect(result).toEqual({ id: "app1", name: "App One" });
+
+      expect(replReadline.pause).toHaveBeenCalled();
+      expect(replReadline.removeAllListeners).toHaveBeenCalledWith("line");
+
+      // Resume scheduled via setTimeout(20ms)
+      await vi.waitFor(() => {
+        expect(replReadline.resume).toHaveBeenCalled();
+      });
+
+      expect(replReadline.on.mock.calls.length).toBe(lineListeners.length);
+      lineListeners.forEach((listener, index) => {
+        expect(replReadline.on.mock.calls[index]).toEqual(["line", listener]);
+      });
+
+      expect(process.stdin.setRawMode).toHaveBeenCalledWith(false);
+    });
+
+    it("runs without REPL interaction when no interactive readline is registered", async () => {
+      mockQuestion = (_query, callback) => callback("2");
+      // No __ablyInteractiveReadline set
+      const result = await promptForSelection("Pick:", choices);
+      expect(result).toEqual({ id: "app2", name: "App Two" });
+    });
   });
 
   describe("separators", () => {
