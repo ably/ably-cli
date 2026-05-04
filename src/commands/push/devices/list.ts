@@ -2,7 +2,6 @@ import { Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import {
   formatDeviceState,
   formatHeading,
@@ -49,7 +48,7 @@ export default class PushDevicesList extends AblyBaseCommand {
     const { flags } = await this.parse(PushDevicesList);
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       this.logProgress("Fetching device registrations", flags);
@@ -128,7 +127,7 @@ export default class PushDevicesList extends AblyBaseCommand {
         if (limitWarning) this.logToStderr(limitWarning);
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushDeviceList");
+      this.fail(error, flags, "pushDeviceList");
     }
   }
 }

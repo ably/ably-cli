@@ -53,9 +53,9 @@ describe("Interactive Command", () => {
         .mockImplementation(() => {});
       const processExitSpy = vi
         .spyOn(process, "exit")
-        .mockImplementation((() => {
+        .mockImplementation(() => {
           throw new Error("Process exit called");
-        }) as never);
+        });
 
       try {
         await cmd.run();

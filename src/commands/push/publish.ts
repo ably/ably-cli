@@ -4,7 +4,6 @@ import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { forceFlag, productApiFlags } from "../../flags.js";
-import { BaseFlags } from "../../types/cli.js";
 import { prepareMessageFromInput } from "../../utils/message.js";
 import { formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
@@ -102,7 +101,7 @@ export default class PushPublish extends AblyBaseCommand {
     if (flags.message && !flags.channel) {
       this.fail(
         "--message can only be used with --channel (realtime message data is not applicable when publishing directly to a device or client)",
-        flags as BaseFlags,
+        flags,
         "pushPublish",
       );
     }
@@ -110,7 +109,7 @@ export default class PushPublish extends AblyBaseCommand {
     if (!hasDirectRecipient && !flags.channel) {
       this.fail(
         "A target is required: --device-id, --client-id, --recipient, or --channel",
-        flags as BaseFlags,
+        flags,
         "pushPublish",
       );
     }
@@ -118,18 +117,18 @@ export default class PushPublish extends AblyBaseCommand {
     if (hasDirectRecipient && flags.channel) {
       this.logWarning(
         "--channel is ignored when --device-id, --client-id, or --recipient is provided.",
-        flags as BaseFlags,
+        flags,
       );
       if (flags.message) {
         this.logWarning(
           "--message is ignored when --device-id, --client-id, or --recipient is provided.",
-          flags as BaseFlags,
+          flags,
         );
       }
     }
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       // Build recipient
@@ -142,7 +141,7 @@ export default class PushPublish extends AblyBaseCommand {
         recipient = this.parseJsonObjectFlag(
           flags.recipient,
           "--recipient",
-          flags as BaseFlags,
+          flags,
         );
       }
 
@@ -153,11 +152,7 @@ export default class PushPublish extends AblyBaseCommand {
         if (flags.payload.startsWith("@")) {
           const filePath = path.resolve(flags.payload.slice(1));
           if (!fs.existsSync(filePath)) {
-            this.fail(
-              `File not found: ${filePath}`,
-              flags as BaseFlags,
-              "pushPublish",
-            );
+            this.fail(`File not found: ${filePath}`, flags, "pushPublish");
           }
           jsonString = fs.readFileSync(filePath, "utf8");
         } else if (
@@ -167,11 +162,7 @@ export default class PushPublish extends AblyBaseCommand {
         ) {
           const filePath = path.resolve(flags.payload);
           if (!fs.existsSync(filePath)) {
-            this.fail(
-              `File not found: ${filePath}`,
-              flags as BaseFlags,
-              "pushPublish",
-            );
+            this.fail(`File not found: ${filePath}`, flags, "pushPublish");
           }
           jsonString = fs.readFileSync(filePath, "utf8");
         } else if (fs.existsSync(path.resolve(flags.payload))) {
@@ -179,11 +170,7 @@ export default class PushPublish extends AblyBaseCommand {
         } else {
           jsonString = flags.payload;
         }
-        payload = this.parseJsonObjectFlag(
-          jsonString,
-          "--payload",
-          flags as BaseFlags,
-        );
+        payload = this.parseJsonObjectFlag(jsonString, "--payload", flags);
       } else {
         const notification: Record<string, unknown> = {};
         if (flags.title) notification.title = flags.title;
@@ -201,11 +188,7 @@ export default class PushPublish extends AblyBaseCommand {
         }
 
         if (flags.data) {
-          payload.data = this.parseJsonObjectFlag(
-            flags.data,
-            "--data",
-            flags as BaseFlags,
-          );
+          payload.data = this.parseJsonObjectFlag(flags.data, "--data", flags);
         }
       }
 
@@ -217,32 +200,20 @@ export default class PushPublish extends AblyBaseCommand {
       ) {
         this.fail(
           "No push payload provided. Use --payload, --title/--body, or --data to specify notification content",
-          flags as BaseFlags,
+          flags,
           "pushPublish",
         );
       }
 
       // Add platform-specific overrides
       if (flags.apns) {
-        payload.apns = this.parseJsonObjectFlag(
-          flags.apns,
-          "--apns",
-          flags as BaseFlags,
-        );
+        payload.apns = this.parseJsonObjectFlag(flags.apns, "--apns", flags);
       }
       if (flags.fcm) {
-        payload.fcm = this.parseJsonObjectFlag(
-          flags.fcm,
-          "--fcm",
-          flags as BaseFlags,
-        );
+        payload.fcm = this.parseJsonObjectFlag(flags.fcm, "--fcm", flags);
       }
       if (flags.web) {
-        payload.web = this.parseJsonObjectFlag(
-          flags.web,
-          "--web",
-          flags as BaseFlags,
-        );
+        payload.web = this.parseJsonObjectFlag(flags.web, "--web", flags);
       }
 
       this.logProgress("Publishing push notification", flags);
@@ -290,7 +261,7 @@ export default class PushPublish extends AblyBaseCommand {
           ) {
             this.fail(
               "--message must not include extras.push; use the push flags (--title/--body/--payload/etc.) to specify push content",
-              flags as BaseFlags,
+              flags,
               "pushPublish",
             );
           }
@@ -331,7 +302,7 @@ export default class PushPublish extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushPublish");
+      this.fail(error, flags, "pushPublish");
     }
   }
 }

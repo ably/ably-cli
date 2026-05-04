@@ -5,7 +5,6 @@ import ora from "ora";
 
 import { AblyBaseCommand } from "../base-command.js";
 import { coreGlobalFlags } from "../flags.js";
-import { BaseFlags } from "../types/cli.js";
 import openUrl from "../utils/open-url.js";
 import { getAgentName, getCliVersion } from "../utils/version.js";
 
@@ -55,7 +54,7 @@ export default class StatusCommand extends AblyBaseCommand {
       if (data.status === undefined) {
         this.fail(
           "Invalid response from status endpoint: status attribute is missing",
-          flags as BaseFlags,
+          flags,
           "status",
         );
       }
@@ -68,7 +67,7 @@ export default class StatusCommand extends AblyBaseCommand {
               statusUrl: "https://status.ably.com",
             },
           },
-          flags as BaseFlags,
+          flags,
         );
       } else if (data.status) {
         this.log("No incidents currently reported");
@@ -97,7 +96,7 @@ export default class StatusCommand extends AblyBaseCommand {
         spinner.fail("Failed to check Ably service status");
       }
 
-      this.fail(error, flags as BaseFlags, "status");
+      this.fail(error, flags, "status");
     }
   }
 }

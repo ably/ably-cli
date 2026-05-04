@@ -531,7 +531,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
         }
       }
 
-      window.WebSocket = InterceptWS as unknown as typeof WebSocket;
+      window.WebSocket = InterceptWS;
     });
 
     const apiKey = process.env.E2E_ABLY_API_KEY || process.env.ABLY_API_KEY;
@@ -672,7 +672,7 @@ test.describe("Web CLI Reconnection E2E Tests", () => {
         }
       }
 
-      window.WebSocket = InterceptWS as unknown as typeof WebSocket;
+      window.WebSocket = InterceptWS;
     });
 
     // Use maxReconnectAttempts=3 for faster testing

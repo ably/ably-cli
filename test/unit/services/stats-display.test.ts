@@ -31,7 +31,7 @@ describe("StatsDisplay", () => {
 
   it("produces no output for null stats", () => {
     const display = new StatsDisplay();
-    display.display(null as unknown as Parameters<typeof display.display>[0]);
+    display.display(null);
     expect(consoleSpy).not.toHaveBeenCalled();
   });
 

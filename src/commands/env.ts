@@ -4,7 +4,6 @@ import pkg from "fast-levenshtein";
 import { AblyBaseCommand } from "../base-command.js";
 import { ENV_VARS_DATA } from "../data/env-vars.js";
 import { coreGlobalFlags } from "../flags.js";
-import { BaseFlags } from "../types/cli.js";
 import {
   getEnvVarSummaries,
   renderMinimalReference,
@@ -59,13 +58,13 @@ export default class EnvCommand extends AblyBaseCommand {
           : "Run `ably env` to see all supported variables.";
         this.fail(
           `Unknown environment variable: ${args.envVarName}. ${hint}`,
-          flags as BaseFlags,
+          flags,
           "env",
         );
       }
 
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ envVar: match }, flags as BaseFlags);
+        this.logJsonResult({ envVar: match }, flags);
         return;
       }
 
@@ -80,7 +79,7 @@ export default class EnvCommand extends AblyBaseCommand {
           crossCutting: ENV_VARS_DATA.crossCutting,
           relatedLinks: ENV_VARS_DATA.relatedLinks,
         },
-        flags as BaseFlags,
+        flags,
       );
       return;
     }

@@ -2,7 +2,6 @@ import { Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import {
   formatCountLabel,
   formatLimitWarning,
@@ -36,7 +35,7 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
     const { flags } = await this.parse(PushChannelsListChannels);
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       this.logProgress("Fetching channels with push subscriptions", flags);
@@ -89,7 +88,7 @@ export default class PushChannelsListChannels extends AblyBaseCommand {
         if (limitWarning) this.logToStderr(limitWarning);
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushChannelListChannels");
+      this.fail(error, flags, "pushChannelListChannels");
     }
   }
 }

@@ -2,7 +2,6 @@ import { Args, Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import { formatResource } from "../../../utils/output.js";
 
 export default class PushChannelsSave extends AblyBaseCommand {
@@ -40,13 +39,13 @@ export default class PushChannelsSave extends AblyBaseCommand {
     if (!flags["device-id"] && !flags["client-id"]) {
       this.fail(
         "Either --device-id or --client-id must be provided",
-        flags as BaseFlags,
+        flags,
         "pushChannelSave",
       );
     }
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       this.logProgress(
@@ -75,7 +74,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushChannelSave");
+      this.fail(error, flags, "pushChannelSave");
     }
   }
 }

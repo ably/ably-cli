@@ -6,7 +6,6 @@ import { AblyBaseCommand } from "../../base-command.js";
 import { CommandError } from "../../errors/command-error.js";
 import { forceFlag, productApiFlags } from "../../flags.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
-import { BaseFlags } from "../../types/cli.js";
 import { prepareMessageFromInput } from "../../utils/message.js";
 import { formatCountLabel, formatResource } from "../../utils/output.js";
 
@@ -92,7 +91,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
     const { args, flags } = await this.parse(PushBatchPublish);
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       let jsonString: string;
@@ -102,7 +101,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
         if (process.stdin.isTTY) {
           this.fail(
             'Missing PAYLOAD. Provide a JSON array, a file path, or "-" to read from stdin.',
-            flags as BaseFlags,
+            flags,
             "pushBatchPublish",
           );
         }
@@ -112,11 +111,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
       } else if (payloadArg.startsWith("@")) {
         const filePath = path.resolve(payloadArg.slice(1));
         if (!fs.existsSync(filePath)) {
-          this.fail(
-            `File not found: ${filePath}`,
-            flags as BaseFlags,
-            "pushBatchPublish",
-          );
+          this.fail(`File not found: ${filePath}`, flags, "pushBatchPublish");
         }
         jsonString = fs.readFileSync(filePath, "utf8");
       } else if (
@@ -126,11 +121,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
       ) {
         const filePath = path.resolve(payloadArg);
         if (!fs.existsSync(filePath)) {
-          this.fail(
-            `File not found: ${filePath}`,
-            flags as BaseFlags,
-            "pushBatchPublish",
-          );
+          this.fail(`File not found: ${filePath}`, flags, "pushBatchPublish");
         }
         jsonString = fs.readFileSync(filePath, "utf8");
       } else if (fs.existsSync(path.resolve(payloadArg))) {
@@ -145,23 +136,19 @@ export default class PushBatchPublish extends AblyBaseCommand {
       } catch {
         this.fail(
           "Payload must be a valid JSON array",
-          flags as BaseFlags,
+          flags,
           "pushBatchPublish",
         );
       }
 
       if (!Array.isArray(batchPayload)) {
-        this.fail(
-          "Payload must be a JSON array",
-          flags as BaseFlags,
-          "pushBatchPublish",
-        );
+        this.fail("Payload must be a JSON array", flags, "pushBatchPublish");
       }
 
       if (batchPayload.length > 10000) {
         this.fail(
           "Batch payload cannot exceed 10,000 items",
-          flags as BaseFlags,
+          flags,
           "pushBatchPublish",
         );
       }
@@ -185,7 +172,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
         if (!itemPayload?.notification && !itemPayload?.data) {
           this.fail(
             `Item at index ${index} must have a "payload.notification" or "payload.data" field`,
-            flags as BaseFlags,
+            flags,
             "pushBatchPublish",
           );
         }
@@ -204,14 +191,14 @@ export default class PushBatchPublish extends AblyBaseCommand {
           } else {
             this.fail(
               `Item at index ${index} has an invalid "channels" field; expected a non-empty string or array of non-empty strings`,
-              flags as BaseFlags,
+              flags,
               "pushBatchPublish",
             );
           }
         } else {
           this.fail(
             `Item at index ${index} must have a "recipient" or "channels" field`,
-            flags as BaseFlags,
+            flags,
             "pushBatchPublish",
           );
         }
@@ -256,7 +243,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
             if (entry.message !== undefined) {
               this.logWarning(
                 `Item at index ${originalIndex}: "message" is not applicable for recipient-based push and will be ignored`,
-                flags as BaseFlags,
+                flags,
               );
               const sanitized = { ...entry };
               delete sanitized.message;
@@ -272,7 +259,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
               response,
               "Batch push publish failed",
             ),
-            flags as BaseFlags,
+            flags,
             "pushBatchPublish",
           );
         }
@@ -299,9 +286,10 @@ export default class PushBatchPublish extends AblyBaseCommand {
             typeof error?.message === "string"
               ? error.message
               : "Unknown error";
-          const code = error?.code
-            ? ` (code: ${String(error.code as string | number)})`
-            : "";
+          const code =
+            typeof error?.code === "string" || typeof error?.code === "number"
+              ? ` (code: ${error.code})`
+              : "";
           failedDetails.push(`  Failed: ${message}${code}`);
           failedItems.push({ ...item, originalIndex });
         }
@@ -329,7 +317,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
               ) {
                 this.fail(
                   `Item at index ${originalIndex}: message must not include extras.push; use the payload field to specify push content`,
-                  flags as BaseFlags,
+                  flags,
                   "pushBatchPublish",
                 );
               }
@@ -395,7 +383,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
               response,
               "Batch channel publish failed",
             ),
-            flags as BaseFlags,
+            flags,
             "pushBatchPublish",
           );
         }
@@ -456,7 +444,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
         );
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushBatchPublish");
+      this.fail(error, flags, "pushBatchPublish");
     }
   }
 

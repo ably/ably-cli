@@ -55,10 +55,7 @@ export default class ChannelsDelete extends AblyBaseCommand {
         ? { description: flags.description }
         : undefined;
 
-      const result = await channel.deleteMessage(
-        message as Ably.Message,
-        operation,
-      );
+      const result = await channel.deleteMessage(message, operation);
 
       const versionSerial = result.versionSerial;
 

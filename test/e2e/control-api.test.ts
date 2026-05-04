@@ -449,11 +449,7 @@ describe.skipIf(!process.env.E2E_ABLY_ACCESS_TOKEN)(
       });
 
       it("should handle malformed requests", async () => {
-        await expect(
-          controlApi.createApp({ name: "" } as unknown as Parameters<
-            typeof controlApi.createApp
-          >[0]),
-        ).rejects.toThrow();
+        await expect(controlApi.createApp({ name: "" })).rejects.toThrow();
       });
     });
 
