@@ -74,6 +74,7 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
 
   // Agent-skills onboarding writes/removes files on the local filesystem —
   // in web CLI mode these would touch the server's filesystem, not the user's.
+  "init",
   "skills*",
 ];
 
@@ -111,6 +112,7 @@ export const INTERACTIVE_UNSUITABLE_COMMANDS = [
   "autocomplete", // Autocomplete setup is not needed in interactive mode
   "config", // Config editing is not suitable for interactive mode
   "version", // Version is shown at startup and available via --version
+  "init", // One-time setup; not meaningful inside an already-running session
   "skills:install", // Filesystem install; not meaningful inside an interactive session
 ];
 
