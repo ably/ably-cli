@@ -70,6 +70,12 @@ export default class AccountsLogin extends ControlBaseCommand {
       default: false,
       hidden: true,
     }),
+    "skip-completed-status": Flags.boolean({
+      default: false,
+      hidden: true,
+      description:
+        "Suppress the trailing JSON {status:'completed'} record. Used when this command is delegated to from another command (e.g. `init`) so the outer command's terminator is the only one in the stream.",
+    }),
   };
 
   public async run(): Promise<void> {

@@ -883,9 +883,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     // Emit a terminal "completed" line so JSON consumers know the command is done.
+    // Suppressed when the command is being delegated to from another command
+    // (the outer command emits its own terminator).
     const isJsonMode =
       this.argv.includes("--json") || this.argv.includes("--pretty-json");
-    if (isJsonMode) {
+    const suppressCompleted = this.argv.includes("--skip-completed-status");
+    if (isJsonMode && !suppressCompleted) {
       const flags: BaseFlags = this.argv.includes("--pretty-json")
         ? ({ "pretty-json": true } as BaseFlags)
         : ({ json: true } as BaseFlags);

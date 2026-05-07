@@ -349,6 +349,18 @@ describe("init command", () => {
       expect(recordedArgv).toEqual([["--skip-logo"]]);
     });
 
+    it("should reject --target auto combined with explicit targets", async () => {
+      const { error } = await runCommand(
+        ["init", "--target", "auto", "--target", "cursor"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /--target auto cannot be combined with explicit targets/i,
+      );
+    });
+
     it("should pass --json through to accounts:login when delegating", async () => {
       delete process.env.ABLY_ACCESS_TOKEN;
       getMockConfigManager().clearAccounts();
@@ -366,7 +378,9 @@ describe("init command", () => {
         import.meta.url,
       );
 
-      expect(recordedArgv).toEqual([["--skip-logo", "--json"]]);
+      expect(recordedArgv).toEqual([
+        ["--skip-logo", "--json", "--skip-completed-status"],
+      ]);
     });
 
     it("should surface accounts:login failures via this.fail", async () => {

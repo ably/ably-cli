@@ -1,6 +1,8 @@
 import { checkbox } from "@inquirer/prompts";
+import * as readline from "node:readline";
 
 import { formatHeading } from "../utils/output.js";
+import { runInquirerWithReadlineRestore } from "../utils/readline-helper.js";
 import isTestMode from "../utils/test-mode.js";
 import { detectTools } from "./tool-detector.js";
 import { TARGET_CONFIGS } from "./skills-installer.js";
@@ -64,13 +66,27 @@ export async function promptForTargets(
   // cancellation deterministic and avoid the "unsettled top-level await"
   // warning.
   process.once("SIGINT", opts.onSigint);
+
+  // When running inside the `ably interactive` shell, we must restore the
+  // shell's readline state after inquirer takes over raw mode — otherwise
+  // arrow keys emit escape sequences and the prompt never redraws.
+  const interactiveReadline =
+    process.env.ABLY_INTERACTIVE_MODE === "true"
+      ? ((globalThis as Record<string, unknown>)
+          .__ablyInteractiveReadline as readline.Interface | null)
+      : null;
+
   try {
-    return await checkbox<string>({
-      message: "Which editor(s) would you like to configure?",
-      choices,
-      instructions:
-        " (Press <space> to toggle, <a> to toggle all, <enter> to confirm)",
-    });
+    return await runInquirerWithReadlineRestore(
+      () =>
+        checkbox<string>({
+          message: "Which editor(s) would you like to configure?",
+          choices,
+          instructions:
+            " (Press <space> to toggle, <a> to toggle all, <enter> to confirm)",
+        }),
+      interactiveReadline,
+    );
   } catch {
     return null;
   } finally {

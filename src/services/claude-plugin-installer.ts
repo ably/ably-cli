@@ -54,28 +54,31 @@ function isAlreadyInstalledMessage(message: string): boolean {
 
 async function fetchMarketplaceManifest(
   repo: string,
+  ref: string,
 ): Promise<MarketplaceManifest> {
-  const url = `https://raw.githubusercontent.com/${repo}/main/.claude-plugin/marketplace.json`;
+  const url = `https://raw.githubusercontent.com/${repo}/${encodeURIComponent(ref)}/.claude-plugin/marketplace.json`;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch marketplace manifest from ${repo}: ${response.statusText}`,
+      `Failed to fetch marketplace manifest from ${repo}@${ref}: ${response.statusText}`,
     );
   }
   return (await response.json()) as MarketplaceManifest;
 }
 
-export async function installClaudePlugin(): Promise<PluginInstallResult> {
+export async function installClaudePlugin(
+  ref: string,
+): Promise<PluginInstallResult> {
   if (isTestMode() && globalThis.__TEST_MOCKS__?.installClaudePlugin) {
     return (
       globalThis.__TEST_MOCKS__ as {
-        installClaudePlugin: () => Promise<PluginInstallResult>;
+        installClaudePlugin: (ref: string) => Promise<PluginInstallResult>;
       }
-    ).installClaudePlugin();
+    ).installClaudePlugin(ref);
   }
   let manifest: MarketplaceManifest;
   try {
-    manifest = await fetchMarketplaceManifest(SKILLS_REPO);
+    manifest = await fetchMarketplaceManifest(SKILLS_REPO, ref);
   } catch (error) {
     return {
       status: PluginInstallStatus.Error,

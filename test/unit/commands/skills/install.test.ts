@@ -301,6 +301,18 @@ describe("skills:install command", () => {
   });
 
   describe("error handling", () => {
+    it("should reject --target auto combined with explicit targets", async () => {
+      const { error } = await runCommand(
+        ["skills:install", "--target", "auto", "--target", "cursor"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /--target auto cannot be combined with explicit targets/i,
+      );
+    });
+
     it("should fail loudly when no release is published", async () => {
       fetchMock.mockResolvedValue({
         ok: false,

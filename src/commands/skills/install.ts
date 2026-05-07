@@ -37,6 +37,16 @@ export default class SkillsInstall extends AblyBaseCommand {
     const { flags } = await this.parse(SkillsInstall);
     const jsonMode = this.shouldOutputJson(flags);
 
+    if (flags.target.includes("auto") && flags.target.length > 1) {
+      this.fail(
+        new Error(
+          "--target auto cannot be combined with explicit targets. Use either auto-detect or named targets, not both.",
+        ),
+        flags,
+        "skillsInstall",
+      );
+    }
+
     const resolvedTargets = await resolveSkillsTargets({
       flags,
       jsonMode,

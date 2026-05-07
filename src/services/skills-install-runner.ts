@@ -19,7 +19,6 @@ import {
 import {
   DetectedTool,
   InstallMethod,
-  detectTool,
   detectTools as runToolDetection,
 } from "./tool-detector.js";
 
@@ -54,12 +53,15 @@ export async function runSkillsInstall(
   output: SkillsInstallOutput,
 ): Promise<SkillsInstallSummary> {
   const isAutoDetect = flags.target.includes("auto");
-  let detectedTools: DetectedTool[] = [];
+  // Always run full tool detection so the JSON envelope's
+  // `installation.detectedTools` has a stable shape regardless of how the
+  // command was invoked. Cost is one cheap probe per supported tool.
+  const detectedTools: DetectedTool[] = await detectTargets(output, {
+    log: isAutoDetect,
+  });
   let fileCopyTargets: string[];
 
   if (isAutoDetect) {
-    detectedTools = await detectTargets(output);
-
     const found = detectedTools.filter((t) => t.detected);
     if (found.length === 0) {
       output.warning(
@@ -91,21 +93,10 @@ export async function runSkillsInstall(
     fileCopyTargets = SkillsInstaller.resolveTargets(flags.target);
   }
 
-  const claudeRequested =
-    (isAutoDetect &&
-      detectedTools.some((t) => t.id === CLAUDE_CODE && t.detected)) ||
-    (!isAutoDetect && fileCopyTargets.includes(CLAUDE_CODE));
-
-  if (claudeRequested && !isAutoDetect) {
-    // Explicit target: probe just claude — no need to scan every supported
-    // tool when the user has already named their target.
-    const claude = await detectTool(CLAUDE_CODE);
-    if (claude) detectedTools = [claude];
-  }
-
-  const hasClaudePlugin =
-    claudeRequested &&
-    detectedTools.some((t) => t.id === CLAUDE_CODE && t.detected);
+  const hasClaudePlugin = isAutoDetect
+    ? detectedTools.some((t) => t.id === CLAUDE_CODE && t.detected)
+    : fileCopyTargets.includes(CLAUDE_CODE) &&
+      detectedTools.some((t) => t.id === CLAUDE_CODE && t.detected);
 
   if (hasClaudePlugin) {
     fileCopyTargets = fileCopyTargets.filter((id) => id !== CLAUDE_CODE);
@@ -129,7 +120,9 @@ export async function runSkillsInstall(
     }
 
     if (hasClaudePlugin) {
-      const outcome = await installClaudeCodePlugin(output);
+      // `source` is guaranteed set here: the download block above runs
+      // whenever `hasClaudePlugin || fileCopyTargets.length > 0`.
+      const outcome = await installClaudeCodePlugin(output, source!.sha);
       if (
         outcome === PluginInstallStatus.Installed ||
         outcome === PluginInstallStatus.AlreadyInstalled ||
@@ -169,7 +162,7 @@ export async function runSkillsInstall(
           installed: allResults,
           pluginInstalled,
           ...(source && { source }),
-          ...(detectedTools.length > 0 && { detectedTools }),
+          detectedTools,
         },
       });
     } else {
@@ -190,31 +183,33 @@ export async function runSkillsInstall(
 
 async function detectTargets(
   output: SkillsInstallOutput,
+  opts: { log: boolean } = { log: true },
 ): Promise<DetectedTool[]> {
-  output.progress("Scanning for AI coding tools");
+  if (opts.log) output.progress("Scanning for AI coding tools");
 
   const detected = await runToolDetection();
+
+  if (!opts.log || output.jsonMode) return detected;
+
   const found = detected.filter((t) => t.detected);
   const notFound = detected.filter((t) => !t.detected);
 
-  if (!output.jsonMode) {
+  output.log(
+    `\n${formatLabel("Detected")} ${found.length} AI coding tool${found.length === 1 ? "" : "s"}`,
+  );
+  for (const tool of found) {
+    const method =
+      tool.installMethod === InstallMethod.Plugin
+        ? "plugin install"
+        : "file copy";
     output.log(
-      `\n${formatLabel("Detected")} ${found.length} AI coding tool${found.length === 1 ? "" : "s"}`,
+      `  ${chalk.green("●")} ${formatResource(tool.name.padEnd(15))} ${chalk.dim(`(${tool.evidence})`.padEnd(28))} → ${method}`,
     );
-    for (const tool of found) {
-      const method =
-        tool.installMethod === InstallMethod.Plugin
-          ? "plugin install"
-          : "file copy";
-      output.log(
-        `  ${chalk.green("●")} ${formatResource(tool.name.padEnd(15))} ${chalk.dim(`(${tool.evidence})`.padEnd(28))} → ${method}`,
-      );
-    }
-    if (notFound.length > 0) {
-      output.log(
-        chalk.dim(`\nNot found: ${notFound.map((t) => t.name).join(", ")}`),
-      );
-    }
+  }
+  if (notFound.length > 0) {
+    output.log(
+      chalk.dim(`\nNot found: ${notFound.map((t) => t.name).join(", ")}`),
+    );
   }
 
   return detected;
@@ -226,21 +221,19 @@ async function downloadSkills(
 ): Promise<{ skills: DownloadedSkill[]; source: SkillsSource }> {
   output.progress("Downloading skills from GitHub");
   const result = await downloader.download();
-  const shortCommit = result.source.sha.slice(0, 7);
-  const shortTarball = result.source.tarballSha256.slice(0, 12);
   output.success(
-    `Verified attestation for ${result.source.repo}@${result.source.tag} (commit ${shortCommit}, tarball sha256:${shortTarball}).`,
+    `Downloaded ${result.skills.length} skills (verified ${result.source.repo}@${result.source.tag}).`,
   );
-  output.success(`Downloaded ${result.skills.length} skills.`);
   return result;
 }
 
 async function installClaudeCodePlugin(
   output: SkillsInstallOutput,
+  ref: string,
 ): Promise<PluginInstallStatus> {
   const claude = "Claude Code".padEnd(12);
   output.progress(`${claude} → installing via plugin system`);
-  const result = await installClaudePlugin();
+  const result = await installClaudePlugin(ref);
 
   switch (result.status) {
     case PluginInstallStatus.Installed: {

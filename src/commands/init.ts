@@ -41,6 +41,16 @@ export default class Init extends AblyBaseCommand {
     const { flags } = await this.parse(Init);
     const jsonMode = this.shouldOutputJson(flags);
 
+    if (flags.target.includes("auto") && flags.target.length > 1) {
+      this.fail(
+        new Error(
+          "--target auto cannot be combined with explicit targets. Use either auto-detect or named targets, not both.",
+        ),
+        flags,
+        "init",
+      );
+    }
+
     if (!jsonMode) {
       displayLogo(this.log.bind(this));
     }
@@ -55,7 +65,7 @@ export default class Init extends AblyBaseCommand {
       exit: () => this.exit(130),
     });
     if (resolvedTargets === null) {
-      this.displayGettingStarted();
+      if (!jsonMode) this.displayGettingStarted();
       return;
     }
 
@@ -138,6 +148,11 @@ export default class Init extends AblyBaseCommand {
     const loginArgv: string[] = ["--skip-logo"];
     if (flags.json) loginArgv.push("--json");
     else if (flags["pretty-json"]) loginArgv.push("--pretty-json");
+    // Suppress accounts:login's terminal {status:"completed"} JSON line so
+    // init's own terminator in finally() is the only one in the stream.
+    if (flags.json || flags["pretty-json"]) {
+      loginArgv.push("--skip-completed-status");
+    }
 
     // Test hook: intercept the accounts:login delegation so unit tests can
     // verify init's unauthenticated branch without spinning up the real
