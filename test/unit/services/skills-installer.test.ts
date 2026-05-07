@@ -125,7 +125,7 @@ describe("SkillsInstaller", () => {
 
         expect(results).toHaveLength(3);
 
-        for (const target of [".claude", ".cursor", ".vscode"]) {
+        for (const target of [".claude", ".cursor", ".copilot"]) {
           expect(
             fs.existsSync(
               path.join(

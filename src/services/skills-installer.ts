@@ -36,11 +36,17 @@ export const TARGET_CONFIGS: Record<string, TargetConfig> = {
   },
   vscode: {
     name: "VS Code",
-    relativeDir: path.join(".vscode", "skills"),
+    // Per code.visualstudio.com/docs/copilot/customization/agent-skills,
+    // Copilot loads personal skills from ~/.copilot/skills/. ~/.vscode/ is
+    // VS Code's extension dir, not a skills root.
+    relativeDir: path.join(".copilot", "skills"),
   },
   windsurf: {
     name: "Windsurf",
-    relativeDir: path.join(".windsurf", "skills"),
+    // Per docs.windsurf.com/windsurf/cascade/skills, Cascade loads global
+    // skills from ~/.codeium/windsurf/skills/, matching the rest of
+    // Codeium's per-user config tree (memories, global_workflows).
+    relativeDir: path.join(".codeium", "windsurf", "skills"),
   },
 };
 
