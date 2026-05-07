@@ -5,7 +5,11 @@ import {
   installClaudePlugin,
   PluginInstallStatus,
 } from "./claude-plugin-installer.js";
-import { DownloadedSkill, SkillsDownloader } from "./skills-downloader.js";
+import {
+  DownloadedSkill,
+  SkillsDownloader,
+  SkillsSource,
+} from "./skills-downloader.js";
 import {
   CLAUDE_CODE,
   InstallResult,
@@ -42,6 +46,7 @@ export interface SkillsInstallSummary {
   results: InstallResult[];
   pluginInstalled: boolean;
   detectedTools: DetectedTool[];
+  source?: SkillsSource;
 }
 
 export async function runSkillsInstall(
@@ -108,6 +113,7 @@ export async function runSkillsInstall(
 
   const downloader = new SkillsDownloader();
   let skills: DownloadedSkill[] = [];
+  let source: SkillsSource | undefined;
   const allResults: InstallResult[] = [];
   let pluginInstalled = false;
 
@@ -117,7 +123,9 @@ export async function runSkillsInstall(
     }
 
     if (fileCopyTargets.length > 0 || hasClaudePlugin) {
-      skills = await downloadSkills(downloader, output);
+      const downloaded = await downloadSkills(downloader, output);
+      skills = downloaded.skills;
+      source = downloaded.source;
     }
 
     if (hasClaudePlugin) {
@@ -160,6 +168,7 @@ export async function runSkillsInstall(
           })),
           installed: allResults,
           pluginInstalled,
+          ...(source && { source }),
           ...(detectedTools.length > 0 && { detectedTools }),
         },
       });
@@ -172,6 +181,7 @@ export async function runSkillsInstall(
       results: allResults,
       pluginInstalled,
       detectedTools,
+      source,
     };
   } finally {
     downloader.cleanup();
@@ -213,11 +223,16 @@ async function detectTargets(
 async function downloadSkills(
   downloader: SkillsDownloader,
   output: SkillsInstallOutput,
-): Promise<DownloadedSkill[]> {
+): Promise<{ skills: DownloadedSkill[]; source: SkillsSource }> {
   output.progress("Downloading skills from GitHub");
-  const skills = await downloader.download();
-  output.success(`Downloaded ${skills.length} skills.`);
-  return skills;
+  const result = await downloader.download();
+  const shortCommit = result.source.sha.slice(0, 7);
+  const shortTarball = result.source.tarballSha256.slice(0, 12);
+  output.success(
+    `Verified attestation for ${result.source.repo}@${result.source.tag} (commit ${shortCommit}, tarball sha256:${shortTarball}).`,
+  );
+  output.success(`Downloaded ${result.skills.length} skills.`);
+  return result;
 }
 
 async function installClaudeCodePlugin(

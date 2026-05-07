@@ -3,8 +3,8 @@ import { runCommand } from "@oclif/test";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { Readable } from "node:stream";
 import { create as tarCreate } from "tar";
+
 import {
   type DetectedTool,
   InstallMethod,
@@ -59,10 +59,11 @@ async function buildSkillsTarball(...names: string[]): Promise<Buffer> {
   const stagingDir = fs.mkdtempSync(
     path.join(os.tmpdir(), "init-skills-stage-"),
   );
-  const repoDir = path.join(stagingDir, "agent-skills-main");
-  fs.mkdirSync(repoDir, { recursive: true });
+  const repoDir = path.join(stagingDir, "agent-skills-v0.1.0");
+  const skillsRoot = path.join(repoDir, "skills");
+  fs.mkdirSync(skillsRoot, { recursive: true });
   for (const name of names) {
-    const skillDir = path.join(repoDir, name);
+    const skillDir = path.join(skillsRoot, name);
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(
       path.join(skillDir, "SKILL.md"),
@@ -70,7 +71,7 @@ async function buildSkillsTarball(...names: string[]): Promise<Buffer> {
     );
   }
   const stream = tarCreate({ gzip: true, cwd: stagingDir }, [
-    "agent-skills-main",
+    "agent-skills-v0.1.0",
   ]);
   const chunks: Buffer[] = [];
   for await (const chunk of stream as unknown as AsyncIterable<Buffer>) {
@@ -80,15 +81,70 @@ async function buildSkillsTarball(...names: string[]): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
+const TEST_RELEASE = {
+  tag: "v0.1.0",
+  name: "v0.1.0",
+  sha: "abc123def456789012345678901234567890abcd",
+};
+
 function mockFetchWithTarball(buffer: Buffer): void {
-  fetchMock.mockImplementation(
-    async () =>
-      ({
+  // Default attestation verification to "passes". Per-test overrides can set
+  // __TEST_MOCKS__.verifyAttestation to a function that throws to exercise
+  // the failure path (downloader rejects, command surfaces a clear error).
+  globalThis.__TEST_MOCKS__ = {
+    ...globalThis.__TEST_MOCKS__,
+    verifyAttestation: (sha256: string) => ({
+      tarballSha256: sha256,
+      signerIdentity: `https://github.com/ably/agent-skills/.github/workflows/release.yml@refs/tags/${TEST_RELEASE.tag}`,
+    }),
+  };
+  fetchMock.mockImplementation(async (input: string | URL | Request) => {
+    const url = typeof input === "string" ? input : input.toString();
+    if (url.includes("/releases/latest")) {
+      return {
         ok: true,
         statusText: "OK",
-        body: Readable.toWeb(Readable.from(buffer)),
-      }) as unknown as Response,
-  );
+        json: async () => ({
+          tag_name: TEST_RELEASE.tag,
+          name: TEST_RELEASE.name,
+        }),
+      } as unknown as Response;
+    }
+    if (url.includes("/git/refs/tags/")) {
+      return {
+        ok: true,
+        statusText: "OK",
+        json: async () => ({
+          object: { sha: TEST_RELEASE.sha, type: "commit", url: "" },
+        }),
+      } as unknown as Response;
+    }
+    if (url.includes("/attestations/sha256:")) {
+      return {
+        ok: true,
+        statusText: "OK",
+        json: async () => ({
+          attestations: [{ bundle: { mediaType: "fake-bundle" } }],
+        }),
+      } as unknown as Response;
+    }
+    if (url.includes("/releases/download/")) {
+      return {
+        ok: true,
+        statusText: "OK",
+        arrayBuffer: async () =>
+          buffer.buffer.slice(
+            buffer.byteOffset,
+            buffer.byteOffset + buffer.byteLength,
+          ),
+      } as unknown as Response;
+    }
+    return {
+      ok: false,
+      status: 404,
+      statusText: `Unexpected URL: ${url}`,
+    } as unknown as Response;
+  });
 }
 
 describe("init command", () => {
@@ -159,6 +215,8 @@ describe("init command", () => {
       delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>)
         .checkboxResponse;
       delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>).runLogin;
+      delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>)
+        .verifyAttestation;
     }
     vi.restoreAllMocks();
   });
@@ -177,7 +235,11 @@ describe("init command", () => {
       );
 
       expect(error).toBeUndefined();
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      // 3 fetches: /releases/latest, /git/refs/tags/<tag>, then the release
+      // asset. Attestation verification is short-circuited by the
+      // __TEST_MOCKS__.verifyAttestation hook, so the /attestations/sha256:
+      // endpoint isn't hit in tests.
+      expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(
         fs.existsSync(
           path.join(tempDir, ".cursor", "skills", "ably-pubsub", "SKILL.md"),
@@ -219,9 +281,10 @@ describe("init command", () => {
   });
 
   describe("error handling", () => {
-    it("should delegate to skills:install and surface download failures", async () => {
+    it("should delegate to skills:install and surface release-resolution failures", async () => {
       fetchMock.mockResolvedValue({
         ok: false,
+        status: 404,
         statusText: "Not Found",
       } as Response);
 
@@ -231,7 +294,9 @@ describe("init command", () => {
       );
 
       expect(error).toBeDefined();
-      expect(error?.message).toMatch(/Failed to download skills|Not Found/i);
+      expect(error?.message).toMatch(
+        /Failed to resolve latest release|Not Found/i,
+      );
     });
   });
 
@@ -279,7 +344,8 @@ describe("init command", () => {
       // The "Authenticate with Ably" heading is only printed by the unauth branch
       // of runAuth(). Its presence proves we delegated rather than skipping.
       expect(stdout).toMatch(/Authenticate with Ably/);
-      // The login runner was invoked exactly once, with no extra flags.
+      // The login runner was invoked exactly once with --skip-logo so the
+      // Ably ASCII logo isn't printed twice (init prints it).
       expect(recordedArgv).toEqual([["--skip-logo"]]);
     });
 

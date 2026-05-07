@@ -6,12 +6,48 @@ import { createGunzip } from "node:zlib";
 import { Readable } from "node:stream";
 import { extract } from "tar";
 
-export const SKILLS_REPO = "ably/agent-skills";
+import {
+  ATTESTATION_REPO,
+  ATTESTATION_WORKFLOW_PATH,
+  verifyTarballAttestation,
+} from "./skills-attestation-verifier.js";
+
+export const SKILLS_REPO = ATTESTATION_REPO;
 
 export interface DownloadedSkill {
   name: string;
   directory: string;
   description?: string;
+}
+
+export interface SkillsSource {
+  repo: string;
+  tag: string;
+  name: string;
+  /** Commit SHA of the released tag — for human auditability. */
+  sha: string;
+  /** SHA-256 of the verified release tarball, hex-encoded. */
+  tarballSha256: string;
+  /** Cert SAN URI of the workflow that produced the attestation. */
+  attestedBy: string;
+}
+
+export interface SkillsDownloadResult {
+  skills: DownloadedSkill[];
+  source: SkillsSource;
+}
+
+interface ReleaseInfo {
+  tag_name: string;
+  name: string;
+}
+
+interface TagRef {
+  object: { sha: string; type: string; url: string };
+}
+
+interface TagObject {
+  object: { sha: string };
 }
 
 interface SkillFrontmatter {
@@ -46,60 +82,148 @@ function parseSkillFrontmatter(content: string): SkillFrontmatter {
   return result;
 }
 
+async function fetchJson<T>(url: string, errorPrefix: string): Promise<T> {
+  const response = await fetch(url, {
+    headers: { Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `${errorPrefix}: ${response.status} ${response.statusText}`,
+    );
+  }
+  return (await response.json()) as T;
+}
+
+async function resolveLatestRelease(
+  repo: string,
+): Promise<{ tag: string; name: string; sha: string }> {
+  const release = await fetchJson<ReleaseInfo>(
+    `https://api.github.com/repos/${repo}/releases/latest`,
+    `Failed to resolve latest release of ${repo} — please retry`,
+  );
+
+  // Resolve the tag ref → commit SHA. Annotated tags need a second hop.
+  const tagRef = await fetchJson<TagRef>(
+    `https://api.github.com/repos/${repo}/git/refs/tags/${encodeURIComponent(release.tag_name)}`,
+    `Failed to resolve tag ${release.tag_name} of ${repo}`,
+  );
+
+  let sha = tagRef.object.sha;
+  if (tagRef.object.type === "tag") {
+    const tagObject = await fetchJson<TagObject>(
+      tagRef.object.url,
+      `Failed to dereference tag ${release.tag_name} of ${repo}`,
+    );
+    sha = tagObject.object.sha;
+  }
+
+  return {
+    tag: release.tag_name,
+    name: release.name || release.tag_name,
+    sha,
+  };
+}
+
+/**
+ * Build the release-asset URL produced by `ably/agent-skills`'s release
+ * workflow. The asset name format `<repo-name>-<tag>.tar.gz` is fixed in
+ * `.github/workflows/release.yml` (ably/agent-skills) — keep these in sync.
+ */
+function releaseAssetUrl(repo: string, tag: string): string {
+  const repoName = repo.split("/")[1]!;
+  return `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${repoName}-${tag}.tar.gz`;
+}
+
+async function fetchTarballAsBuffer(url: string, tag: string): Promise<Buffer> {
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Failed to download skills release asset for ${SKILLS_REPO}@${tag}: ${response.status} ${response.statusText}. ` +
+        `The release may be missing the attested tarball asset.`,
+    );
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
 export class SkillsDownloader {
   private tempDir: string | null = null;
 
-  async download(): Promise<DownloadedSkill[]> {
-    const tarballUrl = `https://github.com/${SKILLS_REPO}/archive/refs/heads/main.tar.gz`;
+  async download(): Promise<SkillsDownloadResult> {
+    const release = await resolveLatestRelease(SKILLS_REPO);
+
+    // Always fetch from the release asset URL — that's the file the SLSA
+    // attestation is signed against. The auto-generated /archive/refs/tags/
+    // tarball is not attested and must be ignored.
+    const tarballUrl = releaseAssetUrl(SKILLS_REPO, release.tag);
+    const tarball = await fetchTarballAsBuffer(tarballUrl, release.tag);
+
+    // Verify the SLSA build-provenance attestation BEFORE extracting. If
+    // verification fails (no bundle, wrong signer, signature mismatch, etc.),
+    // we throw and never touch the tarball contents on disk.
+    const verification = await verifyTarballAttestation(tarball, {
+      repo: SKILLS_REPO,
+      workflowPath: ATTESTATION_WORKFLOW_PATH,
+    });
+
     this.tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ably-skills-"));
 
-    const response = await fetch(tarballUrl, {
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (!response.ok) {
-      throw new Error(
-        `Failed to download skills from ${SKILLS_REPO}: ${response.statusText}`,
-      );
-    }
-
-    if (!response.body) {
-      throw new Error("Empty response body from GitHub");
-    }
-
     await pipeline(
-      Readable.fromWeb(
-        response.body as import("node:stream/web").ReadableStream,
-      ),
+      Readable.from(tarball),
       createGunzip(),
       extract({ cwd: this.tempDir, strip: 1 }),
     );
 
-    return this.findSkills(this.tempDir);
+    const source: SkillsSource = {
+      repo: SKILLS_REPO,
+      tag: release.tag,
+      name: release.name,
+      sha: release.sha,
+      tarballSha256: verification.tarballSha256,
+      attestedBy: verification.signerIdentity,
+    };
+
+    const skills = this.findSkills(this.tempDir, source);
+    return { skills, source };
   }
 
-  private findSkills(baseDir: string): DownloadedSkill[] {
+  private findSkills(baseDir: string, source: SkillsSource): DownloadedSkill[] {
+    const skillsDir = path.join(baseDir, "skills");
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(skillsDir, { withFileTypes: true });
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") {
+        throw new Error(
+          `Skills directory missing in ${source.repo}@${source.tag}`,
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+
     const skills: DownloadedSkill[] = [];
-    this.walkForSkills(baseDir, skills);
-    return skills;
-  }
-
-  private walkForSkills(dir: string, skills: DownloadedSkill[]): void {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
 
-      const fullPath = path.join(dir, entry.name);
+      const fullPath = path.join(skillsDir, entry.name);
       const skillFile = path.join(fullPath, "SKILL.md");
-
-      if (fs.existsSync(skillFile)) {
-        const content = fs.readFileSync(skillFile, "utf8");
-        const { description } = parseSkillFrontmatter(content);
-        skills.push({ name: entry.name, directory: fullPath, description });
-      } else {
-        this.walkForSkills(fullPath, skills);
+      let content: string;
+      try {
+        content = fs.readFileSync(skillFile, "utf8");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+        throw error;
       }
+      const { description } = parseSkillFrontmatter(content);
+      skills.push({ name: entry.name, directory: fullPath, description });
     }
+
+    return skills;
   }
 
   cleanup(): void {
