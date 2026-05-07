@@ -59,13 +59,6 @@ const ALL_UNDETECTED: DetectedTool[] = [
     evidence: "",
     installMethod: "file-copy",
   },
-  {
-    id: "zed",
-    name: "Zed",
-    detected: false,
-    evidence: "",
-    installMethod: "file-copy",
-  },
 ];
 
 async function buildSkillsTarball(...names: string[]): Promise<Buffer> {
@@ -180,7 +173,6 @@ describe("skills:install command", () => {
       expect(stdout).toContain("auto");
       expect(stdout).toContain("vscode");
       expect(stdout).toContain("windsurf");
-      expect(stdout).toContain("zed");
     });
   });
 

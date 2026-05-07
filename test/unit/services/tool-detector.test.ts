@@ -46,7 +46,7 @@ describe("tool-detector", () => {
 
     const results = await detectTools();
 
-    expect(results.length).toBeGreaterThanOrEqual(5);
+    expect(results.length).toBeGreaterThanOrEqual(4);
     for (const tool of results) {
       expect(tool.detected).toBe(false);
       expect(tool.evidence).toBe("");

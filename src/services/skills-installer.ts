@@ -42,10 +42,6 @@ export const TARGET_CONFIGS: Record<string, TargetConfig> = {
     name: "Windsurf",
     relativeDir: path.join(".windsurf", "skills"),
   },
-  zed: {
-    name: "Zed",
-    relativeDir: path.join(".config", "zed", "skills"),
-  },
 };
 
 /**
