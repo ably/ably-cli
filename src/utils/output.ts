@@ -202,16 +202,19 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     }
 
     if (msg.annotations && Object.keys(msg.annotations.summary).length > 0) {
-      lines.push(`${formatLabel("Annotations")}`);
+      lines.push(
+        `${formatLabel("Annotations")}`,
+        `  ${formatLabel("Summary")}`,
+      );
       for (const [annotationType, value] of Object.entries(
         msg.annotations.summary,
       )) {
         const formattedValue = formatMessageData(value)
           .split("\n")
-          .map((line) => `    ${line}`)
+          .map((line) => `      ${line}`)
           .join("\n");
 
-        lines.push(`  ${formatLabel(annotationType)}`, formattedValue);
+        lines.push(`    ${formatLabel(annotationType)}`, formattedValue);
       }
     }
 

@@ -240,7 +240,14 @@ describe("channels:get-message command", () => {
       );
 
       expect(stdout).toContain("Annotations");
+      expect(stdout).toContain("Summary");
       expect(stdout).toContain("reaction:distinct.v1");
+      expect(stdout.indexOf("Annotations")).toBeLessThan(
+        stdout.indexOf("Summary"),
+      );
+      expect(stdout.indexOf("Summary")).toBeLessThan(
+        stdout.indexOf("reaction:distinct.v1"),
+      );
     });
 
     it("renders message.delete action when retrieving a deleted message", async () => {
