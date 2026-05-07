@@ -113,7 +113,6 @@ export const INTERACTIVE_UNSUITABLE_COMMANDS = [
   "config", // Config editing is not suitable for interactive mode
   "version", // Version is shown at startup and available via --version
   "init", // One-time setup; not meaningful inside an already-running session
-  "skills:install", // Filesystem install; not meaningful inside an interactive session
 ];
 
 // List of commands that should not show account/app info
