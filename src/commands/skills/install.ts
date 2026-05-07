@@ -7,6 +7,7 @@ import {
   SkillsInstallOutput,
 } from "../../services/skills-install-runner.js";
 import { TARGET_CONFIGS } from "../../services/skills-installer.js";
+import { resolveSkillsTargets } from "../../services/skills-target-prompt.js";
 import { BaseFlags } from "../../types/cli.js";
 
 export default class SkillsInstall extends AblyBaseCommand {
@@ -16,6 +17,8 @@ export default class SkillsInstall extends AblyBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> --target claude-code",
+    "<%= config.bin %> <%= command.id %> --target cursor --target windsurf",
+    "<%= config.bin %> <%= command.id %> --target auto",
     "<%= config.bin %> <%= command.id %> --json",
   ];
 
@@ -32,8 +35,22 @@ export default class SkillsInstall extends AblyBaseCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(SkillsInstall);
+    const jsonMode = this.shouldOutputJson(flags);
+
+    const resolvedTargets = await resolveSkillsTargets({
+      flags,
+      jsonMode,
+      log: this.log.bind(this),
+      warn: (msg) => this.logWarning(msg, flags),
+      exit: () => this.exit(130),
+    });
+    if (resolvedTargets === null) return;
+
     try {
-      await runSkillsInstall(flags, this.buildInstallOutput(flags));
+      await runSkillsInstall(
+        { target: resolvedTargets },
+        this.buildInstallOutput(flags),
+      );
     } catch (error) {
       this.fail(error, flags, "skillsInstall");
     }

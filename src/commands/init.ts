@@ -1,5 +1,4 @@
 import { Flags } from "@oclif/core";
-import { checkbox } from "@inquirer/prompts";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../base-command.js";
@@ -9,7 +8,7 @@ import {
   SkillsInstallOutput,
 } from "../services/skills-install-runner.js";
 import { TARGET_CONFIGS } from "../services/skills-installer.js";
-import { detectTools } from "../services/tool-detector.js";
+import { resolveSkillsTargets } from "../services/skills-target-prompt.js";
 import { BaseFlags } from "../types/cli.js";
 import { displayLogo } from "../utils/logo.js";
 import { formatHeading, formatResource } from "../utils/output.js";
@@ -22,6 +21,8 @@ export default class Init extends AblyBaseCommand {
   static override examples = [
     "<%= config.bin %> <%= command.id %>",
     "<%= config.bin %> <%= command.id %> --target claude-code",
+    "<%= config.bin %> <%= command.id %> --target cursor --target windsurf",
+    "<%= config.bin %> <%= command.id %> --target auto",
     "<%= config.bin %> <%= command.id %> --json",
   ];
 
@@ -46,26 +47,16 @@ export default class Init extends AblyBaseCommand {
 
     await this.runAuth(flags);
 
-    const isAutoDetect = flags.target.includes("auto");
-    const isInteractive =
-      !jsonMode && Boolean(process.stdout.isTTY && process.stdin.isTTY);
-
-    let resolvedTargets = flags.target;
-    if (isAutoDetect && isInteractive) {
-      const picked = await this.promptForTargets(flags);
-      if (picked === null) {
-        this.displayGettingStarted();
-        return;
-      }
-      if (picked.length === 0) {
-        this.logWarning(
-          "No editors selected — skipping skill installation.",
-          flags,
-        );
-        this.displayGettingStarted();
-        return;
-      }
-      resolvedTargets = picked;
+    const resolvedTargets = await resolveSkillsTargets({
+      flags,
+      jsonMode,
+      log: this.log.bind(this),
+      warn: (msg) => this.logWarning(msg, flags),
+      exit: () => this.exit(130),
+    });
+    if (resolvedTargets === null) {
+      this.displayGettingStarted();
+      return;
     }
 
     try {
@@ -120,60 +111,6 @@ export default class Init extends AblyBaseCommand {
     this.log("Docs: https://ably.com/docs/cli\n");
   }
 
-  private async promptForTargets(flags: BaseFlags): Promise<string[] | null> {
-    this.log(`\n${formatHeading("Detecting AI coding tools")}\n`);
-
-    const detected = await detectTools();
-    const choices = detected
-      .filter((t) => t.detected && t.id in TARGET_CONFIGS)
-      .map((t) => ({
-        name: t.name,
-        value: t.id,
-        checked: true,
-      }));
-
-    if (choices.length === 0) {
-      this.logWarning(
-        "No AI coding tools detected. Use --target to specify editors manually.",
-        flags,
-      );
-      return null;
-    }
-
-    // Test hook: short-circuit the interactive prompt so unit tests don't have
-    // to drive a real TTY. Tests set globalThis.__TEST_MOCKS__.checkboxResponse
-    // to either an array (the picked targets) or "throw" (simulate cancel).
-    if (
-      isTestMode() &&
-      globalThis.__TEST_MOCKS__?.checkboxResponse !== undefined
-    ) {
-      const response = (
-        globalThis.__TEST_MOCKS__ as { checkboxResponse: string[] | "throw" }
-      ).checkboxResponse;
-      return response === "throw" ? null : response;
-    }
-
-    // Take ownership of SIGINT during the prompt: inquirer's signal-exit
-    // handler rejects the prompt promise, but Node still tears down the
-    // top-level await before our catch runs. By exiting (130) here we make
-    // cancellation deterministic and avoid the "unsettled top-level await"
-    // warning.
-    const onSigint = () => this.exit(130);
-    process.once("SIGINT", onSigint);
-    try {
-      return await checkbox<string>({
-        message: "Which editor(s) would you like to configure?",
-        choices,
-        instructions:
-          " (Press <space> to toggle, <a> to toggle all, <enter> to confirm)",
-      });
-    } catch {
-      return null;
-    } finally {
-      process.removeListener("SIGINT", onSigint);
-    }
-  }
-
   private async runAuth(flags: BaseFlags): Promise<void> {
     if (this.hasControlApiAccess()) {
       if (!this.shouldOutputJson(flags)) {
@@ -196,7 +133,9 @@ export default class Init extends AblyBaseCommand {
     // accounts:login handles JSON mode natively — emitting an
     // awaiting_authorization event with userCode + verificationUri so
     // headless callers can render the device-flow prompt themselves.
-    const loginArgv: string[] = [];
+    // We pass --skip-logo to avoid printing the Ably ASCII art twice
+    // (init already printed it above).
+    const loginArgv: string[] = ["--skip-logo"];
     if (flags.json) loginArgv.push("--json");
     else if (flags["pretty-json"]) loginArgv.push("--pretty-json");
 

@@ -280,7 +280,7 @@ describe("init command", () => {
       // of runAuth(). Its presence proves we delegated rather than skipping.
       expect(stdout).toMatch(/Authenticate with Ably/);
       // The login runner was invoked exactly once, with no extra flags.
-      expect(recordedArgv).toEqual([[]]);
+      expect(recordedArgv).toEqual([["--skip-logo"]]);
     });
 
     it("should pass --json through to accounts:login when delegating", async () => {
@@ -300,7 +300,7 @@ describe("init command", () => {
         import.meta.url,
       );
 
-      expect(recordedArgv).toEqual([["--json"]]);
+      expect(recordedArgv).toEqual([["--skip-logo", "--json"]]);
     });
 
     it("should surface accounts:login failures via this.fail", async () => {
