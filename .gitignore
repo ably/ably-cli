@@ -60,3 +60,6 @@ test/e2e/web-cli/*.log
 
 # Environment files with secrets
 .env
+
+# Behavior testing reports
+CLAUDE-BEHAVIOR-TESTING/
