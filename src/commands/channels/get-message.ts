@@ -92,9 +92,18 @@ export default class ChannelsGetMessage extends AblyBaseCommand {
           {
             message: {
               ...message,
-              timestamp: message.timestamp
-                ? new Date(message.timestamp).toISOString()
-                : undefined,
+              // Stringify action for predictable JSON typing across commands
+              // (matches `channels subscribe`'s explicit normalisation).
+              action:
+                message.action === undefined
+                  ? undefined
+                  : String(message.action),
+              // Nullish-aware: a legitimate epoch-zero timestamp must not be
+              // dropped to undefined.
+              timestamp:
+                message.timestamp == null
+                  ? undefined
+                  : new Date(message.timestamp).toISOString(),
             },
           },
           flags,

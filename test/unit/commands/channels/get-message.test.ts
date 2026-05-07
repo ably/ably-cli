@@ -106,6 +106,45 @@ describe("channels:get-message command", () => {
       expect(result!.message.timestamp).toBe("2023-11-14T22:13:20.000Z");
     });
 
+    it("preserves a legitimate epoch-zero timestamp (does not drop to undefined)", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      channel.getMessage.mockResolvedValue({
+        id: "epoch-id",
+        serial: "epoch-serial",
+        timestamp: 0,
+        action: "message.create",
+        data: "epoch-data",
+      });
+
+      const { stdout } = await runCommand(
+        [COMMAND, "test-channel", "epoch-serial", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "result") as
+        | { message: { timestamp: string } }
+        | undefined;
+
+      expect(result!.message.timestamp).toBe("1970-01-01T00:00:00.000Z");
+    });
+
+    it("stringifies `action` in JSON for predictable typing", async () => {
+      const { stdout } = await runCommand(
+        [COMMAND, "test-channel", "serial-001", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const result = records.find((r) => r.type === "result") as
+        | { message: { action: string } }
+        | undefined;
+
+      expect(typeof result!.message.action).toBe("string");
+      expect(result!.message.action).toBe("message.update");
+    });
+
     it("preserves nested `version` block verbatim", async () => {
       const { stdout } = await runCommand(
         [COMMAND, "test-channel", "serial-001", "--json"],
