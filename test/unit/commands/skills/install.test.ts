@@ -5,8 +5,14 @@ import path from "node:path";
 import os from "node:os";
 import { Readable } from "node:stream";
 import { create as tarCreate } from "tar";
-import type { DetectedTool } from "../../../../src/services/tool-detector.js";
-import type { PluginInstallResult } from "../../../../src/services/claude-plugin-installer.js";
+import {
+  type DetectedTool,
+  InstallMethod,
+} from "../../../../src/services/tool-detector.js";
+import {
+  type PluginInstallResult,
+  PluginInstallStatus,
+} from "../../../../src/services/claude-plugin-installer.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -23,7 +29,7 @@ globalThis.fetch = fetchMock as typeof fetch;
 const detectorState: { tools: DetectedTool[] } = { tools: [] };
 const pluginInstallState: { result: PluginInstallResult } = {
   result: {
-    status: "installed",
+    status: PluginInstallStatus.Installed,
     pluginsInstalled: [],
     pluginsAlreadyInstalled: [],
     pluginsFailed: [],
@@ -36,28 +42,28 @@ const ALL_UNDETECTED: DetectedTool[] = [
     name: "Claude Code",
     detected: false,
     evidence: "",
-    installMethod: "plugin",
+    installMethod: InstallMethod.Plugin,
   },
   {
     id: "cursor",
     name: "Cursor",
     detected: false,
     evidence: "",
-    installMethod: "file-copy",
+    installMethod: InstallMethod.FileCopy,
   },
   {
     id: "vscode",
     name: "VS Code",
     detected: false,
     evidence: "",
-    installMethod: "file-copy",
+    installMethod: InstallMethod.FileCopy,
   },
   {
     id: "windsurf",
     name: "Windsurf",
     detected: false,
     evidence: "",
-    installMethod: "file-copy",
+    installMethod: InstallMethod.FileCopy,
   },
 ];
 
@@ -123,7 +129,7 @@ describe("skills:install command", () => {
     // Wire test injection hooks read by tool-detector / claude-plugin-installer.
     setDetected(ALL_UNDETECTED);
     setPluginResult({
-      status: "installed",
+      status: PluginInstallStatus.Installed,
       pluginsInstalled: ["ably-realtime"],
       pluginsAlreadyInstalled: [],
       pluginsFailed: [],
@@ -302,7 +308,7 @@ describe("skills:install command", () => {
           name: "Cursor",
           detected: true,
           evidence: "config: ~/.cursor",
-          installMethod: "file-copy",
+          installMethod: InstallMethod.FileCopy,
         },
       ]);
       mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
@@ -326,12 +332,12 @@ describe("skills:install command", () => {
           name: "Claude Code",
           detected: true,
           evidence: "cli: claude",
-          installMethod: "plugin",
+          installMethod: InstallMethod.Plugin,
         },
         ...ALL_UNDETECTED.filter((t) => t.id !== "claude-code"),
       ]);
       setPluginResult({
-        status: "installed",
+        status: PluginInstallStatus.Installed,
         pluginsInstalled: ["ably-realtime"],
         pluginsAlreadyInstalled: [],
         pluginsFailed: [],
@@ -375,12 +381,12 @@ describe("skills:install command", () => {
           name: "Claude Code",
           detected: true,
           evidence: "cli: claude",
-          installMethod: "plugin",
+          installMethod: InstallMethod.Plugin,
         },
         ...ALL_UNDETECTED.filter((t) => t.id !== "claude-code"),
       ]);
       setPluginResult({
-        status: "error",
+        status: PluginInstallStatus.Error,
         pluginsInstalled: [],
         pluginsAlreadyInstalled: [],
         pluginsFailed: [],
@@ -429,12 +435,12 @@ describe("skills:install command", () => {
           name: "Claude Code",
           detected: true,
           evidence: "cli: claude",
-          installMethod: "plugin",
+          installMethod: InstallMethod.Plugin,
         },
         ...ALL_UNDETECTED.filter((t) => t.id !== "claude-code"),
       ]);
       setPluginResult({
-        status: "partial",
+        status: PluginInstallStatus.Partial,
         pluginsInstalled: ["ably-realtime"],
         pluginsAlreadyInstalled: [],
         pluginsFailed: [{ name: "ably-chat", error: "plugin chat broke" }],

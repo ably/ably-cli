@@ -1,7 +1,10 @@
 import chalk from "chalk";
 
 import { formatHeading, formatLabel, formatResource } from "../utils/output.js";
-import { installClaudePlugin } from "./claude-plugin-installer.js";
+import {
+  installClaudePlugin,
+  PluginInstallStatus,
+} from "./claude-plugin-installer.js";
 import { DownloadedSkill, SkillsDownloader } from "./skills-downloader.js";
 import {
   CLAUDE_CODE,
@@ -11,6 +14,7 @@ import {
 } from "./skills-installer.js";
 import {
   DetectedTool,
+  InstallMethod,
   detectTool,
   detectTools as runToolDetection,
 } from "./tool-detector.js";
@@ -75,7 +79,7 @@ export async function runSkillsInstall(
     }
 
     fileCopyTargets = found
-      .filter((t) => t.installMethod === "file-copy")
+      .filter((t) => t.installMethod === InstallMethod.FileCopy)
       .map((t) => t.id)
       .filter((id) => id in TARGET_CONFIGS);
   } else {
@@ -119,9 +123,9 @@ export async function runSkillsInstall(
     if (hasClaudePlugin) {
       const outcome = await installClaudeCodePlugin(output);
       if (
-        outcome === "installed" ||
-        outcome === "already-installed" ||
-        outcome === "partial"
+        outcome === PluginInstallStatus.Installed ||
+        outcome === PluginInstallStatus.AlreadyInstalled ||
+        outcome === PluginInstallStatus.Partial
       ) {
         pluginInstalled = true;
       } else {
@@ -189,7 +193,9 @@ async function detectTargets(
     );
     for (const tool of found) {
       const method =
-        tool.installMethod === "plugin" ? "plugin install" : "file copy";
+        tool.installMethod === InstallMethod.Plugin
+          ? "plugin install"
+          : "file copy";
       output.log(
         `  ${chalk.green("●")} ${formatResource(tool.name.padEnd(15))} ${chalk.dim(`(${tool.evidence})`.padEnd(28))} → ${method}`,
       );
@@ -216,21 +222,21 @@ async function downloadSkills(
 
 async function installClaudeCodePlugin(
   output: SkillsInstallOutput,
-): Promise<"installed" | "already-installed" | "partial" | "error"> {
+): Promise<PluginInstallStatus> {
   const claude = "Claude Code".padEnd(12);
   output.progress(`${claude} → installing via plugin system`);
   const result = await installClaudePlugin();
 
   switch (result.status) {
-    case "installed": {
+    case PluginInstallStatus.Installed: {
       output.success(`${claude} → installed via plugin system.`);
       break;
     }
-    case "already-installed": {
+    case PluginInstallStatus.AlreadyInstalled: {
       output.success(`${claude} → already installed (plugin).`);
       break;
     }
-    case "partial": {
+    case PluginInstallStatus.Partial: {
       const failedNames = result.pluginsFailed.map((p) => p.name).join(", ");
       output.warning(
         `${claude} → installed with errors (failed: ${failedNames}).`,

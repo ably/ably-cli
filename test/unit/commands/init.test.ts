@@ -5,7 +5,10 @@ import path from "node:path";
 import os from "node:os";
 import { Readable } from "node:stream";
 import { create as tarCreate } from "tar";
-import type { DetectedTool } from "../../../src/services/tool-detector.js";
+import {
+  type DetectedTool,
+  InstallMethod,
+} from "../../../src/services/tool-detector.js";
 import { getMockConfigManager } from "../../helpers/mock-config-manager.js";
 import {
   standardHelpTests,
@@ -27,28 +30,28 @@ const ALL_UNDETECTED: DetectedTool[] = [
     name: "Claude Code",
     detected: false,
     evidence: "",
-    installMethod: "plugin",
+    installMethod: InstallMethod.Plugin,
   },
   {
     id: "cursor",
     name: "Cursor",
     detected: false,
     evidence: "",
-    installMethod: "file-copy",
+    installMethod: InstallMethod.FileCopy,
   },
   {
     id: "vscode",
     name: "VS Code",
     detected: false,
     evidence: "",
-    installMethod: "file-copy",
+    installMethod: InstallMethod.FileCopy,
   },
   {
     id: "windsurf",
     name: "Windsurf",
     detected: false,
     evidence: "",
-    installMethod: "file-copy",
+    installMethod: InstallMethod.FileCopy,
   },
 ];
 
@@ -348,7 +351,7 @@ describe("init command", () => {
           name: "Cursor",
           detected: true,
           evidence: "config: ~/.cursor",
-          installMethod: "file-copy",
+          installMethod: InstallMethod.FileCopy,
         },
         ...ALL_UNDETECTED.filter((t) => t.id !== "cursor"),
       ];
@@ -371,7 +374,7 @@ describe("init command", () => {
           name: "Cursor",
           detected: true,
           evidence: "config: ~/.cursor",
-          installMethod: "file-copy",
+          installMethod: InstallMethod.FileCopy,
         },
         ...ALL_UNDETECTED.filter((t) => t.id !== "cursor"),
       ];
@@ -394,7 +397,7 @@ describe("init command", () => {
           name: "Cursor",
           detected: true,
           evidence: "config: ~/.cursor",
-          installMethod: "file-copy",
+          installMethod: InstallMethod.FileCopy,
         },
         ...ALL_UNDETECTED.filter((t) => t.id !== "cursor"),
       ];

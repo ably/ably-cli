@@ -3,11 +3,12 @@ import { execFile } from "node:child_process";
 import isTestMode from "../utils/test-mode.js";
 import { SKILLS_REPO } from "./skills-downloader.js";
 
-export type PluginInstallStatus =
-  | "installed"
-  | "already-installed"
-  | "partial"
-  | "error";
+export enum PluginInstallStatus {
+  Installed = "installed",
+  AlreadyInstalled = "already-installed",
+  Partial = "partial",
+  Error = "error",
+}
 
 export interface PluginInstallFailure {
   name: string;
@@ -77,7 +78,7 @@ export async function installClaudePlugin(): Promise<PluginInstallResult> {
     manifest = await fetchMarketplaceManifest(SKILLS_REPO);
   } catch (error) {
     return {
-      status: "error",
+      status: PluginInstallStatus.Error,
       pluginsInstalled: [],
       pluginsAlreadyInstalled: [],
       pluginsFailed: [],
@@ -90,7 +91,7 @@ export async function installClaudePlugin(): Promise<PluginInstallResult> {
 
   if (pluginNames.length === 0) {
     return {
-      status: "error",
+      status: PluginInstallStatus.Error,
       pluginsInstalled: [],
       pluginsAlreadyInstalled: [],
       pluginsFailed: [],
@@ -104,7 +105,7 @@ export async function installClaudePlugin(): Promise<PluginInstallResult> {
     const message = error instanceof Error ? error.message : String(error);
     if (!isAlreadyInstalledMessage(message)) {
       return {
-        status: "error",
+        status: PluginInstallStatus.Error,
         pluginsInstalled: [],
         pluginsAlreadyInstalled: [],
         pluginsFailed: [],
@@ -137,13 +138,13 @@ export async function installClaudePlugin(): Promise<PluginInstallResult> {
 
   let status: PluginInstallStatus;
   if (pluginsFailed.length === pluginNames.length) {
-    status = "error";
+    status = PluginInstallStatus.Error;
   } else if (pluginsFailed.length > 0) {
-    status = "partial";
+    status = PluginInstallStatus.Partial;
   } else if (pluginsInstalled.length === 0) {
-    status = "already-installed";
+    status = PluginInstallStatus.AlreadyInstalled;
   } else {
-    status = "installed";
+    status = PluginInstallStatus.Installed;
   }
 
   return {
