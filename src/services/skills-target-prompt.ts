@@ -82,8 +82,6 @@ export async function promptForTargets(
         checkbox<string>({
           message: "Which editor(s) would you like to configure?",
           choices,
-          instructions:
-            " (Press <space> to toggle, <a> to toggle all, <enter> to confirm)",
         }),
       interactiveReadline,
     );

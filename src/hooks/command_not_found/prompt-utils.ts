@@ -7,33 +7,37 @@ export class PromptHelper {
    * Prompts the user for confirmation with a timeout.
    */
   async getConfirmation(suggestion: string): Promise<boolean> {
-    const ac = new AbortController();
-    const { signal } = ac;
+    const promptAc = new AbortController();
+    const timerAc = new AbortController();
 
-    const confirmation = confirm({
-      default: true,
-      message: `Did you mean ${chalk.blueBright(suggestion)}?`,
-      theme: {
-        prefix: "",
-        style: {
-          message: (text: string) => chalk.reset(text),
+    const confirmation = confirm(
+      {
+        default: true,
+        message: `Did you mean ${chalk.blueBright(suggestion)}?`,
+        theme: {
+          prefix: "",
+          style: {
+            message: (text: string) => chalk.reset(text),
+          },
         },
       },
-    });
+      { signal: promptAc.signal },
+    );
 
     // Timeout the prompt after 10 seconds
-    void setTimeout(10_000, "timeout", { signal })
-      .catch(() => false) // Ignore timeout errors, treat as 'No'
-      .then(() => confirmation.cancel());
+    void setTimeout(10_000, "timeout", { signal: timerAc.signal })
+      .catch(() => {}) // Ignore timer cancellation
+      .then(() => promptAc.abort());
 
     try {
       const value = await confirmation;
       return value;
     } catch {
-      // Handle cancellation (e.g., Ctrl+C) as 'No'
+      // Handle cancellation (e.g., Ctrl+C or timeout) as 'No'
       return false;
     } finally {
-      ac.abort(); // Clean up the AbortController
+      timerAc.abort(); // Cancel the pending timer
+      promptAc.abort(); // Clean up the prompt controller
     }
   }
 }
