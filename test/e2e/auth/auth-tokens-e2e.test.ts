@@ -12,6 +12,29 @@ import {
 } from "../../helpers/e2e-test-helper.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
+// Probe whether the E2E key has the revocableTokens attribute.
+// Error 40164 means it does not; runs once at module load so describe.skipIf can use the result.
+const revocationSupported =
+  !SHOULD_SKIP_E2E &&
+  (await (async () => {
+    const probe = await runCommand(
+      [
+        "auth",
+        "revoke-token",
+        "--client-id",
+        "__revocation-probe__",
+        "--json",
+        "--force",
+      ],
+      { env: { ABLY_API_KEY: E2E_API_KEY || "" }, timeoutMs: 10000 },
+    );
+    const records = parseNdjsonLines(probe.stdout);
+    const errorRecord = records.find((r) => r.type === "error");
+    const errObj = errorRecord?.error as Record<string, unknown> | undefined;
+    const msg = String(errObj?.message ?? "");
+    return !msg.includes("40164") && !msg.includes("revocableTokens");
+  })());
+
 describe.skipIf(SHOULD_SKIP_E2E)("Auth Tokens E2E Tests", () => {
   beforeEach(() => {
     resetTestTracking();
@@ -82,7 +105,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Auth Tokens E2E Tests", () => {
     });
   });
 
-  describe("auth revoke-token", () => {
+  describe.skipIf(!revocationSupported)("auth revoke-token", () => {
     it("should issue a token and then revoke it", async () => {
       setupTestFailureHandler("should issue a token and then revoke it");
 
