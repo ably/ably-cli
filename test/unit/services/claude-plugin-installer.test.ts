@@ -16,14 +16,24 @@ globalThis.fetch = fetchMock;
 const { installClaudePlugin } =
   await import("../../../src/services/claude-plugin-installer.js");
 
+const TEST_REF = "v1.2.3";
+
 describe("claude-plugin-installer", () => {
   const mockedExecFile = vi.mocked(execFile);
 
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockManifest),
+    fetchMock.mockImplementation((url: string) => {
+      if (!url.includes(`/${encodeURIComponent(TEST_REF)}/`)) {
+        return Promise.resolve({
+          ok: false,
+          statusText: `Unexpected ref in URL: ${url}`,
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockManifest),
+      });
     });
   });
 
@@ -43,7 +53,7 @@ describe("claude-plugin-installer", () => {
       },
     );
 
-    const result = await installClaudePlugin();
+    const result = await installClaudePlugin(TEST_REF);
 
     expect(result.status).toBe("installed");
     expect(result.pluginsInstalled).toEqual(["ably-realtime", "ably-chat"]);
@@ -62,7 +72,7 @@ describe("claude-plugin-installer", () => {
       },
     );
 
-    const result = await installClaudePlugin();
+    const result = await installClaudePlugin(TEST_REF);
 
     expect(result.status).toBe("already-installed");
     expect(result.pluginsAlreadyInstalled).toEqual([
@@ -95,7 +105,7 @@ describe("claude-plugin-installer", () => {
       },
     );
 
-    const result = await installClaudePlugin();
+    const result = await installClaudePlugin(TEST_REF);
 
     expect(result.status).toBe("error");
     expect(result.pluginsFailed).toHaveLength(2);
@@ -124,7 +134,7 @@ describe("claude-plugin-installer", () => {
       },
     );
 
-    const result = await installClaudePlugin();
+    const result = await installClaudePlugin(TEST_REF);
 
     expect(result.status).toBe("partial");
     expect(result.pluginsInstalled).toEqual(["ably-realtime"]);
@@ -155,7 +165,7 @@ describe("claude-plugin-installer", () => {
       },
     );
 
-    const result = await installClaudePlugin();
+    const result = await installClaudePlugin(TEST_REF);
 
     expect(result.status).toBe("installed");
     expect(result.pluginsInstalled).toEqual(["ably-chat"]);
@@ -169,7 +179,7 @@ describe("claude-plugin-installer", () => {
       statusText: "Not Found",
     });
 
-    const result = await installClaudePlugin();
+    const result = await installClaudePlugin(TEST_REF);
 
     expect(result.status).toBe("error");
     expect(result.error).toContain("Failed to fetch marketplace manifest");
@@ -189,7 +199,12 @@ describe("claude-plugin-installer", () => {
       },
     );
 
-    await installClaudePlugin();
+    await installClaudePlugin(TEST_REF);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      `https://raw.githubusercontent.com/ably/agent-skills/${encodeURIComponent(TEST_REF)}/.claude-plugin/marketplace.json`,
+    );
 
     // 1 marketplace add + 2 plugin installs
     expect(calls).toHaveLength(3);
@@ -217,7 +232,7 @@ describe("claude-plugin-installer", () => {
       json: () => Promise.resolve({ name: "empty", plugins: [] }),
     });
 
-    const result = await installClaudePlugin();
+    const result = await installClaudePlugin(TEST_REF);
 
     expect(result.status).toBe("error");
     expect(result.error).toContain("No plugins found");
