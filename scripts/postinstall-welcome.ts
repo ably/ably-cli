@@ -60,7 +60,7 @@ console.log(`   Version: ${version}\n`);
 
 // Display the welcome messages
 console.log('Ably CLI installed successfully!');
-console.log('To get started, explore commands:');
+console.log('\nGet started in one command (authenticate + install Agent Skills):');
+console.log('  ably init');
+console.log('\nOr explore:');
 console.log('  ably --help');
-console.log('\nOr log in to your Ably account:');
-console.log('  ably login');

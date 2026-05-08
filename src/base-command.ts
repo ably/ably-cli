@@ -71,6 +71,11 @@ export const WEB_CLI_RESTRICTED_COMMANDS = [
   // File-reading commands can expose server filesystem contents in web CLI mode
   "push:config:set-apns",
   "push:config:set-fcm",
+
+  // Agent-skills onboarding writes/removes files on the local filesystem —
+  // in web CLI mode these would touch the server's filesystem, not the user's.
+  "init",
+  "skills*",
 ];
 
 /* Additional restricted commands when running in anonymous web CLI mode */
@@ -107,6 +112,7 @@ export const INTERACTIVE_UNSUITABLE_COMMANDS = [
   "autocomplete", // Autocomplete setup is not needed in interactive mode
   "config", // Config editing is not suitable for interactive mode
   "version", // Version is shown at startup and available via --version
+  "init", // One-time setup; not meaningful inside an already-running session
 ];
 
 // List of commands that should not show account/app info
@@ -877,9 +883,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     // Emit a terminal "completed" line so JSON consumers know the command is done.
+    // Suppressed when the command is being delegated to from another command
+    // (the outer command emits its own terminator).
     const isJsonMode =
       this.argv.includes("--json") || this.argv.includes("--pretty-json");
-    if (isJsonMode) {
+    const suppressCompleted = this.argv.includes("--skip-completed-status");
+    if (isJsonMode && !suppressCompleted) {
       const flags: BaseFlags = this.argv.includes("--pretty-json")
         ? ({ "pretty-json": true } as BaseFlags)
         : ({ json: true } as BaseFlags);

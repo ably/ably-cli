@@ -66,13 +66,24 @@ export default class AccountsLogin extends ControlBaseCommand {
       default: false,
       description: "Do not open a browser",
     }),
+    "skip-logo": Flags.boolean({
+      default: false,
+      hidden: true,
+    }),
+    "skip-completed-status": Flags.boolean({
+      default: false,
+      hidden: true,
+      description:
+        "Suppress the trailing JSON {status:'completed'} record. Used when this command is delegated to from another command (e.g. `init`) so the outer command's terminator is the only one in the stream.",
+    }),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(AccountsLogin);
 
-    // Display ASCII art logo if not in JSON mode
-    if (!this.shouldOutputJson(flags)) {
+    // Display ASCII art logo if not in JSON mode and the caller hasn't
+    // opted out (e.g. `ably init` already prints the logo and delegates here).
+    if (!this.shouldOutputJson(flags) && !flags["skip-logo"]) {
       displayLogo(this.log.bind(this));
     }
 
