@@ -14,12 +14,6 @@ interface BatchMessage {
   [key: string]: unknown;
 }
 
-interface BatchContent {
-  channels: string | string[];
-  messages: BatchMessage;
-  [key: string]: unknown;
-}
-
 interface BatchResponseItem {
   channel: string;
   messageId?: string;
@@ -195,7 +189,7 @@ export default class ChannelsBatchPublish extends AblyBaseCommand {
         batchContent = {
           channels,
           messages: message,
-        } as BatchContent;
+        };
       }
 
       if (!this.shouldSuppressOutput(flags)) {

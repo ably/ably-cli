@@ -49,6 +49,8 @@ export interface AblyConfig {
   accounts: Record<string, AccountConfig>;
   current?: {
     account?: string;
+    /** @deprecated Legacy field migrated to account.currentAppId on first load */
+    app?: string;
   };
   helpContext?: {
     conversation: {
@@ -772,9 +774,7 @@ export class TomlConfigManager implements ConfigManager {
         };
 
         // Migrate old config format if needed - move app from current to account.currentAppId
-        const legacyCurrent = this.config.current as
-          | (typeof this.config.current & { app?: string })
-          | undefined;
+        const legacyCurrent = this.config.current;
         if (legacyCurrent?.app) {
           const currentAccountAlias = this.config.current?.account;
           if (

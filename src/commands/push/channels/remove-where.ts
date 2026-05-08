@@ -2,7 +2,6 @@ import { Args, Flags } from "@oclif/core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { forceFlag, productApiFlags } from "../../../flags.js";
-import { BaseFlags } from "../../../types/cli.js";
 import { formatResource } from "../../../utils/output.js";
 import { promptForConfirmation } from "../../../utils/prompt-confirmation.js";
 
@@ -38,7 +37,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
     const { args, flags } = await this.parse(PushChannelsRemoveWhere);
 
     try {
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) return;
 
       const params: Record<string, string> = {
@@ -87,7 +86,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
         this.logSuccessMessage("Matching subscriptions removed.", flags);
       }
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "pushChannelRemoveWhere");
+      this.fail(error, flags, "pushChannelRemoveWhere");
     }
   }
 }

@@ -50,7 +50,7 @@ export function prepareMessageFromInput(
   if (
     messageData.extras &&
     typeof messageData.extras === "object" &&
-    Object.keys(messageData.extras as Record<string, unknown>).length > 0
+    Object.keys(messageData.extras).length > 0
   ) {
     message.extras = messageData.extras as Record<string, unknown>;
     delete messageData.extras;
@@ -66,5 +66,5 @@ export function prepareMessageFromInput(
     message.encoding = flags.encoding as string;
   }
 
-  return message as Ably.Message;
+  return message;
 }

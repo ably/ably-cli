@@ -442,7 +442,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
       if (mock) {
         // Return mock as appropriate type
-        return mock as unknown as Ably.Rest | Ably.Realtime;
+        return mock;
       }
 
       this.fail(
@@ -890,8 +890,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     const suppressCompleted = this.argv.includes("--skip-completed-status");
     if (isJsonMode && !suppressCompleted) {
       const flags: BaseFlags = this.argv.includes("--pretty-json")
-        ? ({ "pretty-json": true } as BaseFlags)
-        : ({ json: true } as BaseFlags);
+        ? { "pretty-json": true }
+        : { json: true };
       const exitCode = err ? 1 : 0;
       this.log(
         this.formatJsonRecord(

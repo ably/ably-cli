@@ -166,10 +166,7 @@ export function formatCursorBlock(
     `${indent}${formatLabel("Position Y")} ${cursor.position.y}`,
   ];
 
-  if (
-    cursor.data &&
-    Object.keys(cursor.data as Record<string, unknown>).length > 0
-  ) {
+  if (cursor.data && Object.keys(cursor.data).length > 0) {
     lines.push(
       `${indent}${formatLabel("Data")} ${JSON.stringify(cursor.data)}`,
     );
@@ -195,10 +192,7 @@ export function formatLockBlock(
     formatMemberBlock(lock.member, { indent: memberIndent }),
   ];
 
-  if (
-    lock.attributes &&
-    Object.keys(lock.attributes as Record<string, unknown>).length > 0
-  ) {
+  if (lock.attributes && Object.keys(lock.attributes).length > 0) {
     lines.push(
       `${indent}${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
     );
