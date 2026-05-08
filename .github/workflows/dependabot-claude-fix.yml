@@ -301,7 +301,7 @@ jobs:
 
       - name: Set up pnpm
         if: steps.gate.outputs.proceed == 'true'
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
