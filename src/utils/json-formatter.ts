@@ -21,7 +21,12 @@ export function formatJson(data: unknown): string {
   } catch {
     // If JSON serialization fails (e.g. circular reference), return a safe string representation
     if (typeof data !== "object") {
-      return String(data as string | number | boolean | bigint | symbol);
+      if (typeof data === "function") return "[Function]";
+      if (typeof data === "symbol") return data.toString();
+      if (typeof data === "bigint") return data.toString();
+      if (typeof data === "number") return data.toString();
+      if (typeof data === "boolean") return data.toString();
+      return typeof data === "string" ? data : "undefined";
     }
 
     try {
@@ -85,10 +90,16 @@ function colorValue(value: unknown): string {
       return chalk.green(`"${value}"`);
     }
 
+    case "bigint": {
+      return chalk.yellow(value.toString());
+    }
+
+    case "symbol": {
+      return value.toString();
+    }
+
     default: {
-      return typeof value === "object"
-        ? JSON.stringify(value)
-        : String(value as string | number | boolean | bigint | symbol);
+      return typeof value === "object" ? JSON.stringify(value) : "[Function]";
     }
   }
 }

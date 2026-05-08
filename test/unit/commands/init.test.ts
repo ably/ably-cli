@@ -108,7 +108,7 @@ function mockFetchWithTarball(buffer: Buffer): void {
           tag_name: TEST_RELEASE.tag,
           name: TEST_RELEASE.name,
         }),
-      } as unknown as Response;
+      };
     }
     if (url.includes("/git/refs/tags/")) {
       return {
@@ -117,7 +117,7 @@ function mockFetchWithTarball(buffer: Buffer): void {
         json: async () => ({
           object: { sha: TEST_RELEASE.sha, type: "commit", url: "" },
         }),
-      } as unknown as Response;
+      };
     }
     if (url.includes("/attestations/sha256:")) {
       return {
@@ -126,7 +126,7 @@ function mockFetchWithTarball(buffer: Buffer): void {
         json: async () => ({
           attestations: [{ bundle: { mediaType: "fake-bundle" } }],
         }),
-      } as unknown as Response;
+      };
     }
     if (url.includes("/releases/download/")) {
       return {
@@ -137,13 +137,13 @@ function mockFetchWithTarball(buffer: Buffer): void {
             buffer.byteOffset,
             buffer.byteOffset + buffer.byteLength,
           ),
-      } as unknown as Response;
+      };
     }
     return {
       ok: false,
       status: 404,
       statusText: `Unexpected URL: ${url}`,
-    } as unknown as Response;
+    };
   });
 }
 
@@ -286,7 +286,7 @@ describe("init command", () => {
         ok: false,
         status: 404,
         statusText: "Not Found",
-      } as Response);
+      });
 
       const { error } = await runCommand(
         ["init", "--target", "cursor"],

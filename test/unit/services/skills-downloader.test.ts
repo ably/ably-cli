@@ -108,7 +108,7 @@ function wireFetch(buffer: Buffer | null, opts: FetchOpts = {}): void {
           ok: false,
           status: opts.releaseStatus,
           statusText: "Not Found",
-        } as unknown as Response;
+        };
       }
       return {
         ok: true,
@@ -117,7 +117,7 @@ function wireFetch(buffer: Buffer | null, opts: FetchOpts = {}): void {
           tag_name: TEST_RELEASE.tag,
           name: TEST_RELEASE.name,
         }),
-      } as unknown as Response;
+      };
     }
     if (url.includes("/git/refs/tags/")) {
       return {
@@ -126,7 +126,7 @@ function wireFetch(buffer: Buffer | null, opts: FetchOpts = {}): void {
         json: async () => ({
           object: { sha: TEST_RELEASE.sha, type: "commit", url: "" },
         }),
-      } as unknown as Response;
+      };
     }
     if (url.includes("/attestations/sha256:")) {
       if ((opts.attestationStatus ?? 200) !== 200) {
@@ -134,7 +134,7 @@ function wireFetch(buffer: Buffer | null, opts: FetchOpts = {}): void {
           ok: false,
           status: opts.attestationStatus,
           statusText: "Not Found",
-        } as unknown as Response;
+        };
       }
       return {
         ok: true,
@@ -143,7 +143,7 @@ function wireFetch(buffer: Buffer | null, opts: FetchOpts = {}): void {
           opts.noAttestations
             ? { attestations: [] }
             : { attestations: [{ bundle: { mediaType: "fake-bundle" } }] },
-      } as unknown as Response;
+      };
     }
     if (url.includes("/releases/download/")) {
       if ((opts.assetStatus ?? 200) !== 200) {
@@ -151,14 +151,14 @@ function wireFetch(buffer: Buffer | null, opts: FetchOpts = {}): void {
           ok: false,
           status: opts.assetStatus,
           statusText: "Not Found",
-        } as unknown as Response;
+        };
       }
       if (buffer === null) {
         return {
           ok: false,
           status: 500,
           statusText: "Internal Server Error",
-        } as unknown as Response;
+        };
       }
       return {
         ok: true,
@@ -168,13 +168,13 @@ function wireFetch(buffer: Buffer | null, opts: FetchOpts = {}): void {
             buffer.byteOffset,
             buffer.byteOffset + buffer.byteLength,
           ),
-      } as unknown as Response;
+      };
     }
     return {
       ok: false,
       status: 404,
       statusText: `Unexpected URL: ${url}`,
-    } as unknown as Response;
+    };
   });
 }
 

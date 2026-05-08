@@ -70,7 +70,7 @@ describe("CLI Help", function () {
       // Stub ConfigManager
       configManagerStub = {
         getAccessToken: vi.fn(),
-      } as Partial<ConfigManager>;
+      };
 
       // Enable Web CLI mode
       process.env.ABLY_WEB_CLI_MODE = "true";

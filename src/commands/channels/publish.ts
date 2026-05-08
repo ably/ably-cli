@@ -4,7 +4,6 @@ import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
-import { BaseFlags } from "../../types/cli.js";
 import { errorMessage, extractErrorInfo } from "../../utils/errors.js";
 import { prepareMessageFromInput } from "../../utils/message.js";
 import { formatResource } from "../../utils/output.js";
@@ -289,11 +288,11 @@ export default class ChannelsPublish extends AblyBaseCommand {
     flags: Record<string, unknown>,
   ): Promise<void> {
     try {
-      this.realtime = await this.createAblyRealtimeClient(flags as BaseFlags);
+      this.realtime = await this.createAblyRealtimeClient(flags);
       if (!this.realtime) {
         this.fail(
           "Failed to create Ably client. Please check your API key and try again.",
-          flags as BaseFlags,
+          flags,
           "channelPublish",
         );
       }
@@ -332,7 +331,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
         return channel.publish(msg);
       });
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "channelPublish");
+      this.fail(error, flags, "channelPublish");
     }
     // Client cleanup is handled by command finally() method
   }
@@ -343,7 +342,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
   ): Promise<void> {
     try {
       // Create REST client
-      const rest = await this.createAblyRestClient(flags as BaseFlags);
+      const rest = await this.createAblyRestClient(flags);
       if (!rest) {
         return;
       }
@@ -360,7 +359,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
         return channel.publish(msg);
       });
     } catch (error) {
-      this.fail(error, flags as BaseFlags, "channelPublish");
+      this.fail(error, flags, "channelPublish");
     }
     // No finally block needed here as REST client doesn't maintain a connection
   }
