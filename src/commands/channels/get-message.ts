@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import * as Ably from "ably";
 
 import { AblyBaseCommand } from "../../base-command.js";
+import { CommandError } from "../../errors/command-error.js";
 import { productApiFlags } from "../../flags.js";
 import {
   formatMessageTimestamp,
@@ -9,6 +10,9 @@ import {
   formatResource,
 } from "../../utils/output.js";
 import type { MessageDisplayFields } from "../../utils/output.js";
+
+const MUTABLE_MESSAGES_HINT =
+  "The channel may not have mutableMessages enabled — without this rule, individual messages cannot be retrieved by serial. Please check the same using 'ably apps rules list'. If the 'Mutable Messages' rule is enabled, then make sure to enter correct message serial.";
 
 export default class ChannelsGetMessage extends AblyBaseCommand {
   static override args = {
@@ -23,7 +27,7 @@ export default class ChannelsGetMessage extends AblyBaseCommand {
   };
 
   static override description =
-    "Get the latest version of a message on an Ably channel";
+    "Get the latest version of a message on an Ably channel. Requires `mutableMessages` enabled on the channel rule.";
 
   static override examples = [
     '$ ably channels get-message my-channel "01234567890:0"',
@@ -125,7 +129,16 @@ export default class ChannelsGetMessage extends AblyBaseCommand {
         this.log(formatMessagesOutput([display]));
       }
     } catch (error) {
-      this.fail(error, flags, "channelGetMessage", {
+      const cmdError = CommandError.from(error);
+      const enriched =
+        cmdError.code === 40400
+          ? new CommandError(`${cmdError.message}\n${MUTABLE_MESSAGES_HINT}`, {
+              code: cmdError.code,
+              statusCode: cmdError.statusCode,
+              context: cmdError.context,
+            })
+          : error;
+      this.fail(enriched, flags, "channelGetMessage", {
         channel: channelName,
         serial,
       });

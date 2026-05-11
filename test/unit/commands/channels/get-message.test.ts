@@ -284,5 +284,67 @@ describe("channels:get-message command", () => {
       expect(error).toBeDefined();
       expect(error?.message).toContain("Message not found");
     });
+
+    it("enriches 40400 errors with the mutableMessages hint", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      const notFound = Object.assign(new Error("Message not found"), {
+        code: 40400,
+        statusCode: 404,
+      });
+      channel.getMessage.mockRejectedValue(notFound);
+
+      const { error } = await runCommand(
+        [COMMAND, "test-channel", "serial-001"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Message not found");
+      expect(error?.message).toContain("mutableMessages");
+      expect(error?.message).toContain("ably apps rules list");
+    });
+
+    it("does NOT enrich non-40400 errors with the mutableMessages hint", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      const otherErr = Object.assign(new Error("Some other error"), {
+        code: 50000,
+        statusCode: 500,
+      });
+      channel.getMessage.mockRejectedValue(otherErr);
+
+      const { error } = await runCommand(
+        [COMMAND, "test-channel", "serial-001"],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("Some other error");
+      expect(error?.message).not.toContain("mutableMessages");
+    });
+
+    it("includes the mutableMessages hint in JSON error envelope for 40400", async () => {
+      const mock = getMockAblyRest();
+      const channel = mock.channels._getChannel("test-channel");
+      const notFound = Object.assign(new Error("Message not found"), {
+        code: 40400,
+        statusCode: 404,
+      });
+      channel.getMessage.mockRejectedValue(notFound);
+
+      const { stdout } = await runCommand(
+        [COMMAND, "test-channel", "serial-001", "--json"],
+        import.meta.url,
+      );
+
+      const records = parseNdjsonLines(stdout);
+      const errorRecord = records.find((r) => r.type === "error") as
+        | { error: { message: string; code: number } }
+        | undefined;
+      expect(errorRecord).toBeDefined();
+      expect(errorRecord!.error.message).toContain("mutableMessages");
+      expect(errorRecord!.error.code).toBe(40400);
+    });
   });
 });
