@@ -625,22 +625,16 @@ describe("Control API E2E Workflow Tests", () => {
       if (shouldSkip) return;
 
       const queueName = `test-delete-queue-${Date.now()}`;
-      // First create a queue and capture its ID
-      const createResult = await runCommand(
+      // First create the queue, then delete it by name
+      await runCommand(
         ["queues", "create", queueName, "--app", testAppId, "--json"],
         {
           env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
       );
 
-      const createOutput = parseNdjsonLines(createResult.stdout).find(
-        (r) => r.type === "result",
-      ) as Record<string, unknown>;
-      const queueId = (createOutput.queue as Record<string, unknown>)
-        .id as string;
-
       const deleteResult = await runCommand(
-        ["queues", "delete", queueId, "--app", testAppId, "--force"],
+        ["queues", "delete", queueName, "--app", testAppId, "--force"],
         {
           env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN },
         },
