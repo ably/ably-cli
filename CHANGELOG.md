@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-12
+
+### Added
+
+- **`ably init`** — single-command onboarding for AI-powered development. Install the Ably CLI, authenticate, and install the Ably Agent Skills into your AI coding tools all in one command (`npx @ably/cli init`). Detects installed tools (Claude Code, Cursor, VS Code, Windsurf) and installs via the appropriate mechanism (Claude Code plugin or file copy). Verifies SLSA provenance attestations on downloaded skill bundles before installing.
+- **`ably skills install`** — install or update the Ably Agent Skills into AI coding tools independently of `ably init`. Same tool detection, install mechanisms, and SLSA attestation verification.
+- **`ably channels get-message`** — retrieve the latest version of a message on a channel by its serial (requires `mutableMessages` enabled on the channel rule).
+
 ## [1.0.0] - 2026-05-01
 
 First stable release. This is a large release that overhauls authentication, command argument conventions, output formatting, and adds several new command groups. Key user-facing changes are summarised below; review the migration notes before upgrading.
