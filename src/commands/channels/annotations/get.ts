@@ -26,7 +26,8 @@ export default class ChannelsAnnotationsGet extends AblyBaseCommand {
     }),
   };
 
-  static override description = "Get annotations for a channel message";
+  static override description =
+    "List individual annotation events published for a given channel message";
 
   static override examples = [
     '$ ably channels annotations get my-channel "01234567890:0"',

@@ -34,6 +34,7 @@ export interface MockRestChannel {
   publish: Mock;
   history: Mock;
   status: Mock;
+  getMessage: Mock;
   updateMessage: Mock;
   deleteMessage: Mock;
   appendMessage: Mock;
@@ -142,6 +143,29 @@ function createMockRestChannel(name: string): MockRestChannel {
     name,
     publish: vi.fn().mockResolvedValue({ serials: ["mock-serial-001"] }),
     history: vi.fn().mockResolvedValue(createMockPaginatedResult([])),
+    getMessage: vi.fn().mockResolvedValue({
+      id: "mock-message-id",
+      name: "mock-event",
+      data: { hello: "world" },
+      encoding: "json",
+      extras: { headers: { foo: "bar" } },
+      serial: "mock-serial-001",
+      timestamp: 1_700_000_000_000,
+      clientId: "mock-client",
+      connectionId: "mock-connection",
+      action: "message.update",
+      version: {
+        serial: "mock-serial-001@v2",
+        timestamp: 1_700_000_001_000,
+        clientId: "mock-editor",
+        description: "Fixed typo",
+      },
+      annotations: {
+        summary: {
+          "reaction:distinct.v1": { unique: 3 },
+        },
+      },
+    }),
     updateMessage: vi
       .fn()
       .mockResolvedValue({ versionSerial: "mock-version-serial-update" }),

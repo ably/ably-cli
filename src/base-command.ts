@@ -1740,6 +1740,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     flags: BaseFlags,
     component: string,
     context?: Record<string, unknown>,
+    hint?: string,
   ): never {
     // If error was already handled by a prior fail() call, re-throw it.
     // This prevents double error output when fail() is called inside a try
@@ -1763,12 +1764,18 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       },
     );
 
-    const friendlyHint = getFriendlyAblyErrorHint(
-      cmdError.code ??
-        (typeof cmdError.context.errorCode === "number"
-          ? cmdError.context.errorCode
-          : undefined),
-    );
+    // A command-specific hint passed by the caller takes precedence over the
+    // global registry. Use this when an Ably error code is too generic to
+    // attach a universally-applicable hint (e.g. 40400 means different things
+    // in `channels get-message` vs `apps`/`keys` lookups).
+    const friendlyHint =
+      hint ??
+      getFriendlyAblyErrorHint(
+        cmdError.code ??
+          (typeof cmdError.context.errorCode === "number"
+            ? cmdError.context.errorCode
+            : undefined),
+      );
 
     if (this.shouldOutputJson(flags)) {
       const jsonData = cmdError.toJsonData(friendlyHint);
