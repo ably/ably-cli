@@ -285,7 +285,7 @@ describe("channels:get-message command", () => {
       expect(error?.message).toContain("Message not found");
     });
 
-    it("enriches 40400 errors with the mutableMessages hint", async () => {
+    it("appends the mutableMessages hint to human output for 40400 errors", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
       const notFound = Object.assign(new Error("Message not found"), {
@@ -305,7 +305,7 @@ describe("channels:get-message command", () => {
       expect(error?.message).toContain("ably apps rules list");
     });
 
-    it("does NOT enrich non-40400 errors with the mutableMessages hint", async () => {
+    it("does NOT append the mutableMessages hint for non-40400 errors", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
       const otherErr = Object.assign(new Error("Some other error"), {
@@ -324,7 +324,7 @@ describe("channels:get-message command", () => {
       expect(error?.message).not.toContain("mutableMessages");
     });
 
-    it("includes the mutableMessages hint in JSON error envelope for 40400", async () => {
+    it("exposes the mutableMessages hint as `error.hint` in the JSON envelope and leaves `error.message` unchanged", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
       const notFound = Object.assign(new Error("Message not found"), {
@@ -340,11 +340,16 @@ describe("channels:get-message command", () => {
 
       const records = parseNdjsonLines(stdout);
       const errorRecord = records.find((r) => r.type === "error") as
-        | { error: { message: string; code: number } }
+        | { error: { message: string; code: number; hint?: string } }
         | undefined;
       expect(errorRecord).toBeDefined();
-      expect(errorRecord!.error.message).toContain("mutableMessages");
       expect(errorRecord!.error.code).toBe(40400);
+      // hint as its own structured field, not baked into message
+      expect(errorRecord!.error.hint).toContain("mutableMessages");
+      expect(errorRecord!.error.hint).toContain("ably apps rules list");
+      // message stays as the upstream error text only
+      expect(errorRecord!.error.message).toBe("Message not found");
+      expect(errorRecord!.error.message).not.toContain("mutableMessages");
     });
   });
 });

@@ -12,7 +12,7 @@ import {
 import type { MessageDisplayFields } from "../../utils/output.js";
 
 const MUTABLE_MESSAGES_HINT =
-  "The channel may not have mutableMessages enabled — without this rule, individual messages cannot be retrieved by serial. Please check the same using 'ably apps rules list'. If the 'Mutable Messages' rule is enabled, then make sure to enter correct message serial.";
+  "Ensure the channel has a `mutableMessages` rule enabled (run `ably apps rules list`) and that the message serial is correct.";
 
 export default class ChannelsGetMessage extends AblyBaseCommand {
   static override args = {
@@ -130,18 +130,14 @@ export default class ChannelsGetMessage extends AblyBaseCommand {
       }
     } catch (error) {
       const cmdError = CommandError.from(error);
-      const enriched =
-        cmdError.code === 40400
-          ? new CommandError(`${cmdError.message}\n${MUTABLE_MESSAGES_HINT}`, {
-              code: cmdError.code,
-              statusCode: cmdError.statusCode,
-              context: cmdError.context,
-            })
-          : error;
-      this.fail(enriched, flags, "channelGetMessage", {
-        channel: channelName,
-        serial,
-      });
+      const hint = cmdError.code === 40400 ? MUTABLE_MESSAGES_HINT : undefined;
+      this.fail(
+        error,
+        flags,
+        "channelGetMessage",
+        { channel: channelName, serial },
+        hint,
+      );
     }
   }
 }
