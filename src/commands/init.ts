@@ -210,15 +210,20 @@ export default class Init extends AblyBaseCommand {
   private async maybeInstallGlobally(flags: BaseFlags): Promise<void> {
     const jsonMode = this.shouldOutputJson(flags);
 
+    // Order matters: --no-install is only meaningful when we would otherwise
+    // install (i.e. when running via npx). Checking the npx context first
+    // means a normal `ably init --no-install` from a globally installed
+    // binary reports the accurate reason ("not-npx") rather than the
+    // irrelevant flag.
+    if (!this.isRunningFromNpx()) {
+      this.emitInstallEvent(flags, { status: "skipped", reason: "not-npx" });
+      return;
+    }
     if (flags["no-install"]) {
       this.emitInstallEvent(flags, {
         status: "skipped",
         reason: "no-install-flag",
       });
-      return;
-    }
-    if (!this.isRunningFromNpx()) {
-      this.emitInstallEvent(flags, { status: "skipped", reason: "not-npx" });
       return;
     }
 

@@ -727,6 +727,26 @@ describe("init command", () => {
         });
       });
 
+      it("emits status=skipped reason=not-npx when --no-install is passed outside npx", async () => {
+        // The flag is only meaningful in the npx flow. From a globally
+        // installed binary, the more accurate reason for skipping is that
+        // we're not in npx — not the flag.
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        // No isRunningFromNpx override → defaults to false.
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json", "--no-install"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "skipped",
+          reason: "not-npx",
+        });
+      });
+
       it("emits status=skipped reason=not-npx when running outside npx", async () => {
         mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
         // Don't set isRunningFromNpx — default is false.
