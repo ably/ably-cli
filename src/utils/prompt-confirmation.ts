@@ -22,6 +22,7 @@ export function promptForConfirmation(
   const promptMessage =
     message.includes("[yes/no]") ||
     message.includes("[y/n]") ||
+    message.includes("[Y/n]") ||
     message.includes("[Y/N]")
       ? message
       : `${message} ${suffix}`;

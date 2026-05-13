@@ -72,5 +72,17 @@ describe("promptForConfirmation", () => {
       });
       expect(result).toBe(false);
     });
+
+    it("does not double-append [Y/n] when the message already contains it", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("y");
+      };
+      await promptForConfirmation("Install globally? [Y/n]", {
+        defaultYes: true,
+      });
+      expect(capturedQuery).toBe("Install globally? [Y/n]");
+    });
   });
 });

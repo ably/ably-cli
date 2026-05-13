@@ -222,11 +222,23 @@ export default class Init extends AblyBaseCommand {
       await this.runGlobalInstall(jsonMode);
       this.logSuccessMessage("Installed @ably/cli globally.", flags);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      this.logWarning(
-        `Could not install @ably/cli globally automatically (${detail}). Run: npm install -g @ably/cli`,
-        flags,
-      );
+      if (jsonMode) {
+        // npm output was piped, so the thrown error already carries the
+        // captured stderr — surface it so agents see why install failed.
+        const detail = error instanceof Error ? error.message : String(error);
+        this.logWarning(
+          `Could not install @ably/cli globally automatically (${detail}). Run: npm install -g @ably/cli`,
+          flags,
+        );
+      } else {
+        // npm output was inherited, so npm has already printed the real error
+        // to the user's terminal. error.message is just "Command failed: ..."
+        // which adds no information — keep the warning terse.
+        this.logWarning(
+          "Could not install @ably/cli globally. Run: npm install -g @ably/cli",
+          flags,
+        );
+      }
     }
   }
 

@@ -615,7 +615,7 @@ describe("init command", () => {
       expect(stderr).toMatch(/Skipping global install/);
     });
 
-    it("should warn rather than fail when the global install command errors", async () => {
+    it("should warn rather than fail when the global install command errors (non-JSON)", async () => {
       mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
       (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
         true;
@@ -627,7 +627,7 @@ describe("init command", () => {
           throw new Error("EACCES: permission denied");
         };
 
-      const { stderr, error } = await runCommand(
+      const { stderr, stdout, error } = await runCommand(
         ["init", "--target", "cursor"],
         import.meta.url,
       );
@@ -635,9 +635,35 @@ describe("init command", () => {
       // Install failure must not be fatal — the rest of init (auth, skills)
       // is still useful, and the user can run `npm install -g` themselves.
       expect(error).toBeUndefined();
+      // Non-JSON mode: terse warning. npm would have printed the real error
+      // to inherited stderr in production, so we don't restate it.
       expect(stderr).toMatch(
-        /Could not install @ably\/cli globally automatically.*EACCES: permission denied/,
+        /Could not install @ably\/cli globally\. Run: npm install -g @ably\/cli/,
       );
+      // Specifically should NOT include the raw error detail in non-JSON mode.
+      expect(stderr).not.toMatch(/EACCES/);
+      expect(stdout).not.toMatch(/EACCES/);
+    });
+
+    it("should surface captured stderr in the JSON-mode failure warning", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
+        true;
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async () => {
+          throw new Error("EACCES: permission denied at /usr/local/lib");
+        };
+
+      const { stdout, error } = await runCommand(
+        ["init", "--target", "cursor", "--json"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      // JSON mode emits the warning as a structured NDJSON line via
+      // logWarning. The captured stderr (the thrown error's message in the
+      // test hook case) should be embedded so agents see why install failed.
+      expect(stdout).toMatch(/EACCES: permission denied at \/usr\/local\/lib/);
     });
   });
 });
