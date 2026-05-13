@@ -13,10 +13,17 @@ import {
 import { TARGET_CONFIGS } from "../services/skills-installer.js";
 import { resolveSkillsTargets } from "../services/skills-target-prompt.js";
 import { BaseFlags } from "../types/cli.js";
+import { extractErrorInfo } from "../utils/errors.js";
 import { displayLogo } from "../utils/logo.js";
 import { formatHeading, formatResource } from "../utils/output.js";
 import { promptForConfirmation } from "../utils/prompt-confirmation.js";
 import isTestMode from "../utils/test-mode.js";
+
+// Bound on the global install step so a hung npm registry can't leave the
+// onboarding command stuck with no feedback. On timeout execSync throws
+// ETIMEDOUT, which the catch block in maybeInstallGlobally turns into the
+// usual non-fatal warning (and JSON failure event).
+const GLOBAL_INSTALL_TIMEOUT_MS = 120_000;
 
 export default class Init extends AblyBaseCommand {
   static override description =
@@ -201,10 +208,19 @@ export default class Init extends AblyBaseCommand {
   // can't run `ably` again after init exits — defeating the "one-command
   // onboarding" promise. Detect that situation and offer to install globally.
   private async maybeInstallGlobally(flags: BaseFlags): Promise<void> {
-    if (flags["no-install"]) return;
-    if (!this.isRunningFromNpx()) return;
-
     const jsonMode = this.shouldOutputJson(flags);
+
+    if (flags["no-install"]) {
+      this.emitInstallEvent(flags, {
+        status: "skipped",
+        reason: "no-install-flag",
+      });
+      return;
+    }
+    if (!this.isRunningFromNpx()) {
+      this.emitInstallEvent(flags, { status: "skipped", reason: "not-npx" });
+      return;
+    }
 
     if (!jsonMode) {
       const confirmed = await this.confirmGlobalInstall();
@@ -221,7 +237,16 @@ export default class Init extends AblyBaseCommand {
     try {
       await this.runGlobalInstall(jsonMode);
       this.logSuccessMessage("Installed @ably/cli globally.", flags);
+      this.emitInstallEvent(flags, {
+        status: "installed",
+        package: "@ably/cli@latest",
+      });
     } catch (error) {
+      this.emitInstallEvent(flags, {
+        status: "failed",
+        package: "@ably/cli@latest",
+        error: extractErrorInfo(error),
+      });
       if (jsonMode) {
         // npm output was piped, so the thrown error already carries the
         // captured stderr — surface it so agents see why install failed.
@@ -240,6 +265,14 @@ export default class Init extends AblyBaseCommand {
         );
       }
     }
+  }
+
+  private emitInstallEvent(
+    flags: BaseFlags,
+    install: Record<string, unknown>,
+  ): void {
+    if (!this.shouldOutputJson(flags)) return;
+    this.logJsonEvent({ install }, flags);
   }
 
   private async confirmGlobalInstall(): Promise<boolean> {
@@ -283,7 +316,10 @@ export default class Init extends AblyBaseCommand {
     }
     if (jsonMode) {
       try {
-        execSync("npm install -g @ably/cli@latest", { stdio: "pipe" });
+        execSync("npm install -g @ably/cli@latest", {
+          stdio: "pipe",
+          timeout: GLOBAL_INSTALL_TIMEOUT_MS,
+        });
       } catch (error) {
         const stderr = (
           error as { stderr?: Buffer | string } | undefined
@@ -298,6 +334,9 @@ export default class Init extends AblyBaseCommand {
       }
       return;
     }
-    execSync("npm install -g @ably/cli@latest", { stdio: "inherit" });
+    execSync("npm install -g @ably/cli@latest", {
+      stdio: "inherit",
+      timeout: GLOBAL_INSTALL_TIMEOUT_MS,
+    });
   }
 }

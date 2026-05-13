@@ -147,6 +147,22 @@ function mockFetchWithTarball(buffer: Buffer): void {
   });
 }
 
+function findInstallEvent(stdout: string): Record<string, unknown> | undefined {
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+      if (parsed.install) return parsed;
+    } catch {
+      // Not JSON — ignore. NDJSON streams may have non-JSON lines
+      // (logo, prompts) in non-JSON mode, but in --json mode all
+      // output should be JSON.
+    }
+  }
+  return undefined;
+}
+
 describe("init command", () => {
   let tempDir: string;
   let originalCwd: string;
@@ -664,6 +680,94 @@ describe("init command", () => {
       // logWarning. The captured stderr (the thrown error's message in the
       // test hook case) should be embedded so agents see why install failed.
       expect(stdout).toMatch(/EACCES: permission denied at \/usr\/local\/lib/);
+    });
+
+    // Agents driving `ably init --json` need a structured signal for the
+    // install step's outcome. logProgress / logSuccessMessage are silent in
+    // JSON mode by design, so without a dedicated event the install step is
+    // invisible unless it fails. We emit one `install` event per init run.
+    describe("JSON install events", () => {
+      it("emits status=installed on a successful global install", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        (
+          globalThis.__TEST_MOCKS__ as Record<string, unknown>
+        ).isRunningFromNpx = true;
+        (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+          async () => {};
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "installed",
+          package: "@ably/cli@latest",
+        });
+      });
+
+      it("emits status=skipped reason=no-install-flag when --no-install is passed", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        (
+          globalThis.__TEST_MOCKS__ as Record<string, unknown>
+        ).isRunningFromNpx = true;
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json", "--no-install"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "skipped",
+          reason: "no-install-flag",
+        });
+      });
+
+      it("emits status=skipped reason=not-npx when running outside npx", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        // Don't set isRunningFromNpx — default is false.
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "skipped",
+          reason: "not-npx",
+        });
+      });
+
+      it("emits status=failed with error details when install throws", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        (
+          globalThis.__TEST_MOCKS__ as Record<string, unknown>
+        ).isRunningFromNpx = true;
+        (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+          async () => {
+            throw new Error("EACCES: permission denied");
+          };
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        const install = event?.install as
+          | { status: string; package: string; error: { message: string } }
+          | undefined;
+        expect(install?.status).toBe("failed");
+        expect(install?.package).toBe("@ably/cli@latest");
+        expect(install?.error.message).toMatch(/EACCES/);
+      });
     });
   });
 });
