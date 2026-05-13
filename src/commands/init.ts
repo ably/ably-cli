@@ -231,7 +231,7 @@ export default class Init extends AblyBaseCommand {
       const confirmed = await this.confirmGlobalInstall();
       if (!confirmed) {
         this.logWarning(
-          "Skipping global install. To install later: npm install -g @ably/cli",
+          "Skipping global install. To install later, Run: npm install -g @ably/cli",
           flags,
         );
         return;
