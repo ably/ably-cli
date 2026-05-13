@@ -45,4 +45,44 @@ describe("promptForConfirmation", () => {
     await promptForConfirmation("Are you sure?");
     expect(capturedQuery).toBe("Are you sure? [y/n]");
   });
+
+  describe("defaultYes", () => {
+    it("appends [Y/n] suffix when defaultYes is true", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("y");
+      };
+      await promptForConfirmation("Install globally?", { defaultYes: true });
+      expect(capturedQuery).toBe("Install globally? [Y/n]");
+    });
+
+    it("treats empty input as yes when defaultYes is true", async () => {
+      mockQuestion = (_query, callback) => callback("");
+      const result = await promptForConfirmation("Install globally?", {
+        defaultYes: true,
+      });
+      expect(result).toBe(true);
+    });
+
+    it("still treats explicit 'n' as no when defaultYes is true", async () => {
+      mockQuestion = (_query, callback) => callback("n");
+      const result = await promptForConfirmation("Install globally?", {
+        defaultYes: true,
+      });
+      expect(result).toBe(false);
+    });
+
+    it("does not double-append [Y/n] when the message already contains it", async () => {
+      let capturedQuery = "";
+      mockQuestion = (query, callback) => {
+        capturedQuery = query;
+        callback("y");
+      };
+      await promptForConfirmation("Install globally? [Y/n]", {
+        defaultYes: true,
+      });
+      expect(capturedQuery).toBe("Install globally? [Y/n]");
+    });
+  });
 });

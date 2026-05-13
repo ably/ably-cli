@@ -147,6 +147,22 @@ function mockFetchWithTarball(buffer: Buffer): void {
   });
 }
 
+function findInstallEvent(stdout: string): Record<string, unknown> | undefined {
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+      if (parsed.install) return parsed;
+    } catch {
+      // Not JSON — ignore. NDJSON streams may have non-JSON lines
+      // (logo, prompts) in non-JSON mode, but in --json mode all
+      // output should be JSON.
+    }
+  }
+  return undefined;
+}
+
 describe("init command", () => {
   let tempDir: string;
   let originalCwd: string;
@@ -217,13 +233,23 @@ describe("init command", () => {
       delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>).runLogin;
       delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>)
         .verifyAttestation;
+      delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>)
+        .isRunningFromNpx;
+      delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>)
+        .confirmGlobalInstall;
+      delete (globalThis.__TEST_MOCKS__ as Record<string, unknown>)
+        .installGlobally;
     }
     vi.restoreAllMocks();
   });
 
   standardHelpTests("init", import.meta.url);
   standardArgValidationTests("init", import.meta.url);
-  standardFlagTests("init", import.meta.url, ["--target", "--json"]);
+  standardFlagTests("init", import.meta.url, [
+    "--target",
+    "--json",
+    "--no-install",
+  ]);
 
   describe("functionality", () => {
     it("should install skills to the requested target when already authenticated", async () => {
@@ -493,6 +519,275 @@ describe("init command", () => {
           path.join(tempDir, ".cursor", "skills", "ably-pubsub", "SKILL.md"),
         ),
       ).toBe(true);
+    });
+  });
+
+  describe("global install (npx onboarding)", () => {
+    // The default test environment looks "not from npx" — these tests have to
+    // opt in via __TEST_MOCKS__.isRunningFromNpx to exercise the install path.
+    it("should not attempt a global install when not launched via npx", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+
+      const installCalls: string[] = [];
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async (pkg: string) => {
+          installCalls.push(pkg);
+        };
+
+      const { error } = await runCommand(
+        ["init", "--target", "cursor"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(installCalls).toEqual([]);
+    });
+
+    it("should not attempt a global install when --no-install is passed (even from npx)", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
+        true;
+
+      const installCalls: string[] = [];
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async (pkg: string) => {
+          installCalls.push(pkg);
+        };
+
+      const { error } = await runCommand(
+        ["init", "--target", "cursor", "--no-install"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(installCalls).toEqual([]);
+    });
+
+    it("should install globally in JSON mode without prompting", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
+        true;
+
+      const installCalls: string[] = [];
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async (pkg: string) => {
+          installCalls.push(pkg);
+        };
+
+      const { error } = await runCommand(
+        ["init", "--target", "cursor", "--json"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(installCalls).toEqual(["@ably/cli@latest"]);
+    });
+
+    it("should install globally in interactive mode when the user confirms", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
+        true;
+      (
+        globalThis.__TEST_MOCKS__ as Record<string, unknown>
+      ).confirmGlobalInstall = true;
+
+      const installCalls: string[] = [];
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async (pkg: string) => {
+          installCalls.push(pkg);
+        };
+
+      const { stderr, error } = await runCommand(
+        ["init", "--target", "cursor"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(installCalls).toEqual(["@ably/cli@latest"]);
+      expect(stderr).toMatch(/Installed @ably\/cli globally/);
+    });
+
+    it("should skip install and warn when the user declines the prompt", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
+        true;
+      (
+        globalThis.__TEST_MOCKS__ as Record<string, unknown>
+      ).confirmGlobalInstall = false;
+
+      const installCalls: string[] = [];
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async (pkg: string) => {
+          installCalls.push(pkg);
+        };
+
+      const { stderr, error } = await runCommand(
+        ["init", "--target", "cursor"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      expect(installCalls).toEqual([]);
+      expect(stderr).toMatch(/Skipping global install/);
+    });
+
+    it("should warn rather than fail when the global install command errors (non-JSON)", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
+        true;
+      (
+        globalThis.__TEST_MOCKS__ as Record<string, unknown>
+      ).confirmGlobalInstall = true;
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async () => {
+          throw new Error("EACCES: permission denied");
+        };
+
+      const { stderr, stdout, error } = await runCommand(
+        ["init", "--target", "cursor"],
+        import.meta.url,
+      );
+
+      // Install failure must not be fatal — the rest of init (auth, skills)
+      // is still useful, and the user can run `npm install -g` themselves.
+      expect(error).toBeUndefined();
+      // Non-JSON mode: terse warning. npm would have printed the real error
+      // to inherited stderr in production, so we don't restate it.
+      expect(stderr).toMatch(
+        /Could not install @ably\/cli globally\. Run: npm install -g @ably\/cli/,
+      );
+      // Specifically should NOT include the raw error detail in non-JSON mode.
+      expect(stderr).not.toMatch(/EACCES/);
+      expect(stdout).not.toMatch(/EACCES/);
+    });
+
+    it("should surface captured stderr in the JSON-mode failure warning", async () => {
+      mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).isRunningFromNpx =
+        true;
+      (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+        async () => {
+          throw new Error("EACCES: permission denied at /usr/local/lib");
+        };
+
+      const { stdout, error } = await runCommand(
+        ["init", "--target", "cursor", "--json"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      // JSON mode emits the warning as a structured NDJSON line via
+      // logWarning. The captured stderr (the thrown error's message in the
+      // test hook case) should be embedded so agents see why install failed.
+      expect(stdout).toMatch(/EACCES: permission denied at \/usr\/local\/lib/);
+    });
+
+    // Agents driving `ably init --json` need a structured signal for the
+    // install step's outcome. logProgress / logSuccessMessage are silent in
+    // JSON mode by design, so without a dedicated event the install step is
+    // invisible unless it fails. We emit one `install` event per init run.
+    describe("JSON install events", () => {
+      it("emits status=installed on a successful global install", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        (
+          globalThis.__TEST_MOCKS__ as Record<string, unknown>
+        ).isRunningFromNpx = true;
+        (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+          async () => {};
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "installed",
+          package: "@ably/cli@latest",
+        });
+      });
+
+      it("emits status=skipped reason=no-install-flag when --no-install is passed", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        (
+          globalThis.__TEST_MOCKS__ as Record<string, unknown>
+        ).isRunningFromNpx = true;
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json", "--no-install"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "skipped",
+          reason: "no-install-flag",
+        });
+      });
+
+      it("emits status=skipped reason=not-npx when --no-install is passed outside npx", async () => {
+        // The flag is only meaningful in the npx flow. From a globally
+        // installed binary, the more accurate reason for skipping is that
+        // we're not in npx — not the flag.
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        // No isRunningFromNpx override → defaults to false.
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json", "--no-install"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "skipped",
+          reason: "not-npx",
+        });
+      });
+
+      it("emits status=skipped reason=not-npx when running outside npx", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        // Don't set isRunningFromNpx — default is false.
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        expect(event?.install).toEqual({
+          status: "skipped",
+          reason: "not-npx",
+        });
+      });
+
+      it("emits status=failed with error details when install throws", async () => {
+        mockFetchWithTarball(await buildSkillsTarball("ably-pubsub"));
+        (
+          globalThis.__TEST_MOCKS__ as Record<string, unknown>
+        ).isRunningFromNpx = true;
+        (globalThis.__TEST_MOCKS__ as Record<string, unknown>).installGlobally =
+          async () => {
+            throw new Error("EACCES: permission denied");
+          };
+
+        const { stdout, error } = await runCommand(
+          ["init", "--target", "cursor", "--json"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const event = findInstallEvent(stdout);
+        const install = event?.install as
+          | { status: string; package: string; error: { message: string } }
+          | undefined;
+        expect(install?.status).toBe("failed");
+        expect(install?.package).toBe("@ably/cli@latest");
+        expect(install?.error.message).toMatch(/EACCES/);
+      });
     });
   });
 });

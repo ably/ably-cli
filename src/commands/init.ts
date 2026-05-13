@@ -1,3 +1,6 @@
+import { execSync } from "node:child_process";
+import path from "node:path";
+
 import { Flags } from "@oclif/core";
 import chalk from "chalk";
 
@@ -10,9 +13,17 @@ import {
 import { TARGET_CONFIGS } from "../services/skills-installer.js";
 import { resolveSkillsTargets } from "../services/skills-target-prompt.js";
 import { BaseFlags } from "../types/cli.js";
+import { extractErrorInfo } from "../utils/errors.js";
 import { displayLogo } from "../utils/logo.js";
 import { formatHeading, formatResource } from "../utils/output.js";
+import { promptForConfirmation } from "../utils/prompt-confirmation.js";
 import isTestMode from "../utils/test-mode.js";
+
+// Bound on the global install step so a hung npm registry can't leave the
+// onboarding command stuck with no feedback. On timeout execSync throws
+// ETIMEDOUT, which the catch block in maybeInstallGlobally turns into the
+// usual non-fatal warning (and JSON failure event).
+const GLOBAL_INSTALL_TIMEOUT_MS = 120_000;
 
 export default class Init extends AblyBaseCommand {
   static override description =
@@ -23,6 +34,7 @@ export default class Init extends AblyBaseCommand {
     "<%= config.bin %> <%= command.id %> --target claude-code",
     "<%= config.bin %> <%= command.id %> --target cursor --target windsurf",
     "<%= config.bin %> <%= command.id %> --target auto",
+    "<%= config.bin %> <%= command.id %> --no-install",
     "<%= config.bin %> <%= command.id %> --json",
   ];
 
@@ -34,6 +46,11 @@ export default class Init extends AblyBaseCommand {
       options: ["auto", ...Object.keys(TARGET_CONFIGS)],
       default: ["auto"],
       description: "Target IDE(s) to install skills for",
+    }),
+    "no-install": Flags.boolean({
+      default: false,
+      description:
+        "Skip installing @ably/cli globally (only relevant when launched via npx)",
     }),
   };
 
@@ -54,6 +71,8 @@ export default class Init extends AblyBaseCommand {
     if (!jsonMode) {
       displayLogo(this.log.bind(this));
     }
+
+    await this.maybeInstallGlobally(flags);
 
     await this.runAuth(flags);
 
@@ -182,5 +201,147 @@ export default class Init extends AblyBaseCommand {
   private hasControlApiAccess(): boolean {
     if (process.env.ABLY_ACCESS_TOKEN) return true;
     return Boolean(this.configManager.getAccessToken());
+  }
+
+  // When invoked via `npx @ably/cli init`, the running binary lives in an
+  // ephemeral npx cache that is not on PATH. Without a global install the user
+  // can't run `ably` again after init exits — defeating the "one-command
+  // onboarding" promise. Detect that situation and offer to install globally.
+  private async maybeInstallGlobally(flags: BaseFlags): Promise<void> {
+    const jsonMode = this.shouldOutputJson(flags);
+
+    // Order matters: --no-install is only meaningful when we would otherwise
+    // install (i.e. when running via npx). Checking the npx context first
+    // means a normal `ably init --no-install` from a globally installed
+    // binary reports the accurate reason ("not-npx") rather than the
+    // irrelevant flag.
+    if (!this.isRunningFromNpx()) {
+      this.emitInstallEvent(flags, { status: "skipped", reason: "not-npx" });
+      return;
+    }
+    if (flags["no-install"]) {
+      this.emitInstallEvent(flags, {
+        status: "skipped",
+        reason: "no-install-flag",
+      });
+      return;
+    }
+
+    if (!jsonMode) {
+      const confirmed = await this.confirmGlobalInstall();
+      if (!confirmed) {
+        this.logWarning(
+          "Skipping global install. To install later, Run: npm install -g @ably/cli",
+          flags,
+        );
+        return;
+      }
+    }
+
+    this.logProgress("Installing @ably/cli globally", flags);
+    try {
+      await this.runGlobalInstall(jsonMode);
+      this.logSuccessMessage("Installed @ably/cli globally.", flags);
+      this.emitInstallEvent(flags, {
+        status: "installed",
+        package: "@ably/cli@latest",
+      });
+    } catch (error) {
+      this.emitInstallEvent(flags, {
+        status: "failed",
+        package: "@ably/cli@latest",
+        error: extractErrorInfo(error),
+      });
+      if (jsonMode) {
+        // npm output was piped, so the thrown error already carries the
+        // captured stderr — surface it so agents see why install failed.
+        const detail = error instanceof Error ? error.message : String(error);
+        this.logWarning(
+          `Could not install @ably/cli globally automatically (${detail}). Run: npm install -g @ably/cli`,
+          flags,
+        );
+      } else {
+        // npm output was inherited, so npm has already printed the real error
+        // to the user's terminal. error.message is just "Command failed: ..."
+        // which adds no information — keep the warning terse.
+        this.logWarning(
+          "Could not install @ably/cli globally. Run: npm install -g @ably/cli",
+          flags,
+        );
+      }
+    }
+  }
+
+  private emitInstallEvent(
+    flags: BaseFlags,
+    install: Record<string, unknown>,
+  ): void {
+    if (!this.shouldOutputJson(flags)) return;
+    this.logJsonEvent({ install }, flags);
+  }
+
+  private async confirmGlobalInstall(): Promise<boolean> {
+    if (isTestMode()) {
+      const hook = globalThis.__TEST_MOCKS__?.confirmGlobalInstall;
+      if (typeof hook === "boolean") return hook;
+    }
+    return promptForConfirmation(
+      "Install @ably/cli globally so you can run 'ably' from any shell?",
+      { defaultYes: true },
+    );
+  }
+
+  private isRunningFromNpx(): boolean {
+    if (isTestMode()) {
+      const hook = globalThis.__TEST_MOCKS__?.isRunningFromNpx;
+      if (typeof hook === "boolean") return hook;
+    }
+    const entry = process.argv[1] ?? "";
+    return entry.includes(`${path.sep}_npx${path.sep}`);
+  }
+
+  // Test hook: when the unit tests set globalThis.__TEST_MOCKS__.installGlobally
+  // to a recording or throwing function, use that instead of shelling out to
+  // `npm install -g` — which would mutate the developer's machine and require
+  // network access during unit tests.
+  //
+  // In JSON mode we pipe npm's output instead of inheriting so the agent's
+  // NDJSON stream isn't polluted with "added N packages" / deprecation
+  // warnings. On failure we re-throw with the captured stderr appended so the
+  // caller's warning still surfaces the root cause.
+  private async runGlobalInstall(jsonMode: boolean): Promise<void> {
+    if (isTestMode()) {
+      const hook = globalThis.__TEST_MOCKS__?.installGlobally as
+        | ((pkg: string) => Promise<void>)
+        | undefined;
+      if (hook) {
+        await hook("@ably/cli@latest");
+        return;
+      }
+    }
+    if (jsonMode) {
+      try {
+        execSync("npm install -g @ably/cli@latest", {
+          stdio: "pipe",
+          timeout: GLOBAL_INSTALL_TIMEOUT_MS,
+        });
+      } catch (error) {
+        const stderr = (
+          error as { stderr?: Buffer | string } | undefined
+        )?.stderr
+          ?.toString()
+          .trim();
+        const baseMessage =
+          error instanceof Error ? error.message : String(error);
+        throw new Error(stderr ? `${baseMessage}: ${stderr}` : baseMessage, {
+          cause: error,
+        });
+      }
+      return;
+    }
+    execSync("npm install -g @ably/cli@latest", {
+      stdio: "inherit",
+      timeout: GLOBAL_INSTALL_TIMEOUT_MS,
+    });
   }
 }
