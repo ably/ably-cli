@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-05-13
+
+### Added
+
+- **`ably init` now completes the one-command onboarding flow by installing `@ably/cli` globally.** Run `npx @ably/cli init` once and the `ably` command is available in every shell from then on — no separate `npm install -g` needed. At-the-keyboard users get a single yes/no prompt (default Yes); `--json` mode runs the install silently for AI agents. Add `--no-install` to opt out. The install step is non-blocking — if it can't complete (e.g. `EACCES` on a system-wide Node install), init carries on with authentication and skills installation and tells the user how to install manually.
+
 ## [1.1.0] - 2026-05-12
 
 ### Added
