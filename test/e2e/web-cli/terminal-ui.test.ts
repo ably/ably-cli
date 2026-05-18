@@ -215,29 +215,37 @@ test.describe("Web CLI Terminal UI Tests", () => {
         page.locator('[data-testid="terminal-container-secondary"]'),
       ).toBeVisible();
 
-      // Wait for both terminals to initialize (needs extra time to avoid server-side rate limiting)
-      await page.waitForTimeout(5000);
-
-      // Type in the first terminal
       const primaryTerminal = page.locator(
         '[data-testid="terminal-container"] .xterm',
       );
+      const secondaryTerminal = page.locator(
+        '[data-testid="terminal-container-secondary"] .xterm',
+      );
+
+      // Wait for secondary terminal to finish connecting before interacting.
+      // The flat 5000ms wait is insufficient when server-side rate limiting
+      // delays the secondary WebSocket connection — we see the connection
+      // animation ("....................") until the session is established.
+      // Wait up to 20s for the shell prompt to appear instead.
+      await expect(secondaryTerminal).toContainText("$ ", { timeout: 20000 });
+
+      // Type in the first terminal
       await primaryTerminal.click();
       await page.keyboard.type("help");
       await page.keyboard.press("Enter");
 
       // Type in the second terminal
-      const secondaryTerminal = page.locator(
-        '[data-testid="terminal-container-secondary"] .xterm',
-      );
       await secondaryTerminal.click();
       await page.keyboard.type("--version");
       await page.keyboard.press("Enter");
 
       // Verify each terminal has its own output
-      await expect(primaryTerminal).toContainText("Subscribe to a channel");
+      await expect(primaryTerminal).toContainText("Subscribe to a channel", {
+        timeout: 15000,
+      });
       await expect(secondaryTerminal).toContainText(
         "browser-based interactive CLI",
+        { timeout: 15000 },
       );
     });
   });
