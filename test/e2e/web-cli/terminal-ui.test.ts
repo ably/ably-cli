@@ -226,8 +226,10 @@ test.describe("Web CLI Terminal UI Tests", () => {
       // The flat 5000ms wait is insufficient when server-side rate limiting
       // delays the secondary WebSocket connection — we see the connection
       // animation ("....................") until the session is established.
-      // Wait up to 20s for the shell prompt to appear instead.
-      await expect(secondaryTerminal).toContainText("$ ", { timeout: 20000 });
+      // Wait up to 20s for the ably interactive shell prompt to appear.
+      await expect(secondaryTerminal).toContainText("ably> ", {
+        timeout: 20000,
+      });
 
       // Type in the first terminal
       await primaryTerminal.click();
