@@ -48,6 +48,12 @@ export const TARGET_CONFIGS: Record<string, TargetConfig> = {
     // Codeium's per-user config tree (memories, global_workflows).
     relativeDir: path.join(".codeium", "windsurf", "skills"),
   },
+  zed: {
+    name: "Zed",
+    // Per zed.dev/docs/ai/skills, Zed's agent loads user-level Agent Skills
+    // from ~/.agents/skills/ (project-level lives at <worktree>/.agents/skills/).
+    relativeDir: path.join(".agents", "skills"),
+  },
 };
 
 /**

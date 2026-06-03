@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
 
 vi.mock("node:child_process", () => ({
   execFile: vi.fn(),
@@ -104,6 +105,30 @@ describe("tool-detector", () => {
     expect(cursor!.detected).toBe(true);
     expect(cursor!.evidence).toMatch(/^config:/);
     expect(cursor!.installMethod).toBe("file-copy");
+  });
+
+  it("should detect Zed via its config directory", async () => {
+    mockedExecFile.mockImplementation(
+      (_cmd: unknown, _args: unknown, _opts: unknown, cb: unknown) => {
+        (cb as (err: Error | null, stdout: string) => void)(
+          new Error("not found"),
+          "",
+        );
+        return undefined as never;
+      },
+    );
+
+    mockedExistsSync.mockImplementation((p: fs.PathLike) =>
+      String(p).includes(path.join(".config", "zed")),
+    );
+
+    const results = await detectTools();
+    const zed = results.find((t) => t.id === "zed");
+
+    expect(zed).toBeDefined();
+    expect(zed!.detected).toBe(true);
+    expect(zed!.evidence).toMatch(/^config:/);
+    expect(zed!.installMethod).toBe("file-copy");
   });
 
   it("should detect multiple tools simultaneously", async () => {

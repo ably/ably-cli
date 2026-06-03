@@ -120,12 +120,12 @@ describe("SkillsInstaller", () => {
         const { results } = installer.install({
           skills,
 
-          targets: ["claude-code", "cursor", "vscode"],
+          targets: ["claude-code", "cursor", "vscode", "zed"],
         });
 
-        expect(results).toHaveLength(3);
+        expect(results).toHaveLength(4);
 
-        for (const target of [".claude", ".cursor", ".copilot"]) {
+        for (const target of [".claude", ".cursor", ".copilot", ".agents"]) {
           expect(
             fs.existsSync(
               path.join(

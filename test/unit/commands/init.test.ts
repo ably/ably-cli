@@ -53,6 +53,13 @@ const ALL_UNDETECTED: DetectedTool[] = [
     evidence: "",
     installMethod: InstallMethod.FileCopy,
   },
+  {
+    id: "zed",
+    name: "Zed",
+    detected: false,
+    evidence: "",
+    installMethod: InstallMethod.FileCopy,
+  },
 ];
 
 async function buildSkillsTarball(...names: string[]): Promise<Buffer> {
