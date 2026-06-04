@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-04
+
+### Added
+
+- **Zed support for Agent Skills.** `ably init` and `ably skills install` can now install the Ably Agent Skills into [Zed](https://zed.dev), which loads user-level skills from `~/.agents/skills/`. Zed is auto-detected (via the `zed` CLI, the macOS/Linux/Windows app install paths, and the `~/.config/zed` config directory) and is also available as an explicit `--target zed`.
+
+### Fixed
+
+- Web CLI: push payload arguments (`push publish`, `push batch-publish`, `push devices save`) no longer read server-side files; file references are rejected with a clear message and inline JSON is used instead.
+
 ## [1.1.1] - 2026-05-13
 
 ### Added
