@@ -1,6 +1,4 @@
 import { Flags } from "@oclif/core";
-import * as fs from "node:fs";
-import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
@@ -202,15 +200,12 @@ export default class PushDevicesSave extends AblyBaseCommand {
     data: string,
     flags: Record<string, unknown>,
   ): Record<string, unknown> {
-    let jsonString = data;
-
-    if (data.startsWith("@")) {
-      const filePath = path.resolve(data.slice(1));
-      if (!fs.existsSync(filePath)) {
-        this.fail(`File not found: ${filePath}`, flags, "pushDeviceSave");
-      }
-      jsonString = fs.readFileSync(filePath, "utf8");
-    }
+    const jsonString = this.resolveJsonInput(
+      data,
+      "--data",
+      flags,
+      "pushDeviceSave",
+    );
 
     let parsed: unknown;
     try {

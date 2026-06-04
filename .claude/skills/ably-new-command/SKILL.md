@@ -429,7 +429,10 @@ If the new command shouldn't be available in the web CLI, add it to the appropri
 - `WEB_CLI_ANONYMOUS_RESTRICTED_COMMANDS` — for commands that expose account/app data
 - `INTERACTIVE_UNSUITABLE_COMMANDS` — for commands that don't work in interactive mode
 
-**Security rule:** Any command that reads or uploads files from the filesystem (e.g., certificate uploads, key file imports) **must** be added to `WEB_CLI_RESTRICTED_COMMANDS`. The web CLI runs on a server — file-reading commands would read from the server's filesystem, not the user's local machine, which could expose server contents. There is no file upload mechanism in the web CLI to transfer local files.
+**Security rule:** The web CLI runs on a shared server — any command that reads files from the filesystem reads the *server's* files, not the user's local machine, which can expose server contents. There is no file-upload mechanism in the web CLI to transfer local files. So for any command that reads files, choose one of:
+
+1. **Block the command** — add it to `WEB_CLI_RESTRICTED_COMMANDS` when the *entire* command is meaningless without local files (e.g. `push config set-fcm`/`set-apns` exist only to upload a credentials file).
+2. **Disable just the file read** — when the command is still useful with inline input (e.g. `push publish`/`batch-publish`/`devices save` accept JSON inline), load the input through the `this.resolveJsonInput(input, label, flags, component)` base-command helper. It reads `@file`/path inputs from disk in local mode but, in web CLI mode, treats the input as literal data and rejects `@file` references — so the command keeps working without a server-side file-read sink. **Never** call `fs.readFileSync` directly on flag/arg values; always go through `resolveJsonInput` so the web-CLI restriction is inherited rather than re-implemented (and re-missed) per command.
 
 ## Step 6: Validate
 

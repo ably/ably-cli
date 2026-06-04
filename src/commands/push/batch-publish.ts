@@ -1,6 +1,4 @@
 import { Args } from "@oclif/core";
-import * as fs from "node:fs";
-import * as path from "node:path";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { CommandError } from "../../errors/command-error.js";
@@ -108,26 +106,13 @@ export default class PushBatchPublish extends AblyBaseCommand {
         jsonString = await this.readStdin();
       } else if (payloadArg === "-") {
         jsonString = await this.readStdin();
-      } else if (payloadArg.startsWith("@")) {
-        const filePath = path.resolve(payloadArg.slice(1));
-        if (!fs.existsSync(filePath)) {
-          this.fail(`File not found: ${filePath}`, flags, "pushBatchPublish");
-        }
-        jsonString = fs.readFileSync(filePath, "utf8");
-      } else if (
-        payloadArg.startsWith("/") ||
-        payloadArg.startsWith("./") ||
-        payloadArg.startsWith("../")
-      ) {
-        const filePath = path.resolve(payloadArg);
-        if (!fs.existsSync(filePath)) {
-          this.fail(`File not found: ${filePath}`, flags, "pushBatchPublish");
-        }
-        jsonString = fs.readFileSync(filePath, "utf8");
-      } else if (fs.existsSync(path.resolve(payloadArg))) {
-        jsonString = fs.readFileSync(path.resolve(payloadArg), "utf8");
       } else {
-        jsonString = payloadArg;
+        jsonString = this.resolveJsonInput(
+          payloadArg,
+          "the batch payload",
+          flags,
+          "pushBatchPublish",
+        );
       }
 
       let batchPayload: unknown[];

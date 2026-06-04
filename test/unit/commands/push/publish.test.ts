@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
@@ -502,6 +505,76 @@ describe("push:publish command", () => {
       );
 
       expect(error).toBeDefined();
+    });
+  });
+
+  // In web CLI mode --payload must never read from the server's filesystem.
+  // The file-loading shortcut is local-CLI only.
+  describe("web CLI file-read restriction", () => {
+    let originalWebCliMode: string | undefined;
+    let secretFile: string;
+
+    beforeEach(() => {
+      originalWebCliMode = process.env.ABLY_WEB_CLI_MODE;
+      secretFile = path.join(os.tmpdir(), `vul506-publish-${process.pid}.json`);
+      fs.writeFileSync(
+        secretFile,
+        '{"notification":{"title":"SECRET_FROM_FILE"}}',
+      );
+    });
+
+    afterEach(() => {
+      if (originalWebCliMode === undefined) {
+        delete process.env.ABLY_WEB_CLI_MODE;
+      } else {
+        process.env.ABLY_WEB_CLI_MODE = originalWebCliMode;
+      }
+      if (fs.existsSync(secretFile)) fs.rmSync(secretFile);
+    });
+
+    it("reads a local file payload when NOT in web CLI mode", async () => {
+      const mock = getMockAblyRest();
+      mock.push.admin.publish.mockImplementation(async () => {});
+
+      const { stderr } = await runCommand(
+        ["push:publish", "--device-id", "dev-1", "--payload", secretFile],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("published");
+      expect(mock.push.admin.publish).toHaveBeenCalledWith(
+        { deviceId: "dev-1" },
+        expect.objectContaining({
+          notification: { title: "SECRET_FROM_FILE" },
+        }),
+      );
+    });
+
+    it("does NOT read a server-side file path in web CLI mode", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+      const mock = getMockAblyRest();
+
+      const { error } = await runCommand(
+        ["push:publish", "--device-id", "dev-1", "--payload", secretFile],
+        import.meta.url,
+      );
+
+      // The path is treated as literal data, fails JSON parsing, and the file
+      // contents are never read or published.
+      expect(error).toBeDefined();
+      expect(mock.push.admin.publish).not.toHaveBeenCalled();
+    });
+
+    it("rejects @file payload references in web CLI mode", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+
+      const { error } = await runCommand(
+        ["push:publish", "--device-id", "dev-1", "--payload", `@${secretFile}`],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not supported in the web CLI");
     });
   });
 });
