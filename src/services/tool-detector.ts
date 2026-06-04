@@ -89,6 +89,22 @@ const TOOL_CHECKS: ToolCheck[] = [
     winPaths: [path.join(localAppData, "Programs", "Windsurf", "Windsurf.exe")],
     configDirs: [path.join(home, ".windsurf")],
   },
+  {
+    id: "zed",
+    name: "Zed",
+    installMethod: InstallMethod.FileCopy,
+    cliNames: ["zed"],
+    macApps: ["/Applications/Zed.app"],
+    // Zed's Linux install script unpacks to ~/.local/zed.app and links a `zed`
+    // launcher into ~/.local/bin; package builds land in /usr/{bin,lib}.
+    linuxPaths: [
+      path.join(home, ".local", "zed.app"),
+      "/usr/bin/zed",
+      "/usr/lib/zed",
+    ],
+    winPaths: [path.join(localAppData, "Programs", "Zed", "Zed.exe")],
+    configDirs: [path.join(home, ".config", "zed")],
+  },
 ];
 
 function checkCli(name: string): Promise<string | null> {
