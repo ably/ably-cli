@@ -464,4 +464,122 @@ describe("DX-1379: inactivity pause & resume-on-return", () => {
     // Fresh session: no sessionId in the auth payload.
     expect(freshAuth?.sessionId).toBeUndefined();
   });
+
+  test("resume uses freshly-refreshed credentials for the handshake", async () => {
+    const freshConfig = JSON.stringify({
+      apiKey: "app.key:fresh",
+      accessToken: "fresh-tok",
+      timestamp: 2,
+    });
+    const refreshCredentials = vi
+      .fn()
+      .mockResolvedValue({ signedConfig: freshConfig, signature: "fresh-sig" });
+
+    await act(async () => {
+      render(
+        <AblyCliTerminal
+          websocketUrl={WS_URL}
+          signedConfig={SIGNED_CONFIG}
+          signature={SIGNATURE}
+          resumeOnReload
+          inactivityTimeoutMs={INACTIVITY_MS}
+          refreshCredentials={refreshCredentials}
+        />,
+      );
+    });
+    await flush();
+    const ws = sockets[0];
+    await act(async () => {
+      ws.fireOpen();
+    });
+    await flush();
+    await act(async () => {
+      ws.fireMessage(
+        createControlMessage({ type: "hello", sessionId: "sess-4" }),
+      );
+    });
+    await flush();
+
+    await act(async () => {
+      setVisibility("hidden");
+    });
+    await flush();
+    await act(async () => {
+      vi.advanceTimersByTime(INACTIVITY_MS + 10);
+    });
+    await flush();
+
+    const socketsAfterPause = sockets.length;
+    await act(async () => {
+      setVisibility("visible");
+    });
+    await flush();
+    await act(async () => {
+      vi.advanceTimersByTime(50);
+    });
+    await flush();
+
+    const resumeSocket = sockets[socketsAfterPause];
+    await act(async () => {
+      resumeSocket.fireOpen();
+    });
+    await flush();
+
+    expect(refreshCredentials).toHaveBeenCalled();
+    const authSend = resumeSocket.send.mock.calls
+      .map(([raw]) => {
+        try {
+          return JSON.parse(raw as string);
+        } catch {
+          return null;
+        }
+      })
+      .find((p) => p && p.config);
+    // The handshake carries the refreshed signed config, not the stale prop.
+    expect(authSend?.config).toBe(freshConfig);
+    expect(authSend?.signature).toBe("fresh-sig");
+    expect(authSend?.sessionId).toBe("sess-4");
+  });
+
+  test.each([
+    ["returns null", vi.fn().mockResolvedValue(null)],
+    ["throws", vi.fn().mockRejectedValue(new Error("offline"))],
+  ])(
+    "falls back to the prop credentials when refreshCredentials %s",
+    async (_label, refreshCredentials) => {
+      await act(async () => {
+        render(
+          <AblyCliTerminal
+            websocketUrl={WS_URL}
+            signedConfig={SIGNED_CONFIG}
+            signature={SIGNATURE}
+            resumeOnReload
+            inactivityTimeoutMs={INACTIVITY_MS}
+            refreshCredentials={refreshCredentials}
+          />,
+        );
+      });
+      await flush();
+      const ws = sockets[0];
+      await act(async () => {
+        ws.fireOpen();
+      });
+      await flush();
+
+      expect(refreshCredentials).toHaveBeenCalled();
+      const authSend = ws.send.mock.calls
+        .map(([raw]) => {
+          try {
+            return JSON.parse(raw as string);
+          } catch {
+            return null;
+          }
+        })
+        .find((p) => p && p.config);
+      // Refresh produced nothing usable, so the handshake still goes out using
+      // the static prop config rather than failing/hanging.
+      expect(authSend?.config).toBe(SIGNED_CONFIG);
+      expect(authSend?.signature).toBe(SIGNATURE);
+    },
+  );
 });

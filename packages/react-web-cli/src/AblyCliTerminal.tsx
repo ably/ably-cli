@@ -127,6 +127,17 @@ export interface AblyCliTerminalProperties {
    */
   inactivityTimeoutMs?: number;
   /**
+   * Called right before each (re)connection handshake to obtain fresh auth.
+   * Short-lived signed configs expire (the terminal server rejects configs
+   * older than a few minutes), so a resume or reconnect after the tab has been
+   * idle would otherwise fail with "Config expired". Return fresh credentials to
+   * use for the handshake, or null/undefined to keep the current
+   * signedConfig/signature props. Errors are swallowed and fall back to props.
+   */
+  refreshCredentials?: () => Promise<
+    { signedConfig: string; signature: string } | null | undefined
+  >;
+  /**
    * When true, enables split-screen mode with a second independent terminal.
    * A split icon will be displayed in the top-right corner when in single-pane mode.
    */
@@ -207,6 +218,7 @@ const AblyCliTerminalInner = (
     resumeOnReload,
     maxReconnectAttempts,
     inactivityTimeoutMs,
+    refreshCredentials,
     enableSplitScreen = false,
     showSplitControl = true,
   }: AblyCliTerminalProperties,
@@ -583,6 +595,41 @@ const AblyCliTerminalInner = (
   // Set while an inactivity-resume attempt is in flight, so a failed resume can
   // fall back to a fresh session instead of dead-ending on the manual prompt.
   const resumeAttemptReference = useRef<boolean>(false);
+
+  // Effective auth used for handshakes. Starts from the props and is replaced by
+  // refreshCredentials() output (when provided) so resumes/reconnects after the
+  // tab has been idle use a fresh, non-expired signed config.
+  const refreshCredentialsReference = useRef(refreshCredentials);
+  const effectiveSignedConfigReference = useRef(signedConfig);
+  const effectiveSignatureReference = useRef(signature);
+  useEffect(() => {
+    refreshCredentialsReference.current = refreshCredentials;
+  }, [refreshCredentials]);
+  useEffect(() => {
+    effectiveSignedConfigReference.current = signedConfig;
+  }, [signedConfig]);
+  useEffect(() => {
+    effectiveSignatureReference.current = signature;
+  }, [signature]);
+
+  // Pull fresh credentials before a handshake; falls back to current props.
+  const refreshAuth = useCallback(async () => {
+    const fn = refreshCredentialsReference.current;
+    if (!fn) return;
+    try {
+      const fresh = await fn();
+      if (fresh?.signedConfig && fresh?.signature) {
+        effectiveSignedConfigReference.current = fresh.signedConfig;
+        effectiveSignatureReference.current = fresh.signature;
+      }
+    } catch (error) {
+      debugLog(
+        "[AblyCLITerminal] refreshCredentials failed; using existing auth",
+        error,
+      );
+    }
+  }, []);
+
   // Guard to ensure we do NOT double-count a failed attempt when both the
   // `error` and the subsequent `close` events fire for the *same* socket.
   const reconnectScheduledThisCycleReference = useRef<boolean>(false);
@@ -1465,87 +1512,97 @@ const AblyCliTerminalInner = (
 
   const socketReference = useRef<WebSocket | null>(null); // Ref to hold the current socket for cleanup
 
-  const handleWebSocketOpen = useCallback(() => {
-    // console.log('[AblyCLITerminal] WebSocket opened');
-    // Clear connection timeout since we successfully connected
-    clearConnectionTimeout();
+  const handleWebSocketOpen = useCallback(
+    async (sock: WebSocket) => {
+      // `sock` is the socket that fired this open event. We send auth on it
+      // specifically (not socketReference.current) because refreshAuth() awaits a
+      // network call, during which a newer reconnect could have replaced the ref.
+      // console.log('[AblyCLITerminal] WebSocket opened');
+      // Clear connection timeout since we successfully connected
+      clearConnectionTimeout();
 
-    // Do not reset reconnection attempts here; wait until terminal prompt confirms full session
-    setShowManualReconnectPrompt(false);
+      // Do not reset reconnection attempts here; wait until terminal prompt confirms full session
+      setShowManualReconnectPrompt(false);
 
-    // Only clear buffer for new sessions, not when resuming
-    if (sessionId) {
-      debugLog(
-        `⚠️ DIAGNOSTIC: Skipping PTY buffer clear for resumed session ${sessionId}`,
-      );
-      // For resumed sessions, we might already be at a prompt
-      // Check if we need to activate the session immediately
-      if (
-        connectionStatusReference.current === "connected" &&
-        !isSessionActiveReference.current
-      ) {
+      // Only clear buffer for new sessions, not when resuming
+      if (sessionId) {
         debugLog(
-          `⚠️ DIAGNOSTIC: Resumed session but not active - checking for existing prompt`,
+          `⚠️ DIAGNOSTIC: Skipping PTY buffer clear for resumed session ${sessionId}`,
         );
+        // For resumed sessions, we might already be at a prompt
+        // Check if we need to activate the session immediately
+        if (
+          connectionStatusReference.current === "connected" &&
+          !isSessionActiveReference.current
+        ) {
+          debugLog(
+            `⚠️ DIAGNOSTIC: Resumed session but not active - checking for existing prompt`,
+          );
+        }
+      } else {
+        clearPtyBuffer(); // Clear buffer for new session prompt detection
+        debugLog(`⚠️ DIAGNOSTIC: Cleared PTY buffer for new session`);
       }
-    } else {
-      clearPtyBuffer(); // Clear buffer for new session prompt detection
-      debugLog(`⚠️ DIAGNOSTIC: Cleared PTY buffer for new session`);
-    }
 
-    debugLog(
-      "⚠️ DIAGNOSTIC: WebSocket open handler started - tracking initialization sequence",
-    );
-
-    if (term.current) {
-      debugLog("⚠️ DIAGNOSTIC: Focusing terminal");
-      term.current.focus();
-      // Don't send the initial command yet - wait for prompt detection
-    }
-
-    // Send auth payload with signed config
-    const payload = createAuthPayload(sessionId, signedConfig, signature);
-
-    debugLog(
-      `⚠️ DIAGNOSTIC: Preparing to send auth payload with env vars: ${JSON.stringify(payload.environmentVariables)}`,
-    );
-    debugLog(
-      `⚠️ DIAGNOSTIC: Auth payload includes sessionId: ${payload.sessionId || "none (new session)"}`,
-    );
-
-    if (
-      socketReference.current &&
-      socketReference.current.readyState === WebSocket.OPEN
-    ) {
-      debugLog("⚠️ DIAGNOSTIC: Sending auth payload to server");
-      socketReference.current.send(JSON.stringify(payload));
-    }
-
-    // Set up initial command to be sent when prompt is detected
-    // Skip initial command if we're resuming an existing session
-    if (initialCommand && !sessionId) {
       debugLog(
-        `⚠️ DIAGNOSTIC: Initial command present: "${initialCommand}" - will be sent when prompt is detected`,
+        "⚠️ DIAGNOSTIC: WebSocket open handler started - tracking initialization sequence",
       );
-      pendingInitialCommandReference.current = initialCommand;
-    } else if (initialCommand && sessionId) {
-      debugLog(
-        `⚠️ DIAGNOSTIC: Skipping initial command for resumed session ${sessionId}`,
-      );
-    } else if (!initialCommand) {
-      debugLog("⚠️ DIAGNOSTIC: No initial command provided");
-    }
 
-    // persistence handled by dedicated useEffect
-    debugLog("WebSocket OPEN handler completed. sessionId:", sessionId);
-  }, [
-    initialCommand,
-    clearPtyBuffer,
-    sessionId,
-    clearConnectionTimeout,
-    signedConfig,
-    signature,
-  ]);
+      if (term.current) {
+        debugLog("⚠️ DIAGNOSTIC: Focusing terminal");
+        term.current.focus();
+        // Don't send the initial command yet - wait for prompt detection
+      }
+
+      // Refresh credentials before authenticating so a resume/reconnect after the
+      // tab has been idle doesn't hand the server an expired signed config.
+      await refreshAuth();
+
+      // Send auth payload with signed config
+      const payload = createAuthPayload(
+        sessionId,
+        effectiveSignedConfigReference.current,
+        effectiveSignatureReference.current,
+      );
+
+      debugLog(
+        `⚠️ DIAGNOSTIC: Preparing to send auth payload with env vars: ${JSON.stringify(payload.environmentVariables)}`,
+      );
+      debugLog(
+        `⚠️ DIAGNOSTIC: Auth payload includes sessionId: ${payload.sessionId || "none (new session)"}`,
+      );
+
+      if (sock.readyState === WebSocket.OPEN) {
+        debugLog("⚠️ DIAGNOSTIC: Sending auth payload to server");
+        sock.send(JSON.stringify(payload));
+      }
+
+      // Set up initial command to be sent when prompt is detected
+      // Skip initial command if we're resuming an existing session
+      if (initialCommand && !sessionId) {
+        debugLog(
+          `⚠️ DIAGNOSTIC: Initial command present: "${initialCommand}" - will be sent when prompt is detected`,
+        );
+        pendingInitialCommandReference.current = initialCommand;
+      } else if (initialCommand && sessionId) {
+        debugLog(
+          `⚠️ DIAGNOSTIC: Skipping initial command for resumed session ${sessionId}`,
+        );
+      } else if (!initialCommand) {
+        debugLog("⚠️ DIAGNOSTIC: No initial command provided");
+      }
+
+      // persistence handled by dedicated useEffect
+      debugLog("WebSocket OPEN handler completed. sessionId:", sessionId);
+    },
+    [
+      initialCommand,
+      clearPtyBuffer,
+      sessionId,
+      clearConnectionTimeout,
+      refreshAuth,
+    ],
+  );
 
   const handleWebSocketMessage = useCallback(
     async (event: MessageEvent) => {
@@ -2549,7 +2606,10 @@ const AblyCliTerminalInner = (
       const messageListener = (event: MessageEvent) => {
         void handleWebSocketMessage(event);
       };
-      socket.addEventListener("open", handleWebSocketOpen);
+      const openListener = () => {
+        void handleWebSocketOpen(socket);
+      };
+      socket.addEventListener("open", openListener);
       socket.addEventListener("message", messageListener);
       socket.addEventListener("close", handleWebSocketClose);
       socket.addEventListener("error", handleWebSocketError);
@@ -2559,7 +2619,7 @@ const AblyCliTerminalInner = (
         debugLog(
           "[AblyCLITerminal] Cleaning up WebSocket event listeners for old socket.",
         );
-        socket.removeEventListener("open", handleWebSocketOpen);
+        socket.removeEventListener("open", openListener);
         socket.removeEventListener("message", messageListener);
         socket.removeEventListener("close", handleWebSocketClose);
         socket.removeEventListener("error", handleWebSocketError);
@@ -3033,39 +3093,44 @@ const AblyCliTerminalInner = (
 
     // WebSocket open handler
     newSocket.addEventListener("open", () => {
-      debugLog("[AblyCLITerminal] Secondary WebSocket opened");
+      void (async () => {
+        debugLog("[AblyCLITerminal] Secondary WebSocket opened");
 
-      // Clear any reconnect prompt
-      setSecondaryShowManualReconnectPrompt(false);
-      secondaryShowManualReconnectPromptReference.current = false;
+        // Clear any reconnect prompt
+        setSecondaryShowManualReconnectPrompt(false);
+        secondaryShowManualReconnectPromptReference.current = false;
 
-      if (secondaryTerm.current) {
-        secondaryTerm.current.focus();
-      }
+        if (secondaryTerm.current) {
+          secondaryTerm.current.focus();
+        }
 
-      // Send auth payload with signed config
-      const payload = createAuthPayload(
-        secondarySessionId,
-        signedConfig,
-        signature,
-      );
+        // Refresh credentials before authenticating (see primary handler).
+        await refreshAuth();
 
-      if (newSocket.readyState === WebSocket.OPEN) {
-        newSocket.send(JSON.stringify(payload));
-      }
-
-      // Set up initial command to be sent when prompt is detected
-      // Skip initial command if we're resuming an existing session
-      if (initialCommand && !secondarySessionId) {
-        debugLog(
-          `[AblyCLITerminal] [Secondary] Initial command present: "${initialCommand}" - will be sent when prompt is detected`,
+        // Send auth payload with signed config
+        const payload = createAuthPayload(
+          secondarySessionId,
+          effectiveSignedConfigReference.current,
+          effectiveSignatureReference.current,
         );
-        pendingSecondaryInitialCommandReference.current = initialCommand;
-      } else if (initialCommand && secondarySessionId) {
-        debugLog(
-          `[AblyCLITerminal] [Secondary] Skipping initial command for resumed session ${secondarySessionId}`,
-        );
-      }
+
+        if (newSocket.readyState === WebSocket.OPEN) {
+          newSocket.send(JSON.stringify(payload));
+        }
+
+        // Set up initial command to be sent when prompt is detected
+        // Skip initial command if we're resuming an existing session
+        if (initialCommand && !secondarySessionId) {
+          debugLog(
+            `[AblyCLITerminal] [Secondary] Initial command present: "${initialCommand}" - will be sent when prompt is detected`,
+          );
+          pendingSecondaryInitialCommandReference.current = initialCommand;
+        } else if (initialCommand && secondarySessionId) {
+          debugLog(
+            `[AblyCLITerminal] [Secondary] Skipping initial command for resumed session ${secondarySessionId}`,
+          );
+        }
+      })();
     });
 
     // WebSocket message handler with binary framing support
@@ -3348,13 +3413,7 @@ const AblyCliTerminalInner = (
 
     return newSocket;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- callback is accessed via connectSecondaryWebSocketReference ref; missing deps include hoisted callbacks and state that would cause cascading recreations
-  }, [
-    websocketUrl,
-    signedConfig,
-    signature,
-    resumeOnReload,
-    secondarySessionId,
-  ]);
+  }, [websocketUrl, refreshAuth, resumeOnReload, secondarySessionId]);
 
   // Keep the ref updated with the latest callback
   connectSecondaryWebSocketReference.current = connectSecondaryWebSocket;
