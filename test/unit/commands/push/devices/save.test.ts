@@ -352,12 +352,43 @@ describe("push:devices:save command", () => {
       );
     });
 
+    it("reads a local --data path input when NOT in web CLI mode", async () => {
+      const mock = getMockAblyRest();
+      mock.push.admin.deviceRegistrations.save.mockResolvedValue({
+        id: "device-2",
+      });
+
+      const { stderr } = await runCommand(
+        ["push:devices:save", "--data", secretFile],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Device registration saved");
+      expect(mock.push.admin.deviceRegistrations.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "device-2", platform: "android" }),
+      );
+    });
+
     it("rejects --data @file references in web CLI mode", async () => {
       process.env.ABLY_WEB_CLI_MODE = "true";
       const mock = getMockAblyRest();
 
       const { error } = await runCommand(
         ["push:devices:save", "--data", `@${secretFile}`],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not supported in the web CLI");
+      expect(mock.push.admin.deviceRegistrations.save).not.toHaveBeenCalled();
+    });
+
+    it("rejects a --data path input in web CLI mode without reading it", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+      const mock = getMockAblyRest();
+
+      const { error } = await runCommand(
+        ["push:devices:save", "--data", secretFile],
         import.meta.url,
       );
 

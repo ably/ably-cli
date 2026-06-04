@@ -550,7 +550,7 @@ describe("push:publish command", () => {
       );
     });
 
-    it("does NOT read a server-side file path in web CLI mode", async () => {
+    it("rejects a server-side file path in web CLI mode without reading it", async () => {
       process.env.ABLY_WEB_CLI_MODE = "true";
       const mock = getMockAblyRest();
 
@@ -559,9 +559,10 @@ describe("push:publish command", () => {
         import.meta.url,
       );
 
-      // The path is treated as literal data, fails JSON parsing, and the file
+      // A path-like payload is rejected with a clear message and the file
       // contents are never read or published.
       expect(error).toBeDefined();
+      expect(error?.message).toContain("not supported in the web CLI");
       expect(mock.push.admin.publish).not.toHaveBeenCalled();
     });
 

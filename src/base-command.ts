@@ -1720,10 +1720,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * SECURITY: in web CLI mode the filesystem belongs to the shared
    * terminal-server container, not the user's machine — reading from it
    * would disclose server-side files. So in web CLI mode this NEVER touches the
-   * filesystem: the input is always treated as a literal JSON string, and an
-   * explicit `@file` reference is rejected with a clear error. Any command that
-   * accepts a JSON-or-file input MUST go through this helper so the restriction
-   * is inherited rather than re-implemented per command.
+   * filesystem: the input is always treated as a literal JSON string, and any
+   * file reference (`@file` or a path prefix) is rejected with a clear error.
+   * Any command that accepts a JSON-or-file input MUST go through this helper so
+   * the restriction is inherited rather than re-implemented per command.
    */
   protected resolveJsonInput(
     input: string,
@@ -1732,10 +1732,17 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     component: string,
   ): string {
     // Web CLI: the filesystem is server-side. Never read it; treat the input as
-    // literal data. Reject the documented `@file` syntax explicitly so users
-    // get a clear message instead of a confusing JSON parse error.
+    // literal data. Reject anything that looks like a file reference explicitly
+    // so users get a clear message instead of a confusing JSON parse error.
+    // Detection is prefix-based only — we must not probe `existsSync` here, as
+    // that would itself touch the server's filesystem.
     if (this.isWebCliMode) {
-      if (input.startsWith("@")) {
+      const looksLikeFileReference =
+        input.startsWith("@") ||
+        input.startsWith("/") ||
+        input.startsWith("./") ||
+        input.startsWith("../");
+      if (looksLikeFileReference) {
         this.fail(
           `Loading ${inputLabel} from a file is not supported in the web CLI. Pass the JSON inline instead.`,
           flags,
