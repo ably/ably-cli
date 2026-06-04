@@ -120,6 +120,13 @@ export interface AblyCliTerminalProperties {
   resumeOnReload?: boolean;
   maxReconnectAttempts?: number;
   /**
+   * Idle time (ms) after which a backgrounded session is paused (the websocket
+   * is closed to free server resources). When the tab is foregrounded again the
+   * session is resumed automatically. Defaults to 5 minutes. Lower it (e.g. in
+   * dev) to exercise the pause/resume cycle without waiting.
+   */
+  inactivityTimeoutMs?: number;
+  /**
    * When true, enables split-screen mode with a second independent terminal.
    * A split icon will be displayed in the top-right corner when in single-pane mode.
    */
@@ -165,6 +172,29 @@ if (globalThis.window !== undefined) {
 // stable between renders and doesn't trigger exhaustive-deps warnings.
 const spinnerFrames = ["●  ", " ● ", "  ●", " ● "];
 
+// Close codes that should *not* trigger automatic reconnection because they
+// represent explicit server-side rejections. Codes such as 1005 (No Status) or
+// 1006 (Abnormal Closure) can legitimately occur when the server is temporarily
+// unreachable, so they are intentionally excluded (treated as recoverable).
+// Single source of truth so the primary and secondary close handlers can't drift.
+// 4900 (client-initiated inactivity pause) is deliberately NOT here — it is
+// handled as a recoverable pause/resume, never a terminal disconnect.
+const BASE_NON_RECOVERABLE_CLOSE_CODES = [
+  4001, // Policy violation (e.g. invalid credentials)
+  4008, // Token expired
+  1013, // Try again later – the server is telling us not to retry
+  4002, // Session resume rejected
+  4000, // Generic server error
+  4003, // Rate limit exceeded
+  4004, // Unsupported protocol version
+  4009, // Server at capacity
+] as const;
+
+// Private (4900-range) close code the client uses to pause a backgrounded
+// session. Distinct from the server's 4002 "resume rejected" so the two are
+// never confused.
+const INACTIVITY_PAUSE_CLOSE_CODE = 4900;
+
 const AblyCliTerminalInner = (
   {
     websocketUrl,
@@ -176,6 +206,7 @@ const AblyCliTerminalInner = (
     onSessionId,
     resumeOnReload,
     maxReconnectAttempts,
+    inactivityTimeoutMs,
     enableSplitScreen = false,
     showSplitControl = true,
   }: AblyCliTerminalProperties,
@@ -546,6 +577,12 @@ const AblyCliTerminalInner = (
 
   // Ref to track manual reconnect prompt visibility inside stable event handlers
   const showManualReconnectPromptReference = useRef<boolean>(false);
+  // Set when the session was paused due to background inactivity (rather than a
+  // server-side disconnect). Drives automatic resume when the tab is foregrounded.
+  const pausedForInactivityReference = useRef<boolean>(false);
+  // Set while an inactivity-resume attempt is in flight, so a failed resume can
+  // fall back to a fresh session instead of dead-ending on the manual prompt.
+  const resumeAttemptReference = useRef<boolean>(false);
   // Guard to ensure we do NOT double-count a failed attempt when both the
   // `error` and the subsequent `close` events fire for the *same* socket.
   const reconnectScheduledThisCycleReference = useRef<boolean>(false);
@@ -600,6 +637,11 @@ const AblyCliTerminalInner = (
   const updateConnectionStatusAndExpose = useCallback(
     (status: ConnectionStatus) => {
       // updateConnectionStatusAndExpose debug removed
+      // A successful connection clears any in-flight inactivity-resume guard so
+      // a later unrelated disconnect isn't misread as a failed resume.
+      if (status === "connected") {
+        resumeAttemptReference.current = false;
+      }
       setComponentConnectionStatusState(status);
       // (window as any).componentConnectionStatusForTest = status; // Keep for direct inspection if needed, but primary is below
       // console.log(`[AblyCLITerminal] (window as any).componentConnectionStatusForTest SET TO: ${status}`);
@@ -1283,6 +1325,13 @@ const AblyCliTerminalInner = (
       debugLog(
         "⚠️ DIAGNOSTIC: Terminal not visible, skipping connection attempt",
       );
+      // If this skipped attempt was a resume (tab re-hidden inside the resume
+      // delay), re-arm the pause so the next foreground resumes again rather
+      // than stranding a preserved-but-unconnected session.
+      if (resumeAttemptReference.current) {
+        resumeAttemptReference.current = false;
+        pausedForInactivityReference.current = true;
+      }
       return;
     }
 
@@ -1745,13 +1794,33 @@ const AblyCliTerminalInner = (
       const userClosedTerminal =
         event.reason === "user-closed-primary" ||
         event.reason === "user-closed-secondary" ||
-        event.reason === "manual-reconnect";
+        event.reason === "manual-reconnect" ||
+        event.reason === "resume-supersede";
 
       if (userClosedTerminal) {
         debugLog(
           `[AblyCLITerminal] User closed terminal: ${event.reason} - not reconnecting`,
         );
         return; // Don't try to reconnect if user closed the terminal intentionally
+      }
+
+      // Client-initiated pause: the inactivity timer closed the socket because
+      // the tab was backgrounded. Preserve the session (don't purge sessionId)
+      // so it can be resumed automatically when the tab is foregrounded again.
+      if (event.code === INACTIVITY_PAUSE_CLOSE_CODE) {
+        debugLog(
+          "[AblyCLITerminal] Session paused for inactivity - preserving session for resume on return",
+        );
+        grCancelReconnect();
+        grResetState();
+        pausedForInactivityReference.current = true;
+        if (term.current) {
+          term.current.writeln(
+            "\r\nSession paused while in the background. It will resume automatically when you return.",
+          );
+        }
+        updateConnectionStatusAndExpose("disconnected");
+        return;
       }
 
       // Close codes that should *not* trigger automatic reconnection because
@@ -1761,18 +1830,9 @@ const AblyCliTerminalInner = (
       // unreachable – for example when the terminal server is still
       // starting up.  Those cases should be treated as recoverable so they
       // are intentionally **excluded** from this list.
-      const NON_RECOVERABLE_CLOSE_CODES = new Set<number>([
-        4001, // Policy violation (e.g. invalid credentials)
-        4008, // Token expired
-        1013, // Try again later – the server is telling us not to retry
-        4002, // Session resume rejected
-        4000, // Generic server error
-        4003, // Rate limit exceeded
-        4004, // Unsupported protocol version
-        4009, // Server at capacity
-        // Note: 1005 removed - it's used for both graceful exit AND network disconnections
-        // We should handle exit commands differently, not by close code
-      ]);
+      const NON_RECOVERABLE_CLOSE_CODES = new Set<number>(
+        BASE_NON_RECOVERABLE_CLOSE_CODES,
+      );
 
       const inactivityRegex = /inactiv|timed out/i;
       if (event.code === 1000 && inactivityRegex.test(event.reason)) {
@@ -1780,6 +1840,42 @@ const AblyCliTerminalInner = (
       }
 
       if (NON_RECOVERABLE_CLOSE_CODES.has(event.code)) {
+        // A *resume rejection* (4002: the server reaped the detached session
+        // while the tab was backgrounded) should transparently fall back to a
+        // fresh session rather than dead-ending on the manual reconnect prompt.
+        // Gate strictly on 4002 so an unrelated failure during a resume (e.g.
+        // 4008 token expired, 4001 policy) is NOT swallowed — those must surface
+        // their real error instead of silently starting a doomed fresh session.
+        if (resumeAttemptReference.current && event.code === 4002) {
+          resumeAttemptReference.current = false;
+          debugLog(
+            "[AblyCLITerminal] Resume rejected by server - starting a fresh session",
+          );
+          if (resumeOnReload && globalThis.window !== undefined) {
+            const urlDomain = new URL(websocketUrl).host;
+            globalThis.sessionStorage.removeItem(
+              `ably.cli.sessionId.${urlDomain}`,
+            );
+            globalThis.sessionStorage.removeItem(
+              `ably.cli.credentialHash.${urlDomain}`,
+            );
+          }
+          setSessionId(null);
+          sessionIdReference.current = null;
+          grResetState();
+          grSuccessfulConnectionReset();
+          clearPtyBuffer();
+          setTimeout(() => {
+            connectWebSocketReference.current?.();
+            startConnectingAnimation(false);
+          }, 20);
+          return;
+        }
+
+        // Not a resume rejection: this is a genuine terminal disconnect. Clear
+        // the resume guard so it can't mis-fire on a later close.
+        resumeAttemptReference.current = false;
+
         grCancelReconnect();
         grResetState();
         updateConnectionStatusAndExpose("disconnected");
@@ -1917,6 +2013,7 @@ const AblyCliTerminalInner = (
       resumeOnReload,
       sessionId,
       clearConnectionTimeout,
+      clearPtyBuffer,
     ],
   );
 
@@ -2536,7 +2633,7 @@ const AblyCliTerminalInner = (
   // Visibility & inactivity timer logic
   // -----------------------------------------------------------------------------------
 
-  const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+  const INACTIVITY_TIMEOUT_MS = inactivityTimeoutMs ?? 5 * 60 * 1000; // default 5 minutes
   const inactivityTimerReference = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -2551,25 +2648,23 @@ const AblyCliTerminalInner = (
   const startInactivityTimer = useCallback(() => {
     clearInactivityTimer();
     inactivityTimerReference.current = setTimeout(() => {
-      // Auto-terminate session due to prolonged invisibility
+      // Pause the session due to prolonged invisibility. Closing with
+      // "inactivity-timeout" lets handleWebSocketClose preserve the sessionId so
+      // it can be resumed when the tab is foregrounded again (see the resume
+      // effect below). If there is no open socket to close, mark the pause
+      // directly so the resume path still fires.
       if (
         socketReference.current &&
         socketReference.current.readyState === WebSocket.OPEN
       ) {
-        socketReference.current.close(4002, "inactivity-timeout");
-      }
-      // Inform the user inside the terminal UI
-      if (term.current) {
-        term.current.writeln(
-          `\r\nSession terminated after ${INACTIVITY_TIMEOUT_MS / 60_000} minutes of inactivity.`,
+        socketReference.current.close(
+          INACTIVITY_PAUSE_CLOSE_CODE,
+          "inactivity-timeout",
         );
-        term.current.writeln("Press ⏎ to start a new session.");
+      } else {
+        pausedForInactivityReference.current = true;
+        updateConnectionStatusAndExpose("disconnected");
       }
-      grCancelReconnect();
-      grResetState();
-      setShowManualReconnectPrompt(true);
-      showManualReconnectPromptReference.current = true;
-      updateConnectionStatusAndExpose("disconnected");
     }, INACTIVITY_TIMEOUT_MS);
   }, [
     INACTIVITY_TIMEOUT_MS,
@@ -2577,10 +2672,53 @@ const AblyCliTerminalInner = (
     updateConnectionStatusAndExpose,
   ]);
 
+  // Resume a session that was paused for inactivity, preserving the sessionId so
+  // the server can reattach us to the existing PTY. Mirrors the manual-reconnect
+  // path but deliberately does NOT forget the session.
+  const resumeFromInactivity = useCallback(() => {
+    pausedForInactivityReference.current = false;
+    resumeAttemptReference.current = true;
+    showManualReconnectPromptReference.current = false;
+    setShowManualReconnectPrompt(false);
+    clearAnimationMessages();
+
+    // Defensively close any lingering socket without forgetting the session.
+    if (
+      socketReference.current &&
+      socketReference.current.readyState !== WebSocket.CLOSED
+    ) {
+      try {
+        socketReference.current.close(1000, "resume-supersede");
+      } catch {
+        /* ignore */
+      }
+      socketReference.current = null;
+    }
+
+    // Give the browser a micro-task to mark the socket CLOSED before reconnect.
+    setTimeout(() => {
+      grResetState();
+      grSuccessfulConnectionReset();
+      setConnectionStartTime(null);
+      setShowInstallInstructions(false);
+      clearInstallInstructionsTimer();
+      connectWebSocketReference.current?.();
+      startConnectingAnimation(false);
+    }, 20);
+  }, [
+    clearAnimationMessages,
+    clearInstallInstructionsTimer,
+    startConnectingAnimation,
+  ]);
+
   // Manage the timer whenever visibility changes
   useEffect(() => {
     if (isVisible) {
       clearInactivityTimer();
+      // Returning to a paused session: resume it automatically.
+      if (pausedForInactivityReference.current) {
+        resumeFromInactivity();
+      }
       return;
     }
     // If not visible start countdown only if there is an active/open socket
@@ -2590,7 +2728,12 @@ const AblyCliTerminalInner = (
     ) {
       startInactivityTimer();
     }
-  }, [isVisible, startInactivityTimer, clearInactivityTimer]);
+  }, [
+    isVisible,
+    startInactivityTimer,
+    clearInactivityTimer,
+    resumeFromInactivity,
+  ]);
 
   useEffect(() => () => clearInactivityTimer(), [clearInactivityTimer]);
 
@@ -3142,16 +3285,9 @@ const AblyCliTerminalInner = (
       updateSecondaryConnectionStatus("disconnected");
 
       // Check if this is a non-recoverable error
-      const NON_RECOVERABLE_CLOSE_CODES = new Set<number>([
-        4001, // Policy violation (e.g. invalid credentials)
-        4008, // Token expired
-        1013, // Try again later
-        4002, // Session resume rejected
-        4000, // Generic server error
-        4003, // Rate limit exceeded
-        4004, // Unsupported protocol version
-        4009, // Server at capacity
-      ]);
+      const NON_RECOVERABLE_CLOSE_CODES = new Set<number>(
+        BASE_NON_RECOVERABLE_CLOSE_CODES,
+      );
 
       if (NON_RECOVERABLE_CLOSE_CODES.has(event.code)) {
         // Clear the secondary session ID as it's no longer valid
@@ -3167,7 +3303,8 @@ const AblyCliTerminalInner = (
       // Check if this was a user-initiated close
       const userClosedTerminal =
         event.reason === "user-closed-secondary" ||
-        event.reason === "manual-reconnect";
+        event.reason === "manual-reconnect" ||
+        event.reason === "resume-supersede";
 
       if (!userClosedTerminal && secondaryTerm.current) {
         let title = "DISCONNECTED";
