@@ -38,6 +38,8 @@ import {
 } from "./utils/long-running.js";
 import isTestMode from "./utils/test-mode.js";
 import isWebCliMode from "./utils/web-mode.js";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 // List of commands not allowed in web CLI mode - EXPORTED
 export const WEB_CLI_RESTRICTED_COMMANDS = [
@@ -1707,6 +1709,75 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         "parse",
       );
     }
+  }
+
+  /**
+   * Resolve a JSON input that may be either a literal JSON string or a
+   * reference to a local file. Supports the documented `@path` prefix, bare
+   * path prefixes (`/`, `./`, `../`), and bare paths that happen to exist on
+   * disk. Returns the raw JSON string for the caller to parse.
+   *
+   * SECURITY: in web CLI mode the filesystem belongs to the shared
+   * terminal-server container, not the user's machine — reading from it
+   * would disclose server-side files. So in web CLI mode this NEVER touches the
+   * filesystem: the input is always treated as a literal JSON string, and any
+   * file reference (`@file` or a path prefix) is rejected with a clear error.
+   * Any command that accepts a JSON-or-file input MUST go through this helper so
+   * the restriction is inherited rather than re-implemented per command.
+   */
+  protected resolveJsonInput(
+    input: string,
+    inputLabel: string,
+    flags: BaseFlags,
+    component: string,
+  ): string {
+    // Web CLI: the filesystem is server-side. Never read it; treat the input as
+    // literal data. Reject anything that looks like a file reference explicitly
+    // so users get a clear message instead of a confusing JSON parse error.
+    // Detection is prefix-based only — we must not probe `existsSync` here, as
+    // that would itself touch the server's filesystem.
+    if (this.isWebCliMode) {
+      const looksLikeFileReference =
+        input.startsWith("@") ||
+        input.startsWith("/") ||
+        input.startsWith("./") ||
+        input.startsWith("../");
+      if (looksLikeFileReference) {
+        this.fail(
+          `Loading ${inputLabel} from a file is not supported in the web CLI. Pass the JSON inline instead.`,
+          flags,
+          component,
+        );
+      }
+      return input;
+    }
+
+    // Local CLI: load from a file when the input is a file reference.
+    if (input.startsWith("@")) {
+      const filePath = path.resolve(input.slice(1));
+      if (!fs.existsSync(filePath)) {
+        this.fail(`File not found: ${filePath}`, flags, component);
+      }
+      return fs.readFileSync(filePath, "utf8");
+    }
+
+    if (
+      input.startsWith("/") ||
+      input.startsWith("./") ||
+      input.startsWith("../")
+    ) {
+      const filePath = path.resolve(input);
+      if (!fs.existsSync(filePath)) {
+        this.fail(`File not found: ${filePath}`, flags, component);
+      }
+      return fs.readFileSync(filePath, "utf8");
+    }
+
+    if (fs.existsSync(path.resolve(input))) {
+      return fs.readFileSync(path.resolve(input), "utf8");
+    }
+
+    return input;
   }
 
   /**

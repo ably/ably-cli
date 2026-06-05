@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { getMockAblyRest } from "../../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
@@ -305,6 +308,93 @@ describe("push:devices:save command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toContain("must be a JSON object");
+    });
+  });
+
+  // In web CLI mode --data must never be read from the server's filesystem.
+  // The @file shortcut is local-CLI only.
+  describe("web CLI file-read restriction", () => {
+    let originalWebCliMode: string | undefined;
+    let secretFile: string;
+
+    beforeEach(() => {
+      originalWebCliMode = process.env.ABLY_WEB_CLI_MODE;
+      secretFile = path.join(os.tmpdir(), `vul506-device-${process.pid}.json`);
+      fs.writeFileSync(
+        secretFile,
+        '{"id":"device-2","platform":"android","formFactor":"tablet","push":{"recipient":{"transportType":"fcm","registrationToken":"tok"}}}',
+      );
+    });
+
+    afterEach(() => {
+      if (originalWebCliMode === undefined) {
+        delete process.env.ABLY_WEB_CLI_MODE;
+      } else {
+        process.env.ABLY_WEB_CLI_MODE = originalWebCliMode;
+      }
+      if (fs.existsSync(secretFile)) fs.rmSync(secretFile);
+    });
+
+    it("reads a local --data @file when NOT in web CLI mode", async () => {
+      const mock = getMockAblyRest();
+      mock.push.admin.deviceRegistrations.save.mockResolvedValue({
+        id: "device-2",
+      });
+
+      const { stderr } = await runCommand(
+        ["push:devices:save", "--data", `@${secretFile}`],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Device registration saved");
+      expect(mock.push.admin.deviceRegistrations.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "device-2", platform: "android" }),
+      );
+    });
+
+    it("reads a local --data path input when NOT in web CLI mode", async () => {
+      const mock = getMockAblyRest();
+      mock.push.admin.deviceRegistrations.save.mockResolvedValue({
+        id: "device-2",
+      });
+
+      const { stderr } = await runCommand(
+        ["push:devices:save", "--data", secretFile],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Device registration saved");
+      expect(mock.push.admin.deviceRegistrations.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "device-2", platform: "android" }),
+      );
+    });
+
+    it("rejects --data @file references in web CLI mode", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+      const mock = getMockAblyRest();
+
+      const { error } = await runCommand(
+        ["push:devices:save", "--data", `@${secretFile}`],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not supported in the web CLI");
+      expect(mock.push.admin.deviceRegistrations.save).not.toHaveBeenCalled();
+    });
+
+    it("rejects a --data path input in web CLI mode without reading it", async () => {
+      process.env.ABLY_WEB_CLI_MODE = "true";
+      const mock = getMockAblyRest();
+
+      const { error } = await runCommand(
+        ["push:devices:save", "--data", secretFile],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toContain("not supported in the web CLI");
+      expect(mock.push.admin.deviceRegistrations.save).not.toHaveBeenCalled();
     });
   });
 });
