@@ -206,6 +206,18 @@ const BASE_NON_RECOVERABLE_CLOSE_CODES = [
 // never confused.
 const INACTIVITY_PAUSE_CLOSE_CODE = 4900;
 
+// Private recoverable close code used when a socket opens but the server never
+// sends its `hello`/`connected` within AWAIT_HELLO_TIMEOUT_MS. Closing it as a
+// (recoverable, not in NON_RECOVERABLE) failure lets the reconnect scheduler
+// retry rather than leaving the UI stuck on "Connecting"/"Reconnecting" forever.
+const AWAIT_HELLO_CLOSE_CODE = 4901;
+
+// How long to wait, after a socket has *opened*, for the server's first
+// `hello`/`status: connected` before treating the attempt as failed. The 30s
+// connection timeout only covers the pre-open CONNECTING phase, so without this
+// a silent-but-accepting server hangs the spinner indefinitely (DX-1379).
+const AWAIT_HELLO_TIMEOUT_MS = 12_000;
+
 const AblyCliTerminalInner = (
   {
     websocketUrl,
@@ -685,9 +697,14 @@ const AblyCliTerminalInner = (
     (status: ConnectionStatus) => {
       // updateConnectionStatusAndExpose debug removed
       // A successful connection clears any in-flight inactivity-resume guard so
-      // a later unrelated disconnect isn't misread as a failed resume.
+      // a later unrelated disconnect isn't misread as a failed resume, and the
+      // "awaiting hello" timeout (the handshake completed).
       if (status === "connected") {
         resumeAttemptReference.current = false;
+        if (awaitHelloTimerReference.current) {
+          clearTimeout(awaitHelloTimerReference.current);
+          awaitHelloTimerReference.current = null;
+        }
       }
       setComponentConnectionStatusState(status);
       // (window as any).componentConnectionStatusForTest = status; // Keep for direct inspection if needed, but primary is below
@@ -758,6 +775,26 @@ const AblyCliTerminalInner = (
     if (connectionTimeoutReference.current) {
       clearTimeout(connectionTimeoutReference.current);
       connectionTimeoutReference.current = null;
+    }
+  }, []);
+
+  // "Awaiting hello" timeout: armed once a socket opens, cleared on
+  // connected/close. Guards against a server that accepts the socket but never
+  // completes the handshake.
+  const awaitHelloTimerReference = useRef<NodeJS.Timeout | null>(null);
+  const clearAwaitHelloTimer = useCallback(() => {
+    if (awaitHelloTimerReference.current) {
+      clearTimeout(awaitHelloTimerReference.current);
+      awaitHelloTimerReference.current = null;
+    }
+  }, []);
+
+  // Same guard for the split-screen secondary socket (its own timer).
+  const secondaryAwaitHelloTimerReference = useRef<NodeJS.Timeout | null>(null);
+  const clearSecondaryAwaitHelloTimer = useCallback(() => {
+    if (secondaryAwaitHelloTimerReference.current) {
+      clearTimeout(secondaryAwaitHelloTimerReference.current);
+      secondaryAwaitHelloTimerReference.current = null;
     }
   }, []);
 
@@ -1577,6 +1614,24 @@ const AblyCliTerminalInner = (
         sock.send(JSON.stringify(payload));
       }
 
+      // Arm the "awaiting hello" timeout: the socket is open, but until the
+      // server sends its hello/connected we have no session. If it never
+      // arrives, force-close this socket as a recoverable failure so the
+      // reconnect scheduler retries instead of the UI hanging on the spinner.
+      clearAwaitHelloTimer();
+      awaitHelloTimerReference.current = setTimeout(() => {
+        if (connectionStatusReference.current !== "connected") {
+          debugLog(
+            `⚠️ DIAGNOSTIC: No hello within ${AWAIT_HELLO_TIMEOUT_MS}ms of open - closing socket to retry`,
+          );
+          try {
+            sock.close(AWAIT_HELLO_CLOSE_CODE, "awaiting-hello-timeout");
+          } catch {
+            /* ignore */
+          }
+        }
+      }, AWAIT_HELLO_TIMEOUT_MS);
+
       // Set up initial command to be sent when prompt is detected
       // Skip initial command if we're resuming an existing session
       if (initialCommand && !sessionId) {
@@ -1600,6 +1655,7 @@ const AblyCliTerminalInner = (
       clearPtyBuffer,
       sessionId,
       clearConnectionTimeout,
+      clearAwaitHelloTimer,
       refreshAuth,
     ],
   );
@@ -1844,6 +1900,7 @@ const AblyCliTerminalInner = (
         `[AblyCLITerminal] WebSocket closed. Code: ${event.code}, Reason: ${event.reason}, Clean: ${event.wasClean}`,
       );
       clearConnectionTimeout(); // Clear timeout on close
+      clearAwaitHelloTimer();
       clearTerminalBoxOnly();
       updateSessionActive(false);
 
@@ -2070,6 +2127,7 @@ const AblyCliTerminalInner = (
       resumeOnReload,
       sessionId,
       clearConnectionTimeout,
+      clearAwaitHelloTimer,
       clearPtyBuffer,
     ],
   );
@@ -2796,6 +2854,11 @@ const AblyCliTerminalInner = (
   ]);
 
   useEffect(() => () => clearInactivityTimer(), [clearInactivityTimer]);
+  useEffect(() => () => clearAwaitHelloTimer(), [clearAwaitHelloTimer]);
+  useEffect(
+    () => () => clearSecondaryAwaitHelloTimer(),
+    [clearSecondaryAwaitHelloTimer],
+  );
 
   // Cleanup install instructions timer on unmount
   useEffect(
@@ -3118,6 +3181,19 @@ const AblyCliTerminalInner = (
           newSocket.send(JSON.stringify(payload));
         }
 
+        // Bound the wait for the server's hello on the secondary socket too, so
+        // a silent-but-accepting server can't hang the secondary pane's spinner.
+        clearSecondaryAwaitHelloTimer();
+        secondaryAwaitHelloTimerReference.current = setTimeout(() => {
+          if (secondaryConnectionStatusReference.current !== "connected") {
+            try {
+              newSocket.close(AWAIT_HELLO_CLOSE_CODE, "awaiting-hello-timeout");
+            } catch {
+              /* ignore */
+            }
+          }
+        }, AWAIT_HELLO_TIMEOUT_MS);
+
         // Set up initial command to be sent when prompt is detected
         // Skip initial command if we're resuming an existing session
         if (initialCommand && !secondarySessionId) {
@@ -3346,6 +3422,7 @@ const AblyCliTerminalInner = (
       debugLog(
         `[AblyCLITerminal] [Secondary] WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`,
       );
+      clearSecondaryAwaitHelloTimer();
       setIsSecondarySessionActive(false);
       updateSecondaryConnectionStatus("disconnected");
 
@@ -3740,6 +3817,10 @@ const AblyCliTerminalInner = (
       // Update internal state for the secondary terminal
       setSecondaryConnectionStatus(status);
       secondaryConnectionStatusReference.current = status;
+      if (status === "connected" && secondaryAwaitHelloTimerReference.current) {
+        clearTimeout(secondaryAwaitHelloTimerReference.current);
+        secondaryAwaitHelloTimerReference.current = null;
+      }
 
       // We intentionally don't call onConnectionStatusChange here
       // as per requirements - only the primary terminal status should be reported

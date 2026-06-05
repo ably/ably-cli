@@ -77,6 +77,7 @@ vi.mock("./utils/crypto", () => ({
 // visibility changes trigger real re-renders.
 import { AblyCliTerminal } from "./AblyCliTerminal";
 import { CONTROL_MESSAGE_PREFIX } from "./terminal-shared";
+import * as GlobalReconnect from "./global-reconnect";
 
 const createControlMessage = (payload: unknown) =>
   CONTROL_MESSAGE_PREFIX + JSON.stringify(payload);
@@ -582,4 +583,151 @@ describe("DX-1379: inactivity pause & resume-on-return", () => {
       expect(authSend?.signature).toBe(SIGNATURE);
     },
   );
+
+  // The reporter's "stuck on Connecting/Reconnecting to Ably" symptom: a socket
+  // that opens but never receives the server's hello. Before the await-hello
+  // timeout this hung forever (the 30s connection timeout only covers the
+  // pre-open CONNECTING phase). It must now be force-closed for retry. (DX-1379)
+  const AWAIT_HELLO_MS = 12_000;
+
+  test("a socket that opens but never receives hello is force-closed for retry (not left hanging)", async () => {
+    await act(async () => {
+      render(
+        <AblyCliTerminal
+          websocketUrl={WS_URL}
+          signedConfig={SIGNED_CONFIG}
+          signature={SIGNATURE}
+          resumeOnReload
+          inactivityTimeoutMs={INACTIVITY_MS}
+          maxReconnectAttempts={15}
+        />,
+      );
+    });
+    await flush();
+    const ws = sockets[0];
+    await act(async () => {
+      ws.fireOpen(); // opens, but the server stays silent (no hello)
+    });
+    await flush();
+
+    // Just before the threshold: still waiting, not force-closed.
+    await act(async () => {
+      vi.advanceTimersByTime(AWAIT_HELLO_MS - 1000);
+    });
+    expect(
+      ws.close.mock.calls.some(
+        ([, reason]) => reason === "awaiting-hello-timeout",
+      ),
+    ).toBe(false);
+
+    // Cross the await-hello threshold -> the silent socket is closed for retry.
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+    await flush();
+    const helloTimeoutClose = ws.close.mock.calls.find(
+      ([code, reason]) => code === 4901 && reason === "awaiting-hello-timeout",
+    );
+    expect(helloTimeoutClose).toBeTruthy();
+  });
+
+  test("a resumed socket that never receives hello is closed for retry (the stuck-reconnecting repro)", async () => {
+    await renderConnected("sess-hang");
+
+    await act(async () => {
+      setVisibility("hidden");
+    });
+    await flush();
+    await act(async () => {
+      vi.advanceTimersByTime(INACTIVITY_MS + 10);
+    });
+    await flush();
+
+    const afterPause = sockets.length;
+    await act(async () => {
+      setVisibility("visible");
+    });
+    await flush();
+    await act(async () => {
+      vi.advanceTimersByTime(50);
+    });
+    await flush();
+
+    const resumeSocket = sockets[afterPause];
+    await act(async () => {
+      resumeSocket.fireOpen(); // resume socket opens; server never sends hello
+    });
+    await flush();
+
+    // It must not hang: after the await-hello timeout the resume socket is closed.
+    await act(async () => {
+      vi.advanceTimersByTime(AWAIT_HELLO_MS + 500);
+    });
+    await flush();
+    const helloTimeoutClose = resumeSocket.close.mock.calls.find(
+      ([code, reason]) => code === 4901 && reason === "awaiting-hello-timeout",
+    );
+    expect(helloTimeoutClose).toBeTruthy();
+  });
+
+  test("a hello within the await-hello window keeps the connection (no spurious close)", async () => {
+    await act(async () => {
+      render(
+        <AblyCliTerminal
+          websocketUrl={WS_URL}
+          signedConfig={SIGNED_CONFIG}
+          signature={SIGNATURE}
+          resumeOnReload
+          inactivityTimeoutMs={INACTIVITY_MS}
+        />,
+      );
+    });
+    await flush();
+    const ws = sockets[0];
+    await act(async () => {
+      ws.fireOpen();
+    });
+    await flush();
+    // Server replies in time.
+    await act(async () => {
+      ws.fireMessage(
+        createControlMessage({ type: "hello", sessionId: "sess-ok" }),
+      );
+    });
+    await flush();
+
+    // Advancing past the await-hello window must NOT close the live socket.
+    await act(async () => {
+      vi.advanceTimersByTime(AWAIT_HELLO_MS + 2000);
+    });
+    await flush();
+    // The live socket is not closed and stays usable.
+    expect(
+      ws.close.mock.calls.some(
+        ([, reason]) => reason === "awaiting-hello-timeout",
+      ),
+    ).toBe(false);
+    expect(ws.readyState).toBe(FakeWebSocket.OPEN);
+  });
+
+  test("the await-hello close code (4901) routes to a reconnect, not a terminal disconnect", async () => {
+    const ws = await renderConnected("sess-route");
+    // Isolate the effect of the 4901 close from the initial-connect bookkeeping.
+    vi.mocked(GlobalReconnect.increment).mockClear();
+    vi.mocked(GlobalReconnect.scheduleReconnect).mockClear();
+
+    // A 4901 close (what the await-hello timeout emits) must be treated as
+    // recoverable: schedule a reconnect rather than purging the session.
+    await act(async () => {
+      ws.fireClose(4901, "awaiting-hello-timeout");
+    });
+    await flush();
+
+    expect(GlobalReconnect.increment).toHaveBeenCalled();
+    expect(GlobalReconnect.scheduleReconnect).toHaveBeenCalled();
+    // Recoverable => the session is NOT purged.
+    expect(sessionStorage.getItem(`ably.cli.sessionId.${URL_HOST}`)).toBe(
+      "sess-route",
+    );
+  });
 });
