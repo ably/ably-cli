@@ -1,3 +1,7 @@
+![Ably CLI](images/cli-github.png)
+
+---
+
 # Ably CLI
 
 [![npm version](https://badge.fury.io/js/@ably%2Fcli.svg)](https://badge.fury.io/js/@ably%2Fcli)
