@@ -280,7 +280,7 @@ export default class CustomHelp extends Help {
       const commandListString = this.renderList(
         combined.map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]!);
+            c.description && this.render(c.description.split("\n", 1)[0]!);
           const descString = description
             ? chalk.whiteBright(description)
             : undefined;
@@ -584,7 +584,7 @@ export default class CustomHelp extends Help {
       this.renderList(
         visibleCommands.map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]!);
+            c.description && this.render(c.description.split("\n", 1)[0]!);
           return [
             chalk.cyan(c.id),
             description ? chalk.whiteBright(description) : undefined,
@@ -614,7 +614,7 @@ export default class CustomHelp extends Help {
         .filter((t) => this.shouldDisplay({ id: t.name } as Command.Loadable)) // Reuse shouldDisplay logic
         .map((c) => {
           const description =
-            c.description && this.render(c.description.split("\n")[0]!);
+            c.description && this.render(c.description.split("\n", 1)[0]!);
           return [
             chalk.cyan(c.name),
             description ? chalk.whiteBright(description) : undefined,

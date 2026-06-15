@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
 
 // Import the compiled hook function
-import hook from "../../../src/hooks/command_not_found/did-you-mean.js";
+import hook from "../../../src/hooks/command-not-found/did-you-mean.js";
 
 // Helper regex to strip ANSI codes for matching
 // eslint-disable-next-line no-control-regex

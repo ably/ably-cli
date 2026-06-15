@@ -131,7 +131,7 @@ async function resolveLatestRelease(
  * `.github/workflows/release.yml` (ably/agent-skills) — keep these in sync.
  */
 function releaseAssetUrl(repo: string, tag: string): string {
-  const repoName = repo.split("/")[1]!;
+  const repoName = repo.split("/", 2)[1]!;
   return `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${repoName}-${tag}.tar.gz`;
 }
 

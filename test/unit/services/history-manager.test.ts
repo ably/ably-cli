@@ -60,7 +60,7 @@ describe("HistoryManager", function () {
 
       // These should all be no-ops
       await manager.saveCommand("");
-      await manager.saveCommand("   ");
+      await manager.saveCommand(" ".repeat(3));
       await manager.saveCommand("\t\n");
 
       // If we got here without throwing, the test passes

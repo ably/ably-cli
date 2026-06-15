@@ -286,7 +286,7 @@ describe("skills:install command", () => {
       );
 
       expect(error).toBeUndefined();
-      const firstLine = stdout.trim().split("\n")[0]!;
+      const firstLine = stdout.trim().split("\n", 1)[0]!;
       const record = JSON.parse(firstLine) as {
         type: string;
         success: boolean;

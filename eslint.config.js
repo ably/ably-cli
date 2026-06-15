@@ -242,6 +242,8 @@ export default [
       "no-console": "off",
       "vitest/no-focused-tests": "error", // Equivalent to mocha/no-exclusive-tests
       "vitest/no-disabled-tests": "warn", // Equivalent to mocha/no-skipped-tests
+      // WebSocket constructor mocks use `this` to refer to the new instance — no alternative API
+      "unicorn/no-this-outside-of-class": "off",
     },
   },
   {
@@ -270,6 +272,8 @@ export default [
   eslintConfigPrettier,
   {
     // All test and test-helper files: disable no-unsafe-* rules (tests legitimately use `any` for mocking)
+    // Also disable no-this-outside-of-class: Mocha root hooks use `this.currentTest` as the framework
+    // context mechanism — there is no alternative API for accessing the current test in hook functions.
     files: ["test/**/*.ts"],
     rules: {
       "@typescript-eslint/no-unsafe-assignment": "off",
@@ -280,6 +284,15 @@ export default [
       "@typescript-eslint/no-base-to-string": "off",
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/unbound-method": "off",
+      "unicorn/no-this-outside-of-class": "off",
+    },
+  },
+  {
+    // oclif hook files: oclif calls hook functions with `this` set to the Hook.Context object,
+    // so `this.warn()`, `this.error()`, `this.log()` are the correct oclif-idiomatic API here.
+    files: ["src/hooks/**/*.ts"],
+    rules: {
+      "unicorn/no-this-outside-of-class": "off",
     },
   },
   {

@@ -169,7 +169,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Auth Tokens E2E Tests", () => {
 
       const apiKey = E2E_API_KEY || "";
       const [keyId, keySecret] = apiKey.split(":");
-      const appId = keyId!.split(".")[0];
+      const appId = keyId!.split(".", 1)[0];
       const revocationKey = `e2e-revoke-group-${Date.now()}`;
 
       // Step 1: Manually create a JWT with the x-ably-revocation-key claim

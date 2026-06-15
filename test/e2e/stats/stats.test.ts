@@ -246,7 +246,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           }
 
           // Extract app ID from API key
-          const appId = E2E_API_KEY.split(".")[0];
+          const appId = E2E_API_KEY.split(".", 1)[0];
 
           const result = await runCommand(["stats", "app", appId], {
             timeoutMs: 60000,
@@ -274,7 +274,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
             throw new Error("E2E_API_KEY is not available for testing");
           }
 
-          const appId = E2E_API_KEY.split(".")[0];
+          const appId = E2E_API_KEY.split(".", 1)[0];
 
           const result = await runCommand(
             ["stats", "app", appId, "--unit", "hour"],
@@ -298,7 +298,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
             throw new Error("E2E_API_KEY is not available for testing");
           }
 
-          const appId = E2E_API_KEY.split(".")[0];
+          const appId = E2E_API_KEY.split(".", 1)[0];
 
           const result = await runCommand(
             ["stats", "app", appId, "--unit", "day"],
@@ -319,7 +319,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           throw new Error("E2E_API_KEY is not available for testing");
         }
 
-        const appId = E2E_API_KEY.split(".")[0];
+        const appId = E2E_API_KEY.split(".", 1)[0];
 
         const result = await runCommand(
           ["stats", "app", appId, "--limit", "5"],
@@ -342,7 +342,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
             throw new Error("E2E_API_KEY is not available for testing");
           }
 
-          const appId = E2E_API_KEY.split(".")[0];
+          const appId = E2E_API_KEY.split(".", 1)[0];
 
           const result = await runCommand(
             ["stats", "app", appId, "--json", "--limit", "1"],
@@ -382,7 +382,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
             throw new Error("E2E_API_KEY is not available for testing");
           }
 
-          const appId = E2E_API_KEY.split(".")[0];
+          const appId = E2E_API_KEY.split(".", 1)[0];
 
           const result = await runCommand(
             ["stats", "app", appId, "--pretty-json", "--limit", "1"],
@@ -409,7 +409,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
           }
 
           const cliPath = join(process.cwd(), "bin", "run.js");
-          const appId = E2E_API_KEY.split(".")[0];
+          const appId = E2E_API_KEY.split(".", 1)[0];
 
           // Start live stats subscription
           const statsMonitor = spawn(
@@ -578,7 +578,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SKIP_ACCOUNT_STATS)(
             throw new Error("E2E_API_KEY is not available for testing");
           }
 
-          const appId = E2E_API_KEY.split(".")[0];
+          const appId = E2E_API_KEY.split(".", 1)[0];
           const now = Date.now();
           const oneHourAgo = now - 60 * 60 * 1000;
 

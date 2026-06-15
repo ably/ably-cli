@@ -90,7 +90,7 @@ describe("auth:keys:get command", () => {
       const currentKeyId = mockConfig.getKeyId(appId)!;
       // Build a mock key whose appId.id matches the current key
       const keyIdPart = currentKeyId.includes(".")
-        ? currentKeyId.split(".")[1]
+        ? currentKeyId.split(".", 2)[1]
         : currentKeyId;
       mockKeysList(appId, [buildMockKey(appId, keyIdPart)]);
 
@@ -132,7 +132,7 @@ describe("auth:keys:get command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const currentKeyId = mockConfig.getKeyId(appId)!;
       const keyIdPart = currentKeyId.includes(".")
-        ? currentKeyId.split(".")[1]
+        ? currentKeyId.split(".", 2)[1]
         : currentKeyId;
       mockKeysList(appId, [buildMockKey(appId, keyIdPart)]);
 
@@ -152,7 +152,7 @@ describe("auth:keys:get command", () => {
       const appId = mockConfig.getCurrentAppId()!;
       const currentKeyId = mockConfig.getKeyId(appId)!;
       const keyIdPart = currentKeyId.includes(".")
-        ? currentKeyId.split(".")[1]
+        ? currentKeyId.split(".", 2)[1]
         : currentKeyId;
       mockKeysList(appId, [buildMockKey(appId, keyIdPart)]);
 

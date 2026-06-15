@@ -3,7 +3,7 @@
  */
 
 export function extractAppIdFromApiKey(apiKey: string): string {
-  return apiKey.split(".")[0] ?? "";
+  return apiKey.split(".", 1)[0] ?? "";
 }
 
 /**
@@ -11,5 +11,5 @@ export function extractAppIdFromApiKey(apiKey: string): string {
  * (i.e. `APP_ID.KEY_ID`). Empty string if the input is not a valid key.
  */
 export function extractKeyNameFromApiKey(apiKey: string): string {
-  return apiKey.split(":")[0] ?? "";
+  return apiKey.split(":", 1)[0] ?? "";
 }

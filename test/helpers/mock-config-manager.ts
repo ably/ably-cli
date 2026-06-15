@@ -321,7 +321,7 @@ export class MockConfigManager implements ConfigManager {
     }
 
     if (appConfig.apiKey) {
-      return appConfig.apiKey.split(":")[0];
+      return appConfig.apiKey.split(":", 1)[0];
     }
 
     return undefined;
@@ -493,7 +493,7 @@ export class MockConfigManager implements ConfigManager {
       ...this.config.accounts[alias].apps[appId],
       apiKey,
       appName: metadata?.appName,
-      keyId: metadata?.keyId || apiKey.split(":")[0],
+      keyId: metadata?.keyId || apiKey.split(":", 1)[0],
       keyName: metadata?.keyName,
     };
   }

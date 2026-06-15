@@ -1742,10 +1742,11 @@ const AblyCliTerminalInner = (
       updateSessionActive(false);
 
       // Check if this was a user-initiated close
-      const userClosedTerminal =
-        event.reason === "user-closed-primary" ||
-        event.reason === "user-closed-secondary" ||
-        event.reason === "manual-reconnect";
+      const userClosedTerminal = [
+        "user-closed-primary",
+        "user-closed-secondary",
+        "manual-reconnect",
+      ].includes(event.reason);
 
       if (userClosedTerminal) {
         debugLog(

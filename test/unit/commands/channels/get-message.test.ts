@@ -200,7 +200,7 @@ describe("channels:get-message command", () => {
       );
 
       // The default mock timestamp 1_700_000_000_000 = 2023-11-14T22:13:20.000Z
-      const firstLine = stdout.split("\n")[0];
+      const firstLine = stdout.split("\n", 1)[0];
       expect(firstLine).toContain("2023-11-14T22:13:20.000Z");
       // No ordinal index like `[1]` should precede the timestamp on the header.
       expect(firstLine).not.toMatch(/^\s*\[\d+]\s+\[/);

@@ -53,7 +53,7 @@ export default class KeysGetCommand extends ControlBaseCommand {
       const currentKeyId = this.configManager.getKeyId(appId);
       const currentKeyName = resolveCurrentKeyName(appId, currentKeyId);
       const envKey = process.env.ABLY_API_KEY;
-      const envKeyPrefix = envKey ? envKey.split(":")[0] : undefined;
+      const envKeyPrefix = envKey ? envKey.split(":", 1)[0] : undefined;
       const hasEnvOverride =
         envKey && currentKeyName === keyName && envKeyPrefix !== keyName;
 

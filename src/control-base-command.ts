@@ -206,11 +206,11 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
 
     if (keyNameOrValue.includes(":")) {
       // Full key value — appId is before the first dot
-      return keyNameOrValue.split(".")[0]!;
+      return keyNameOrValue.split(".", 1)[0]!;
     }
 
     // Key name — appId is the first segment
-    return keyNameOrValue.split(".")[0]!;
+    return keyNameOrValue.split(".", 1)[0]!;
   }
 
   /**

@@ -587,7 +587,7 @@ export class ControlApi {
       method,
     };
 
-    if (body && (method === "POST" || method === "PUT" || method === "PATCH")) {
+    if (body && ["POST", "PUT", "PATCH"].includes(method)) {
       options.body = isFormData ? body : JSON.stringify(body);
     }
 

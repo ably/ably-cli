@@ -631,10 +631,8 @@ export default class Interactive extends Command {
         // Check if this is an escape sequence
         if (
           inDoubleQuote &&
-          (nextChar === '"' ||
-            nextChar === "\\" ||
-            nextChar === "$" ||
-            nextChar === "`")
+          nextChar !== undefined &&
+          ['"', "\\", "$", "`"].includes(nextChar)
         ) {
           escaped = true;
           continue;

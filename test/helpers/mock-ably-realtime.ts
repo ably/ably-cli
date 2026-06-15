@@ -262,15 +262,11 @@ function createMockChannel(name: string): MockRealtimeChannel {
     }),
     publish: vi.fn().mockResolvedValue({ serials: ["mock-serial-001"] }),
     history: vi.fn().mockResolvedValue({ items: [] }),
-    attach: vi.fn().mockImplementation(async function (
-      this: MockRealtimeChannel,
-    ) {
-      this.state = "attached";
+    attach: vi.fn().mockImplementation(async () => {
+      channel.state = "attached";
     }),
-    detach: vi.fn().mockImplementation(async function (
-      this: MockRealtimeChannel,
-    ) {
-      this.state = "detached";
+    detach: vi.fn().mockImplementation(async () => {
+      channel.state = "detached";
     }),
     on: vi.fn((eventOrListener, listener?) => {
       const event = listener ? eventOrListener : null;

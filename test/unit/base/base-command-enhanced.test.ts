@@ -270,7 +270,7 @@ describe("AblyBaseCommand - Enhanced Coverage", function () {
 
       // Verify app ID extraction logic
       const apiKey = process.env.ABLY_API_KEY;
-      const appId = apiKey.split(".")[0];
+      const appId = apiKey.split(".", 1)[0];
       expect(appId).toBe("testApp");
     });
 

@@ -23,7 +23,7 @@ describe("slugifyAccountName", () => {
   });
 
   it("returns 'default' for whitespace-only string", () => {
-    expect(slugifyAccountName("   ")).toBe("default");
+    expect(slugifyAccountName(" ".repeat(3))).toBe("default");
   });
 
   it("prefixes with 'account-' when name starts with a number", () => {

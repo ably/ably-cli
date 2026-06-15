@@ -8,7 +8,7 @@ import {
   MockInstance,
 } from "vitest";
 // import { Config } from '@oclif/core'; // Unused
-import hook from "../../../src/hooks/command_not_found/did-you-mean.js";
+import hook from "../../../src/hooks/command-not-found/did-you-mean.js";
 import inquirer from "inquirer";
 // import chalk from 'chalk'; // Unused
 

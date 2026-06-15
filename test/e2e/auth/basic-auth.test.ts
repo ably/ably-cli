@@ -88,7 +88,7 @@ describe("Authentication E2E", () => {
 
       // Extract app ID from API key (simulating BaseCommand logic)
       const apiKey = process.env.ABLY_API_KEY;
-      const appId = apiKey.split(".")[0];
+      const appId = apiKey.split(".", 1)[0];
       expect(appId).toBe("test-app");
     });
   });

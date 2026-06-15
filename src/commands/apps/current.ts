@@ -67,7 +67,7 @@ export default class AppsCurrent extends ControlBaseCommand {
             this.configManager.getKeyName(currentAppId) || "Unnamed key";
           const keyName = keyId.includes(".")
             ? keyId
-            : `${currentAppId}.${keyId.split(".")[1] ?? keyId}`;
+            : `${currentAppId}.${keyId.split(".", 2)[1] ?? keyId}`;
 
           keyInfo = {
             keyName,
@@ -107,7 +107,7 @@ export default class AppsCurrent extends ControlBaseCommand {
           // Format the full key name (app_id.key_id)
           const keyName = keyId.includes(".")
             ? keyId
-            : `${currentAppId}.${keyId.split(".")[1] ?? keyId}`;
+            : `${currentAppId}.${keyId.split(".", 2)[1] ?? keyId}`;
 
           this.log(`${formatLabel("API Key")} ${chalk.yellow.bold(keyName)}`);
           this.log(

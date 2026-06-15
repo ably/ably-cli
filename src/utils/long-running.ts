@@ -48,10 +48,9 @@ export async function waitUntilInterruptedOrTimeout(
     const effectiveDuration =
       typeof durationSeconds === "number" && durationSeconds > 0
         ? durationSeconds
-        : process.env.ABLY_CLI_DEFAULT_DURATION
-          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION) > 0
-            ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
-            : undefined
+        : process.env.ABLY_CLI_DEFAULT_DURATION &&
+            Number(process.env.ABLY_CLI_DEFAULT_DURATION) > 0
+          ? Number(process.env.ABLY_CLI_DEFAULT_DURATION)
           : undefined;
 
     if (effectiveDuration) {

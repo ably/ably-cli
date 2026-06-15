@@ -109,7 +109,7 @@ export class TerminalDiagnostics {
       stdinWithRaw.setRawMode = function (mode: boolean): NodeJS.ReadStream {
         TerminalDiagnostics.log(`setRawMode(${mode}) called`);
         try {
-          const result = originalSetRawMode.call(this, mode);
+          const result = originalSetRawMode.call(stdinWithRaw, mode);
           TerminalDiagnostics.log(`setRawMode(${mode}) succeeded`);
           return result;
         } catch (error) {

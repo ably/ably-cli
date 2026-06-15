@@ -84,9 +84,11 @@ export function createAblyClient(): Ably.Rest {
   }
 
   const clientId = getUniqueClientId();
-  const _keyPrefix = E2E_API_KEY.split(":")[0]?.split(".")[0] || "unknown-app";
+  const _keyPrefix =
+    E2E_API_KEY.split(":", 1)[0]?.split(".", 1)[0] || "unknown-app";
   const _keyId =
-    E2E_API_KEY.split(":")[0]?.split(".")[1]?.slice(0, 4) || "unknown-key";
+    E2E_API_KEY.split(":", 1)[0]?.split(".", 2)[1]?.slice(0, 4) ||
+    "unknown-key";
 
   const client = new Ably.Rest({
     key: E2E_API_KEY,
@@ -118,9 +120,11 @@ export function createAblyRealtimeClient(): Ably.Realtime {
   }
 
   const clientId = getUniqueClientId();
-  const _keyPrefix = E2E_API_KEY.split(":")[0]?.split(".")[0] || "unknown-app";
+  const _keyPrefix =
+    E2E_API_KEY.split(":", 1)[0]?.split(".", 1)[0] || "unknown-app";
   const _keyId =
-    E2E_API_KEY.split(":")[0]?.split(".")[1]?.slice(0, 4) || "unknown-key";
+    E2E_API_KEY.split(":", 1)[0]?.split(".", 2)[1]?.slice(0, 4) ||
+    "unknown-key";
 
   const client = new Ably.Realtime({
     key: E2E_API_KEY,

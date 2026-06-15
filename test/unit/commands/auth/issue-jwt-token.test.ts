@@ -33,7 +33,7 @@ describe("auth:issue-jwt-token command", () => {
       const mockConfig = getMockConfigManager();
       const appId = mockConfig.getCurrentAppId()!;
       const apiKey = mockConfig.getApiKey()!;
-      const mockKeySecret = apiKey.split(":")[1];
+      const mockKeySecret = apiKey.split(":", 2)[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],
         import.meta.url,
@@ -52,7 +52,7 @@ describe("auth:issue-jwt-token command", () => {
 
     it("should issue a token with custom capability", async () => {
       const apiKey = getMockConfigManager().getApiKey()!;
-      const mockKeySecret = apiKey.split(":")[1];
+      const mockKeySecret = apiKey.split(":", 2)[1];
       const customCapability = '{"chat:*":["publish","subscribe"]}';
 
       const { stdout } = await runCommand(
@@ -77,7 +77,7 @@ describe("auth:issue-jwt-token command", () => {
 
     it("should issue a token with custom TTL", async () => {
       const apiKey = getMockConfigManager().getApiKey()!;
-      const mockKeySecret = apiKey.split(":")[1];
+      const mockKeySecret = apiKey.split(":", 2)[1];
       const ttl = 7200; // 2 hours
 
       const { stdout } = await runCommand(
@@ -96,7 +96,7 @@ describe("auth:issue-jwt-token command", () => {
 
     it("should issue a token with custom client ID", async () => {
       const apiKey = getMockConfigManager().getApiKey()!;
-      const mockKeySecret = apiKey.split(":")[1];
+      const mockKeySecret = apiKey.split(":", 2)[1];
       const customClientId = "my-custom-client";
 
       const { stdout } = await runCommand(
@@ -114,7 +114,7 @@ describe("auth:issue-jwt-token command", () => {
 
     it("should issue a token with no client ID when 'none' is specified", async () => {
       const apiKey = getMockConfigManager().getApiKey()!;
-      const mockKeySecret = apiKey.split(":")[1];
+      const mockKeySecret = apiKey.split(":", 2)[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--client-id", "none", "--token-only"],
         import.meta.url,
@@ -163,7 +163,7 @@ describe("auth:issue-jwt-token command", () => {
 
     it("should generate token with default capability of all permissions", async () => {
       const apiKey = getMockConfigManager().getApiKey()!;
-      const mockKeySecret = apiKey.split(":")[1];
+      const mockKeySecret = apiKey.split(":", 2)[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],
         import.meta.url,
@@ -180,7 +180,7 @@ describe("auth:issue-jwt-token command", () => {
 
     it("should generate token with default TTL of 1 hour", async () => {
       const apiKey = getMockConfigManager().getApiKey()!;
-      const mockKeySecret = apiKey.split(":")[1];
+      const mockKeySecret = apiKey.split(":", 2)[1];
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],
         import.meta.url,

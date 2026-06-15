@@ -81,7 +81,7 @@
         "./dist/src/hooks/init/version-flag",
         "./dist/src/hooks/init/patch-arg-names"
       ],
-      "command_not_found": "./dist/src/hooks/command_not_found/did-you-mean"
+      "command_not_found": "./dist/src/hooks/command-not-found/did-you-mean"
     },
     "hidden": [
       "aliases"

@@ -230,11 +230,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       return;
     }
 
-    if (
-      connection.state === "failed" ||
-      connection.state === "closed" ||
-      connection.state === "suspended"
-    ) {
+    if (["failed", "closed", "suspended"].includes(connection.state)) {
       const errorMsg = `Connection failed with state: ${connection.state}`;
       this.logCliEvent(flags, "connection", "failed", errorMsg, {
         state: connection.state,

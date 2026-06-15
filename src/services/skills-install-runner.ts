@@ -124,9 +124,11 @@ export async function runSkillsInstall(
       // whenever `hasClaudePlugin || fileCopyTargets.length > 0`.
       const outcome = await installClaudeCodePlugin(output, source!.sha);
       if (
-        outcome === PluginInstallStatus.Installed ||
-        outcome === PluginInstallStatus.AlreadyInstalled ||
-        outcome === PluginInstallStatus.Partial
+        [
+          PluginInstallStatus.Installed,
+          PluginInstallStatus.AlreadyInstalled,
+          PluginInstallStatus.Partial,
+        ].includes(outcome)
       ) {
         pluginInstalled = true;
       } else {

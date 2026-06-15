@@ -17,7 +17,7 @@ let ruleCreated = false;
 
 function getAppId(): string {
   if (!E2E_API_KEY) throw new Error("E2E_API_KEY is not set");
-  return E2E_API_KEY.split(".")[0] || "";
+  return E2E_API_KEY.split(".", 1)[0] || "";
 }
 
 /**
@@ -62,11 +62,11 @@ export async function setupMutableMessagesRule(): Promise<void> {
       id?: string;
       mutableMessages?: boolean;
     }>;
-    const existing = rules.find(
+    const ruleExists = rules.some(
       (r) => r.id === MUTABLE_NAMESPACE && r.mutableMessages === true,
     );
 
-    if (existing) {
+    if (ruleExists) {
       ruleCreated = true;
     } else {
       throw new Error(
