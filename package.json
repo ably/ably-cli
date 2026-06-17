@@ -62,8 +62,7 @@
   "author": "Ably <support@ably.com>",
   "license": "Apache-2.0",
   "bin": {
-    "ably": "./bin/run.js",
-    "ably-interactive": "./bin/ably-interactive"
+    "ably": "./bin/run.js"
   },
   "type": "module",
   "oclif": {
