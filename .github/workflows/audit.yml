@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Security audit (osv-scanner)
         run: bin/osv-audit --level critical pnpm-lock.yaml examples/web-cli/pnpm-lock.yaml packages/react-web-cli/pnpm-lock.yaml

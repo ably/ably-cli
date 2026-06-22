@@ -294,7 +294,7 @@ jobs:
 
       - name: Checkout Dependabot branch
         if: steps.gate.outputs.proceed == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr.outputs.head_ref }}
           token: ${{ steps.generate-token.outputs.token }}

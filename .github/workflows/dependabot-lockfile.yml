@@ -57,7 +57,7 @@ jobs:
 
       - name: Checkout Dependabot branch
         if: steps.guard.outputs.skip != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ steps.generate-token.outputs.token }}
