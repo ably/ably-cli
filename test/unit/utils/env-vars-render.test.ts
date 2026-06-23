@@ -119,10 +119,8 @@ describe("env-vars-render", () => {
       expect(renderSingleVar("ABLY_TOKEN")).toContain("unset ABLY_TOKEN");
     });
 
-    it("ABLY_HISTORY_FILE section explains the wrapper auto-set behavior", () => {
-      expect(renderSingleVar("ABLY_HISTORY_FILE")).toContain(
-        "ably-interactive",
-      );
+    it("ABLY_HISTORY_FILE section documents the custom history location", () => {
+      expect(renderSingleVar("ABLY_HISTORY_FILE")).toContain("custom location");
     });
 
     it("does not surface deleted detail-section content (Behavior, Obtaining, etc.)", () => {

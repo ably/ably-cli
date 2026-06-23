@@ -20,20 +20,20 @@ node bin/run.js interactive
 # 3. Note any error messages
 ```
 
-## Test 2: Wrapper Script Test
+## Test 2: Repeated Interrupt Test
 
 ```bash
 # Keep diagnostics enabled
 export TERMINAL_DIAGNOSTICS=1
 export DEBUG_SIGINT=1
 
-# Run with wrapper
-bin/ably-interactive
+# Run interactive mode
+node bin/run.js interactive
 
-# When you see the prompt:
-# 1. Type: test:wait --duration 10  
-# 2. Press Ctrl+C while it's waiting
-# 3. Watch for "setRawMode EIO" error when wrapper tries to restart
+# When you see the prompt, repeat several times:
+# 1. Type: test:wait --duration 10
+# 2. Press Ctrl+C while it's waiting (should return to the prompt in-process)
+# 3. Watch for any "setRawMode EIO" / terminal-corruption errors across repeats
 ```
 
 ## Test 3: Check Terminal State
@@ -72,7 +72,7 @@ ps aux | grep ably
 
 ```bash
 # Clean up any stale processes
-pkill -f "ably-interactive"
+pkill -f "run.js interactive"
 
 # Reset terminal if corrupted
 reset

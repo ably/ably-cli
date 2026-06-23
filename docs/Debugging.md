@@ -57,7 +57,7 @@ Refer to [Testing.md](Testing.md) for how to run specific tests.
     ```
 *   **Terminal Diagnostics:** Enable terminal state logging for TTY/stdin/stdout issues:
     ```bash
-    TERMINAL_DIAGNOSTICS=1 ably-interactive
+    TERMINAL_DIAGNOSTICS=1 ably interactive
     ```
 *   **Check Configuration:** Use `ably config show` to view stored credentials or `ably config path` to find the config file location.
 *   **Override Configuration:** Use environment variables to override config for testing:

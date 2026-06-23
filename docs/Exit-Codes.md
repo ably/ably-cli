@@ -6,11 +6,11 @@ This document describes the exit codes used by the Ably CLI, particularly in int
 
 ### 0 - Success
 - Normal successful completion of a command
-- Clean exit after user types `exit` command (in non-wrapper mode)
+- Clean exit after the user types `exit` (when not running under a session restart loop)
 
 ### 42 - User Exit (Interactive Mode)
-- Special exit code used when user types `exit` in interactive mode with wrapper
-- Signals to the wrapper script (`bin/ably-interactive`) to terminate the loop
+- Special exit code emitted when the user types `exit` while running under a session restart loop (`ABLY_WRAPPER_MODE=1`)
+- Signals the restart loop (e.g. the Ably terminal server's session entrypoint) to stop, rather than treating the exit as a crash to relaunch
 - Defined as `Interactive.EXIT_CODE_USER_EXIT`
 
 ### 130 - SIGINT (Ctrl+C)
@@ -40,25 +40,24 @@ This document describes the exit codes used by the Ably CLI, particularly in int
 - Shows "⚠ Force quit" message
 - Bypasses normal cleanup
 
-## Wrapper Script Behavior
+## Session Restart Loop Behavior
 
-The `bin/ably-interactive` wrapper script uses these exit codes to determine whether to restart the interactive shell:
+`ably interactive` is a normal command and handles Ctrl+C in-process — the CLI no longer ships a separate `ably-interactive` wrapper binary. A host that wants the interactive shell to survive a force-quit (for example the Ably terminal server, which keeps a browser session alive) can wrap `ably interactive` in a small restart loop, set `ABLY_WRAPPER_MODE=1`, and key the loop off these exit codes:
 
-- **Exit code 42**: User typed 'exit' - terminate the wrapper loop
-- **Exit code 130**: SIGINT - restart the shell (unless double Ctrl+C)
-- **Exit code 0**: Normal exit - terminate the wrapper loop
-- **Other codes**: Show error message and restart after delay
+- **Exit code 42**: User typed 'exit' - stop the loop
+- **Exit code 0**: Normal exit - stop the loop
+- **Exit code 130**: Force quit (double Ctrl+C) - relaunch the shell
+- **Other codes**: Show an error and relaunch after a short delay
 
 ## Implementation Details
 
 Exit codes are handled in:
 - `src/commands/interactive.ts`: Sets exit code 42 for user exit
 - `src/utils/sigint-exit.ts`: Handles SIGINT behavior and exit code 130
-- `bin/ably-interactive`: Wrapper script that interprets exit codes
 
 ---
 
 ## Related
 
-- [Interactive-REPL.md](Interactive-REPL.md) — Architecture and wrapper script design
+- [Interactive-REPL.md](Interactive-REPL.md) — Interactive mode architecture
 - [Troubleshooting.md](Troubleshooting.md#interactive-mode-issues) — Common interactive mode issues

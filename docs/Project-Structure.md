@@ -8,8 +8,6 @@ This document outlines the directory structure of the Ably CLI project.
 /
 ├── assets/                     # Static assets (e.g. CLI screenshot)
 ├── bin/                        # Executable scripts
-│   ├── ably-interactive        # Bash wrapper for interactive mode (restarts on Ctrl+C)
-│   ├── ably-interactive.ps1    # PowerShell equivalent for Windows
 │   ├── dev.cmd                 # Development run script (Windows)
 │   ├── development.js          # Development run script (Unix)
 │   ├── run.cmd                 # Production run script (Windows)
@@ -175,5 +173,5 @@ This document outlines the directory structure of the Ably CLI project.
 - [Development Stage](Environment-Variables/Development-Usage.md) Env Variables — Development, testing, debugging, and internal env variables. For user-facing variables, run `ably env`.
 - [Testing Guide](Testing.md) — Test layers and directory layout (`test/unit/`, `test/e2e/`, `test/tty/`, `test/integration/`)
 - [Debugging Guide](Debugging.md) — Debugging tips for CLI development
-- [Interactive REPL](Interactive-REPL.md) — Architecture of `src/commands/interactive.ts` and `bin/ably-interactive`
+- [Interactive REPL](Interactive-REPL.md) — Architecture of `src/commands/interactive.ts`
 - [Exit Codes](Exit-Codes.md) — Exit codes handled in `src/commands/interactive.ts` and `src/utils/sigint-exit.ts`

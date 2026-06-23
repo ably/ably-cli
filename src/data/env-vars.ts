@@ -235,17 +235,17 @@ const ABLY_HISTORY_FILE = new EnvVarEntry(
   "File path",
   "~/.ably/history",
   null,
-  ["ably-interactive"],
+  ["ably interactive"],
   "Override the location of the interactive mode command history file.",
   new Example([
     `export ABLY_HISTORY_FILE="/path/to/custom/history"`,
-    `ably-interactive`,
+    `ably interactive`,
   ]),
   [
     new DetailSection("", [
       {
         kind: "note",
-        text: "Auto-set by the `ably-interactive` shell wrapper; only set manually for a custom location.",
+        text: "Defaults to `~/.ably/history`; only set this to use a custom location.",
       },
     ]),
   ],

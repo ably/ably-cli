@@ -1,185 +1,162 @@
 # Manual Test Instructions for Interactive Mode
 
 ## Overview
-This document provides manual test cases for the new interactive mode implementation using the bash wrapper approach.
+
+This document provides manual test cases for interactive mode (`ably interactive`).
+
+Interactive mode runs as a single Node process and handles Ctrl+C **in-process** —
+there is no longer a separate `ably-interactive` bash wrapper. A single Ctrl+C
+interrupts the running command and returns to the prompt; a double Ctrl+C (within
+500ms) force-quits with exit code 130. The "restart the shell after a force-quit"
+behaviour previously provided by the wrapper is now optional and owned by the host
+(e.g. the Ably terminal server wraps `ably interactive` in a small restart loop;
+see `docs/Exit-Codes.md`).
 
 ## Prerequisites
-1. Build the project: `npm run build`
+
+1. Build the project: `pnpm build`
 2. Ensure you have a valid Ably account configured
+3. Run these in a **real terminal** (not an IDE/script stdio) so Ctrl+C is delivered as a signal
 
 ## Test Cases
 
-### 1. Basic Interactive Mode (Without Wrapper)
+### 1. Basic Interactive Mode
 
 ```bash
-# Start interactive mode directly
-./bin/run.js interactive
+node bin/run.js interactive
 ```
 
 **Expected behavior:**
 - Welcome message appears
-- `$ ` prompt is shown
+- `ably>` prompt is shown
 - Commands execute inline
-- Ctrl+C shows yellow warning message
-- Type `exit` to quit
+- A dim hint explains Ctrl+C/`exit` behaviour
+- Type `exit` to quit (exit code 0)
 
-### 2. Interactive Mode with Bash Wrapper
+### 2. Long-Running Command Interruption (single Ctrl+C)
 
 ```bash
-# Start with wrapper for seamless Ctrl+C handling
-./bin/ably-interactive
+node bin/run.js interactive
+# At the prompt:
+ably> test:wait --duration 30
+# Press Ctrl+C while it is waiting
 ```
 
 **Expected behavior:**
-- Welcome message appears on first run only
-- `$ ` prompt is shown
-- Commands execute inline
-- Ctrl+C during command execution:
-  - Interrupts the command
-  - CLI automatically restarts
-  - No welcome message on restart
-  - New prompt appears immediately
-- Type `exit` to quit completely
+- Command starts running ("Waiting for ...")
+- Single Ctrl+C interrupts the command and shows stopping feedback
+- The **same process** returns to a new `ably>` prompt (no restart, no welcome message)
+- No `setRawMode EIO` / terminal-corruption errors
+- Repeat several times — behaviour stays stable
 
-### 3. Long-Running Command Interruption
+### 3. Double Ctrl+C (force quit)
 
 ```bash
-# In wrapper mode
-./bin/ably-interactive
-
-# At prompt, run a long command
-$ channels subscribe test-channel --duration 30
+node bin/run.js interactive
+ably> test:wait --duration 30
+# Press Ctrl+C twice rapidly (within 500ms) while it is waiting
 ```
 
 **Expected behavior:**
-- Command starts running
-- Press Ctrl+C
-- Command is interrupted
-- Shell automatically restarts
-- New prompt appears without welcome message
+- `⚠ Force quit` is shown
+- Process exits with code 130 (`echo $?`)
+- (Under a host restart loop with `ABLY_WRAPPER_MODE=1`, the host would relaunch the shell instead — see test 6)
 
 ### 4. Interactive Prompts
 
 ```bash
-# In wrapper mode
-./bin/ably-interactive
-
-# Run a command that requires confirmation
-$ apps create test-app
+node bin/run.js interactive
+ably> apps create test-app
 ```
 
 **Expected behavior:**
 - Command prompts for confirmation (Y/N)
-- Typing Y or N works correctly
-- Prompt response is processed by the command
+- Typing Y or N works correctly and is processed by the command
 
 ### 5. Command History
 
 ```bash
-# Run several commands
-./bin/ably-interactive
-$ help
-$ version
-$ apps list
-$ exit
+node bin/run.js interactive
+ably> help
+ably> version
+ably> exit
 
-# Start again
-./bin/ably-interactive
+# Start again and press the up arrow
+node bin/run.js interactive
 ```
 
 **Expected behavior:**
-- Press up arrow
-- Previous commands appear in reverse order
-- History persists across sessions
-- Check `~/.ably/history` file exists
+- Up arrow recalls previous commands in reverse order
+- History persists across sessions in `~/.ably/history`
 
-### 6. Exit Code Testing
+### 6. Exit Code Contract
 
 ```bash
-# Test normal exit
-./bin/ably-interactive
-$ exit
-echo $?  # Should be 0
+# Normal exit
+node bin/run.js interactive
+ably> exit
+echo $?   # 0
 
-# Test wrapper mode exit
-ABLY_WRAPPER_MODE=1 ./bin/run.js interactive
-$ exit
-echo $?  # Should be 42
+# Restart-loop contract: with ABLY_WRAPPER_MODE=1, `exit` returns 42 so a host
+# restart loop knows to stop (rather than relaunch). 130 = force quit.
+ABLY_WRAPPER_MODE=1 node bin/run.js interactive
+ably> exit
+echo $?   # 42
 ```
 
 ### 7. Error Handling
 
 ```bash
-./bin/ably-interactive
-
-# Try invalid commands
-$ invalid-command
-$ apps invalid-subcommand
+node bin/run.js interactive
+ably> invalid-command
+ably> apps invalid-subcommand
 ```
 
 **Expected behavior:**
 - Error messages appear
-- Shell continues running
-- New prompt appears
+- Shell continues running and shows a new prompt
 
-### 8. Rapid Ctrl+C Testing
+### 8. Rapid Ctrl+C at the Prompt
 
 ```bash
-./bin/ably-interactive
-
-# Press Ctrl+C multiple times rapidly at the prompt
+node bin/run.js interactive
+# Press Ctrl+C several times at an empty prompt
 ```
 
 **Expected behavior:**
-- Multiple yellow warning messages may appear
-- Shell remains stable
-- No crashes or unexpected exits
+- Each shows `^C` and a hint to type `exit`
+- Shell remains stable (no crashes); a rapid double-press force-quits with 130
 
-### 9. Environment Variable Testing
+### 9. Custom History File
 
 ```bash
-# Test with custom history file
-ABLY_HISTORY_FILE=/tmp/test-history ./bin/ably-interactive
-$ test command
-$ exit
-
-# Verify custom history location
+ABLY_HISTORY_FILE=/tmp/test-history node bin/run.js interactive
+ably> help
+ably> exit
 cat /tmp/test-history
 ```
 
-### 10. Cross-Platform Testing
+### 10. Cross-Platform
 
-If testing on different platforms:
-
-**macOS/Linux:**
-- Bash wrapper should work normally
-- All features functional
-
-**Windows (Git Bash/WSL):**
-- Bash wrapper should work in Git Bash or WSL
-- Note: Native Windows Command Prompt won't support bash wrapper
+The single `ably` bin works on all platforms, and Ctrl+C is handled in-process, so
+interactive mode no longer depends on a bash wrapper (macOS/Linux/Windows behave
+the same). Any restart-on-force-quit behaviour is a host concern, not the CLI's.
 
 ## Verification Checklist
 
 - [ ] Interactive mode starts successfully
 - [ ] Commands execute without spawn overhead
-- [ ] Ctrl+C interrupts long-running commands
-- [ ] Shell restarts seamlessly after Ctrl+C
+- [ ] Single Ctrl+C interrupts a long-running command and returns to the prompt in-process
+- [ ] No terminal corruption (`setRawMode EIO`) across repeated interrupts
+- [ ] Double Ctrl+C force-quits with exit code 130
+- [ ] `exit` returns 0 normally, and 42 under `ABLY_WRAPPER_MODE=1`
 - [ ] Interactive prompts (Y/N) work correctly
 - [ ] Command history persists in `~/.ably/history`
-- [ ] Exit command works with correct exit codes
 - [ ] Error handling doesn't crash the shell
-- [ ] Welcome message only shows on first run
+- [ ] Welcome message shows once (suppressed by `ABLY_SUPPRESS_WELCOME=1`)
 
-## Known Limitations
+## Notes
 
-1. Ctrl+C at the prompt shows a warning instead of clearing the line
-2. In direct mode (without wrapper), Ctrl+C exits the shell during command execution
-3. Bash wrapper requires bash shell (won't work in pure Windows CMD)
-
-## Troubleshooting
-
-If the wrapper doesn't restart after Ctrl+C:
-1. Check the exit code: `echo $?`
-2. Ensure you're using the wrapper script, not direct mode
-3. Check for any error messages before the shell exits
+- Ctrl+C at the prompt prints `^C` and a hint rather than clearing the line.
+- For automated coverage of the SIGINT/terminal behaviour, see
+  `test/tty/commands/interactive-sigint.test.ts` (run with `pnpm test:tty`).
