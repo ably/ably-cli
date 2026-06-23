@@ -75,12 +75,19 @@ export default class Interactive extends Command {
       // Install a data handler on stdin to detect Ctrl+C
       const handleStdinData = (data: Buffer) => {
         if (data.includes(0x03)) {
-          // Ctrl+C byte
+          // Non-TTY readline doesn't synthesise SIGINT from a 0x03 (Ctrl+C)
+          // byte, so we do it. This only fires while stdin is flowing: at the
+          // prompt, or while a command is itself reading stdin (e.g. a y/n
+          // confirmation). For an ordinary long-running command the outer
+          // readline keeps stdin paused, so the byte is buffered and never
+          // reaches here — those are interrupted by a real OS SIGINT, which is
+          // what a TTY and the node-pty web CLI deliver.
           if (this.runningCommand) {
-            // Exit immediately with 130 during command execution
-            process.exit(130);
+            // A command is reading stdin (e.g. a prompt): SIGINT ourselves so
+            // its own handlers unwind and we return to the prompt.
+            process.kill(process.pid, "SIGINT");
           } else {
-            // Emit SIGINT event to readline
+            // At the prompt: let readline show ^C and a fresh prompt.
             this.rl?.emit("SIGINT");
           }
         }
@@ -98,7 +105,8 @@ export default class Interactive extends Command {
       // Don't install any signal handlers at the process level
       // When SIGINT is received:
       // - If at prompt: readline handles it (shows ^C and new prompt)
-      // - If running command: process exits with 130, wrapper restarts
+      // - If running command: the command's own SIGINT handling unwinds and we
+      //   return to the prompt in-process (a double Ctrl+C still force-quits)
 
       // Set environment variable to indicate we're in interactive mode
       process.env.ABLY_INTERACTIVE_MODE = "true";
@@ -147,16 +155,12 @@ export default class Interactive extends Command {
         console.log(chalk.bold(tagline));
         console.log();
 
-        // Warn if running without wrapper
+        // Ctrl+C guidance. A single Ctrl+C interrupts a running command and
+        // returns to the prompt; type `exit` (or Ctrl+D) to leave the shell.
         if (!this.isWrapperMode && !this.isWebCliMode()) {
           console.log(
-            chalk.yellow(
-              "⚠️  Running without the wrapper script. Ctrl+C will exit the shell.",
-            ),
-          );
-          console.log(
-            chalk.yellow(
-              "   For better experience with automatic restart after Ctrl+C, use: ably-interactive\n",
+            chalk.dim(
+              "Press Ctrl+C to interrupt a running command. Type 'exit' to quit.\n",
             ),
           );
         }
