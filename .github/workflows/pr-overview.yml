@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   generate-overview:
@@ -32,7 +33,8 @@ jobs:
           private-key: ${{ secrets.CLAUDE_APP_PRIVATE_KEY }}
           permissions: >-
             contents:read,
-            pull-requests:write
+            pull-requests:write,
+            issues:write
 
       - name: Generate PR Overview
         uses: anthropics/claude-code-action@1dc994ee7a008f0ecc866d9ac23ef036b7229f84 # v1
