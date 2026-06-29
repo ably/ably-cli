@@ -67,7 +67,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
       const { channelName } = args;
 
       // Parse data if provided
-      let data: unknown = undefined;
+      let data: unknown;
       if (flags.data) {
         data = this.parseJsonFlag(flags.data, "data", flags);
       }

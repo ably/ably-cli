@@ -63,9 +63,13 @@ export default [
       ...eslintPluginN.configs["flat/recommended-module"].rules,
       // Unicorn plugin recommended rules
       ...eslintPluginUnicorn.configs.recommended.rules,
+      // Explicitly configure to work around eslint-plugin-unicorn v68 bug where defaultOptions: [null]
+      // fails ESLint 10.3.0's stricter schema validation (null is not "always" or "never")
+      "unicorn/logical-assignment-operators": ["error", "always"],
       // Disable noisy stylistic rules for now
       "unicorn/no-null": "off",
-      "unicorn/no-array-for-each": "off",
+      "unicorn/no-array-for-each": "off", // old name (pre-v66), kept for clarity
+      "unicorn/no-for-each": "off", // renamed from no-array-for-each in unicorn v66
       "unicorn/no-for-loop": "off",
       "unicorn/prefer-string-raw": "off",
       "unicorn/no-object-as-default-parameter": "off",
@@ -73,6 +77,61 @@ export default [
       "unicorn/prefer-ternary": "off",
       // Rules from .eslintrc.json
       "unicorn/no-process-exit": "off",
+      // New rules added in unicorn v65 (not enforced yet):
+      "unicorn/prefer-split-limit": "off",
+      "unicorn/prefer-includes-over-repeated-comparisons": "off",
+      "unicorn/prefer-string-repeat": "off",
+      "unicorn/no-this-outside-of-class": "off",
+      "unicorn/no-unnecessary-nested-ternary": "off",
+      "unicorn/prefer-iterator-to-array": "off", // v65/v66; requires Iterator Helpers (Node 22+)
+      // New rules added in unicorn v66 (not enforced yet):
+      "unicorn/no-unnecessary-global-this": "off",
+      "unicorn/no-top-level-side-effects": "off",
+      "unicorn/consistent-class-member-order": "off",
+      "unicorn/prefer-early-return": "off",
+      "unicorn/prefer-await": "off",
+      "unicorn/prefer-unicode-code-point-escapes": "off",
+      "unicorn/no-global-object-property-assignment": "off",
+      "unicorn/no-useless-template-literals": "off",
+      "unicorn/no-computed-property-existence-check": "off",
+      "unicorn/max-nested-calls": "off",
+      "unicorn/no-useless-else": "off",
+      "unicorn/no-break-in-nested-loop": "off",
+      "unicorn/require-array-sort-compare": "off",
+      "unicorn/prefer-number-coercion": "off",
+      "unicorn/prefer-smaller-scope": "off",
+      "unicorn/no-declarations-before-early-exit": "off",
+      "unicorn/prefer-minimal-ternary": "off",
+      "unicorn/prefer-uint8array-base64": "off",
+      "unicorn/prefer-object-define-properties": "off",
+      "unicorn/prefer-number-is-safe-integer": "off",
+      "unicorn/prefer-direct-iteration": "off",
+      "unicorn/no-unsafe-string-replacement": "off",
+      "unicorn/no-return-array-push": "off",
+      "unicorn/no-negated-array-predicate": "off",
+      "unicorn/class-reference-in-static-methods": "off",
+      "unicorn/prefer-url-href": "off",
+      // New rules added in unicorn v67 (not enforced yet):
+      "unicorn/consistent-boolean-name": "off",
+      "unicorn/no-top-level-assignment-in-function": "off",
+      "unicorn/no-non-function-verb-prefix": "off",
+      "unicorn/no-unreadable-for-of-expression": "off",
+      "unicorn/no-useless-coercion": "off",
+      "unicorn/prefer-else-if": "off",
+      "unicorn/operator-assignment": "off",
+      // New rules added in unicorn v68 (not enforced yet):
+      "unicorn/name-replacements": "off", // renamed from prevent-abbreviations in v68
+      "unicorn/consistent-conditional-object-spread": "off",
+      "unicorn/no-nonstandard-builtin-properties": "off",
+      "unicorn/no-useless-logical-operand": "off",
+      "unicorn/no-duplicate-if-branches": "off",
+      "unicorn/prefer-promise-with-resolvers": "off",
+      "unicorn/prefer-hoisting-branch-code": "off",
+      "unicorn/prefer-array-from-async": "off",
+      "unicorn/prefer-continue": "off",
+      "unicorn/prefer-boolean-return": "off",
+      "unicorn/no-unnecessary-boolean-comparison": "off",
+      "unicorn/default-export-style": "off",
       "n/no-process-exit": "off",
       "n/no-unsupported-features/node-builtins": "off",
       // Prettier
@@ -113,7 +172,8 @@ export default [
       "@typescript-eslint/return-await": "error",
       // Add other TS specific rules or overrides here
       "unicorn/prefer-module": "off",
-      "unicorn/prevent-abbreviations": "off",
+      "unicorn/prevent-abbreviations": "off", // old name (pre-v68), kept for clarity
+      "unicorn/name-replacements": "off", // renamed from prevent-abbreviations in unicorn v68
       "unicorn/numeric-separators-style": "off",
     },
   },
@@ -280,6 +340,13 @@ export default [
       "@typescript-eslint/no-base-to-string": "off",
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/unbound-method": "off",
+    },
+  },
+  {
+    // oclif hook directories use underscores in their names (e.g. command_not_found) — exempt from filename-case
+    files: ["src/hooks/**/*.ts", "test/hooks/**/*.ts"],
+    rules: {
+      "unicorn/filename-case": "off",
     },
   },
   {

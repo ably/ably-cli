@@ -18,8 +18,7 @@ export function useTerminalVisibility(
 
   useEffect(() => {
     function recompute(intersecting: boolean | null = null) {
-      const isIntersecting =
-        intersecting == null ? lastIntersectionRef.current : intersecting;
+      const isIntersecting = intersecting ?? lastIntersectionRef.current;
       const pageVisible =
         typeof document === "undefined"
           ? true
