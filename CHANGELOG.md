@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-06-30
+
+### Fixed
+
+- `npx @ably/cli <command>` now runs without a redundant `ably` token, so `npx @ably/cli init` works as expected. The package previously shipped two binaries, which stopped npx from auto-selecting one. It now ships a single `ably` binary. The older forms (`npx -p @ably/cli ably <command>`, `npx @ably/cli ably <command>`, and `npm install -g @ably/cli`) all still work.
+
+### Changed
+
+- The standalone `ably-interactive` binary is no longer installed as a separate global command. Interactive mode now handles Ctrl+C in-process. This is an internal change for most users; the terminal server consumes it through a companion update.
+
 ## [1.2.0] - 2026-06-04
 
 ### Added
