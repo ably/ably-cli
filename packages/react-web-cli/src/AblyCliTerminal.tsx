@@ -401,9 +401,7 @@ const AblyCliTerminalInner = (
           secondaryRootReference.current.querySelector(".xterm");
         if (xtermElement) {
           // Clear the primary container
-          while (rootReference.current.firstChild) {
-            rootReference.current.firstChild.remove();
-          }
+          rootReference.current.replaceChildren();
 
           // Move the xterm element to the primary container
           rootReference.current.append(xtermElement);

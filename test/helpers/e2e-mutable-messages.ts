@@ -62,11 +62,11 @@ export async function setupMutableMessagesRule(): Promise<void> {
       id?: string;
       mutableMessages?: boolean;
     }>;
-    const existing = rules.find(
-      (r) => r.id === MUTABLE_NAMESPACE && r.mutableMessages === true,
-    );
-
-    if (existing) {
+    if (
+      rules.some(
+        (r) => r.id === MUTABLE_NAMESPACE && r.mutableMessages === true,
+      )
+    ) {
       ruleCreated = true;
     } else {
       throw new Error(
