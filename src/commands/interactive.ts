@@ -2,7 +2,6 @@ import { Command } from "@oclif/core";
 import * as readline from "node:readline";
 import * as path from "node:path";
 import * as fs from "node:fs";
-import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { HistoryManager } from "../services/history-manager.js";
 import { displayLogo } from "../utils/logo.js";
@@ -15,9 +14,6 @@ import { TerminalDiagnostics } from "../utils/terminal-diagnostics.js";
 import { formatWarning } from "../utils/output.js";
 import "../utils/sigint-exit.js";
 import isWebCliMode from "../utils/web-mode.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 interface HistorySearchState {
   active: boolean;
