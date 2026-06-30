@@ -1,10 +1,7 @@
 import React, { useEffect, useRef } from "react";
 
 export type OverlayVariant =
-  | "connecting"
-  | "reconnecting"
-  | "error"
-  | "maxAttempts";
+  "connecting" | "reconnecting" | "error" | "maxAttempts";
 
 export interface TerminalOverlayProperties {
   variant: OverlayVariant;

@@ -312,8 +312,7 @@ export default class Init extends AblyBaseCommand {
   private async runGlobalInstall(jsonMode: boolean): Promise<void> {
     if (isTestMode()) {
       const hook = globalThis.__TEST_MOCKS__?.installGlobally as
-        | ((pkg: string) => Promise<void>)
-        | undefined;
+        ((pkg: string) => Promise<void>) | undefined;
       if (hook) {
         await hook("@ably/cli@latest");
         return;

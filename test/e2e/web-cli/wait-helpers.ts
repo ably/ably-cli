@@ -180,8 +180,7 @@ export async function waitForTerminalReady(
   );
 
   const reactState = finalState.reactState as
-    | { componentConnectionStatus?: string }
-    | undefined;
+    { componentConnectionStatus?: string } | undefined;
   throw new Error(
     `Terminal not ready after ${effectiveTimeout}ms. State: ${reactState?.componentConnectionStatus || "unknown"}`,
   );
