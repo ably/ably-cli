@@ -1,5 +1,16 @@
 #!/usr/bin/env node
 
+// Backwards-compatible invocation: `npx @ably/cli ably <command>` passes a
+// redundant leading `ably` token through to the CLI (the package is `@ably/cli`
+// and the bin is `ably`, so people naturally repeat it). Now that
+// `npx @ably/cli <command>` resolves the single `ably` bin directly, tolerate a
+// leading `ably` so old docs, scripts and muscle memory keep working. There is
+// no top-level `ably` command, so a leading `ably` is unambiguously the
+// redundant binary name and is safe to drop.
+if (process.argv[2] === 'ably') {
+  process.argv.splice(2, 1);
+}
+
 // For interactive mode, ensure SIGINT exits with code 130
 if (process.argv.includes('interactive')) {
   process.env.ABLY_INTERACTIVE_MODE = 'true';

@@ -226,8 +226,8 @@ Property 'x' does not exist on type 'Y'
 **Solution**:
 - Check the exit code to understand what happened (see [Exit Codes documentation](Exit-Codes.md) and [Development Stage Env Variables](Environment-Variables/Development-Usage.md) for interactive mode env vars)
 - Common exit codes:
-  - Exit code 0: Wrapper (`ably-interactive`) terminated normally
-  - Exit code 42: User typed 'exit' in interactive mode (signals wrapper to terminate)
+  - Exit code 0: Interactive shell exited normally
+  - Exit code 42: User typed 'exit' in interactive mode (signals a session restart loop to stop)
   - Exit code 130: SIGINT/Ctrl+C (double Ctrl+C or force quit)
   - Exit code 143: SIGTERM received
 
@@ -236,10 +236,9 @@ Property 'x' does not exist on type 'Y'
 **Problem**: Ctrl+C doesn't interrupt commands or behaves unexpectedly.
 
 **Solution**:
-- Use the wrapper script `ably-interactive` for better Ctrl+C handling
-- Single Ctrl+C should interrupt running command and return to prompt
+- Single Ctrl+C interrupts the running command and returns to the prompt
+- At an empty prompt, single Ctrl+C prints `^C`; type `exit` (or Ctrl+D) to leave the shell
 - Double Ctrl+C (within 500ms) force quits with exit code 130
-- If running without wrapper, Ctrl+C may exit the entire shell
 
 ### Command History Not Persisting
 
