@@ -192,8 +192,7 @@ describe.skipIf(SHOULD_SKIP_E2E || SHOULD_SKIP_MUTABLE_TESTS)(
             const parsed =
               records.find((r) => r.type === "result") ?? records[0];
             latestMessage = parsed.message as
-              | Record<string, unknown>
-              | undefined;
+              Record<string, unknown> | undefined;
             if (latestMessage?.data === "edited-text") break;
           }
           await new Promise((resolve) => setTimeout(resolve, 1000));

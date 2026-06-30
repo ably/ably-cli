@@ -103,8 +103,7 @@ export default class PushDevicesList extends AblyBaseCommand {
         if (device.clientId)
           this.log(`  ${formatLabel("Client ID")} ${device.clientId}`);
         const recipient = device.push.recipient as
-          | Record<string, unknown>
-          | undefined;
+          Record<string, unknown> | undefined;
         if (recipient?.transportType) {
           this.log(
             `  ${formatLabel("Transport")} ${recipient.transportType as string}`,

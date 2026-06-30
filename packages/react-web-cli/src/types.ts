@@ -52,7 +52,4 @@ export interface AblyCliGlobals {
  * WebSocket message data types the browser may deliver.
  */
 export type WebSocketMessageData =
-  | string
-  | Blob
-  | ArrayBuffer
-  | ArrayBufferView;
+  string | Blob | ArrayBuffer | ArrayBufferView;

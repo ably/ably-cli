@@ -16,8 +16,7 @@ async function getSpacesConstructor(): Promise<
     const spacesModule = (await import("@ably/spaces")) as unknown;
     const moduleAsRecord = spacesModule as Record<string, unknown>;
     const defaultProperty = moduleAsRecord.default as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     SpacesConstructor = (defaultProperty?.default ||
       moduleAsRecord.default ||
       moduleAsRecord) as new (client: Ably.Realtime) => unknown;
