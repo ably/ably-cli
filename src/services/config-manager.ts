@@ -159,8 +159,7 @@ export interface ConfigManager {
 // Type declaration for test mocks available on globalThis
 declare global {
   var __TEST_MOCKS__:
-    | { configManager?: ConfigManager; [key: string]: unknown }
-    | undefined;
+    { configManager?: ConfigManager; [key: string]: unknown } | undefined;
 }
 
 /**
