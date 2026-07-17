@@ -123,4 +123,99 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Integrations E2E Tests", () => {
       expect(deleteResult.exitCode).toBe(0);
     },
   );
+
+  it(
+    "should create, get, list, and delete a chat-room-sourced integration rule",
+    { timeout: 30000 },
+    async () => {
+      setupTestFailureHandler(
+        "should create, get, list, and delete a chat-room-sourced integration rule",
+      );
+
+      // Create a rule sourced from a chat room rather than a channel
+      const createResult = await runCommand(
+        [
+          "integrations",
+          "create",
+          "--app",
+          testAppId,
+          "--rule-type",
+          "http",
+          "--source-type",
+          "chat.message",
+          "--chat-room-filter",
+          "room:.*",
+          "--target-url",
+          "https://example.com/e2e-chat-room-webhook-test",
+          "--json",
+        ],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
+        },
+      );
+
+      expect(createResult.exitCode).toBe(0);
+
+      const createLines = parseNdjsonLines(createResult.stdout);
+      const createRecord = createLines.find((r) => r.type === "result");
+      expect(createRecord).toBeDefined();
+
+      const createdRule = (createRecord?.rule ?? createRecord?.integration) as
+        | Record<string, unknown>
+        | undefined;
+      const ruleId = (createdRule?.id ?? createdRule?.ruleId ?? "") as string;
+      expect(ruleId).toBeTruthy();
+      expect(createdRule).toHaveProperty("chatRoomFilter", "room:.*");
+
+      // Get the rule and confirm chatRoomFilter round-trips
+      const getResult = await runCommand(
+        ["integrations", "get", ruleId, "--app", testAppId, "--json"],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
+        },
+      );
+
+      expect(getResult.exitCode).toBe(0);
+
+      const getLines = parseNdjsonLines(getResult.stdout);
+      const getRecord = getLines.find((r) => r.type === "result");
+      expect(getRecord).toBeDefined();
+
+      const fetchedRule = getRecord?.rule as Record<string, unknown>;
+      expect(fetchedRule).toHaveProperty("chatRoomFilter", "room:.*");
+      expect((fetchedRule.source as Record<string, unknown>).type).toBe(
+        "chat.message",
+      );
+
+      // List rules and confirm the chat-room rule appears with its filter
+      const listResult = await runCommand(
+        ["integrations", "list", "--app", testAppId, "--json"],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
+        },
+      );
+
+      expect(listResult.exitCode).toBe(0);
+
+      const listRecords = parseNdjsonLines(listResult.stdout);
+      const listRecord = listRecords.find((r) => r.type === "result");
+      expect(listRecord).toBeDefined();
+
+      const listedRule = (
+        listRecord!.integrations as Record<string, unknown>[]
+      ).find((rule) => rule.id === ruleId);
+      expect(listedRule).toBeDefined();
+      expect(listedRule).toHaveProperty("chatRoomFilter", "room:.*");
+
+      // Delete the integration rule
+      const deleteResult = await runCommand(
+        ["integrations", "delete", ruleId, "--app", testAppId, "--force"],
+        {
+          env: { ABLY_ACCESS_TOKEN: E2E_ACCESS_TOKEN || "" },
+        },
+      );
+
+      expect(deleteResult.exitCode).toBe(0);
+    },
+  );
 });
