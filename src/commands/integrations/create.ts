@@ -5,6 +5,7 @@ import { formatLabel, formatResource } from "../../utils/output.js";
 
 // Interface for basic integration data structure
 interface IntegrationData {
+  chatRoomFilter: string;
   requestMode: string;
   ruleType: string; // API property name
   source: {
@@ -21,6 +22,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
   static examples = [
     '$ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook"',
     '$ ably integrations create --rule-type "amqp" --source-type "channel.message" --channel-filter "chat:*"',
+    '$ ably integrations create --rule-type "http" --source-type "chat.message" --chat-room-filter "room:.*" --target-url "https://example.com/webhook"',
     '$ ably integrations create --rule-type "http" --source-type "channel.message" --target-url "https://example.com/webhook" --json',
   ];
 
@@ -32,6 +34,10 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
     }),
     "channel-filter": Flags.string({
       description: "Channel filter pattern",
+      required: false,
+    }),
+    "chat-room-filter": Flags.string({
+      description: "Chat room filter pattern",
       required: false,
     }),
     "request-mode": Flags.string({
@@ -63,6 +69,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         "channel.presence",
         "channel.lifecycle",
         "presence.message",
+        "chat.message",
       ],
       required: true,
     }),
@@ -87,6 +94,7 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       const controlApi = this.createControlApi(flags);
       // Prepare integration data
       const integrationData: IntegrationData = {
+        chatRoomFilter: flags["chat-room-filter"] || "",
         requestMode: flags["request-mode"],
         ruleType: flags["rule-type"], // API property name
         source: {
@@ -167,6 +175,11 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         if (createdIntegration.source.channelFilter) {
           this.log(
             `${formatLabel("Source Channel Filter")} ${createdIntegration.source.channelFilter}`,
+          );
+        }
+        if (createdIntegration.chatRoomFilter) {
+          this.log(
+            `${formatLabel("Chat Room Filter")} ${createdIntegration.chatRoomFilter}`,
           );
         }
         this.log(

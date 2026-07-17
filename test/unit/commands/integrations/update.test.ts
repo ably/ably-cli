@@ -67,6 +67,53 @@ describe("integrations:update command", () => {
       expect(stdout).toContain(mockRuleId);
     });
 
+    it("should update chat room filter", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        chatRoomFilter: "room:.*",
+        source: {
+          channelFilter: "",
+          type: "chat.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+      const updatedIntegration = {
+        ...mockIntegration,
+        chatRoomFilter: "rooms:.*",
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      nockControl()
+        .patch(
+          `/v1/apps/${appId}/rules/${mockRuleId}`,
+          (body: Record<string, unknown>) => body.chatRoomFilter === "rooms:.*",
+        )
+        .reply(200, updatedIntegration);
+
+      const { stdout, stderr } = await runCommand(
+        ["integrations:update", mockRuleId, "--chat-room-filter", "rooms:.*"],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Integration rule updated.");
+      expect(stdout).toContain("Chat Room Filter: rooms:.*");
+    });
+
     it("should update target URL for HTTP integrations", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {

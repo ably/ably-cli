@@ -108,7 +108,7 @@ describe("integrations:list command", () => {
         mockRule({
           id: "rule-003",
           appId,
-          chatRoomFilter: "room:*",
+          chatRoomFilter: "room:.*",
           source: { channelFilter: "", type: "room.message" },
           target: { url: "https://example.com/webhook", format: "json" },
         }),
@@ -122,7 +122,7 @@ describe("integrations:list command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("Chat Room Filter: room:*");
+      expect(stdout).toContain("Chat Room Filter: room:.*");
     });
 
     it("should include chatRoomFilter in JSON output", async () => {
@@ -131,7 +131,7 @@ describe("integrations:list command", () => {
         mockRule({
           id: "rule-003",
           appId,
-          chatRoomFilter: "room:*",
+          chatRoomFilter: "room:.*",
           source: { channelFilter: "", type: "room.message" },
           target: { url: "https://example.com/webhook", format: "json" },
         }),
@@ -146,7 +146,10 @@ describe("integrations:list command", () => {
       );
 
       const result = parseJsonOutput(stdout);
-      expect(result.integrations[0]).toHaveProperty("chatRoomFilter", "room:*");
+      expect(result.integrations[0]).toHaveProperty(
+        "chatRoomFilter",
+        "room:.*",
+      );
     });
 
     it("should output null chatRoomFilter in JSON when absent", async () => {

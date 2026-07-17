@@ -61,6 +61,46 @@ describe("integrations:create command", () => {
       expect(stdout).toContain("http");
     });
 
+    it("should display chat room filter in human-readable output", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`)
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "http",
+          requestMode: "single",
+          chatRoomFilter: "room:.*",
+          source: {
+            channelFilter: "",
+            type: "chat.message",
+          },
+          target: {
+            url: "https://example.com/webhook",
+            format: "json",
+          },
+          status: "enabled",
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "http",
+          "--source-type",
+          "chat.message",
+          "--chat-room-filter",
+          "room:.*",
+          "--target-url",
+          "https://example.com/webhook",
+        ],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Chat Room Filter");
+      expect(stdout).toContain("room:.*");
+    });
+
     it("should create an AMQP integration successfully", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
@@ -434,6 +474,54 @@ describe("integrations:create command", () => {
       const integration = result.integration as Record<string, unknown>;
       const source = integration.source as Record<string, unknown>;
       expect(source.type).toBe("channel.lifecycle");
+    });
+
+    it("should accept chat.message source type with a chat room filter", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          return body.chatRoomFilter === "room:.*";
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "http",
+          requestMode: "single",
+          chatRoomFilter: "room:.*",
+          source: {
+            channelFilter: "",
+            type: "chat.message",
+          },
+          target: {
+            url: "https://example.com/webhook",
+          },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "http",
+          "--source-type",
+          "chat.message",
+          "--chat-room-filter",
+          "room:.*",
+          "--target-url",
+          "https://example.com/webhook",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+      const integration = result.integration as Record<string, unknown>;
+      expect(integration).toHaveProperty("chatRoomFilter", "room:.*");
+      const source = integration.source as Record<string, unknown>;
+      expect(source.type).toBe("chat.message");
     });
   });
 

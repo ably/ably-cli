@@ -106,6 +106,7 @@ export interface Rule {
 
 // Define RuleData interface for rule creation and updates
 export interface RuleData {
+  chatRoomFilter?: string;
   requestMode: string;
   ruleType: string;
   source: {

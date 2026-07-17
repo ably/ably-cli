@@ -183,7 +183,7 @@ describe("integrations:get command", () => {
         appId,
         ruleType: "http",
         requestMode: "single",
-        chatRoomFilter: "room:*",
+        chatRoomFilter: "room:.*",
         source: {
           type: "room.message",
         },
@@ -208,7 +208,7 @@ describe("integrations:get command", () => {
       );
 
       expect(stdout).toContain("Chat Room Filter");
-      expect(stdout).toContain("room:*");
+      expect(stdout).toContain("room:.*");
     });
 
     it("should not display chat room filter when absent", async () => {

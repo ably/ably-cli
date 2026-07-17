@@ -2,6 +2,7 @@ import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
 // Interface for rule update data structure (most fields optional)
 interface PartialRuleData {
+  chatRoomFilter?: string;
   requestMode?: string;
   ruleType?: string; // Usually shouldn't be updated, but kept for structure
   source?: {
@@ -25,6 +26,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
   static examples = [
     "$ ably integrations update rule123 --status disabled",
     '$ ably integrations update rule123 --channel-filter "chat:*"',
+    '$ ably integrations update rule123 --chat-room-filter "room:.*"',
     '$ ably integrations update rule123 --target-url "https://new-example.com/webhook"',
     "$ ably integrations update rule123 --status disabled --json",
   ];
@@ -37,6 +39,10 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
     }),
     "channel-filter": Flags.string({
       description: "Channel filter pattern",
+      required: false,
+    }),
+    "chat-room-filter": Flags.string({
+      description: "Chat room filter pattern",
       required: false,
     }),
     status: Flags.string({
@@ -96,6 +102,10 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         updatePayload.source.channelFilter = flags["channel-filter"];
       }
 
+      if (flags["chat-room-filter"]) {
+        updatePayload.chatRoomFilter = flags["chat-room-filter"];
+      }
+
       // Update target if it's an HTTP rule and target-url is provided
       if (existingRule.ruleType === "http" && flags["target-url"]) {
         // Ensure target exists before assigning to url
@@ -129,6 +139,9 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
           this.log(
             `Source Channel Filter: ${updatedRule.source.channelFilter}`,
           );
+        }
+        if (updatedRule.chatRoomFilter) {
+          this.log(`Chat Room Filter: ${updatedRule.chatRoomFilter}`);
         }
         this.log(`Source Type: ${updatedRule.source.type}`);
         if (
