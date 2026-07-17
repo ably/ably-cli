@@ -19,7 +19,7 @@ describe("integrations:list command", () => {
     mockRule({
       id: "rule-001",
       appId: "app-123",
-      source: { channelFilter: "chat:*", type: "channel.message" },
+      source: { channelFilter: "chat:.*", type: "channel.message" },
       target: { url: "https://example.com/webhook", format: "json" },
     }),
     mockRule({
@@ -99,7 +99,7 @@ describe("integrations:list command", () => {
       expect(stdout).toContain("Integration ID: rule-001");
       expect(stdout).toContain("Request Mode: single");
       expect(stdout).toContain("Source Type: channel.message");
-      expect(stdout).toContain("Channel Filter: chat:*");
+      expect(stdout).toContain("Channel Filter: chat:.*");
     });
 
     it("should display chat room filter in human-readable output", async () => {

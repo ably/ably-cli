@@ -28,7 +28,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -66,7 +66,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -112,7 +112,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -150,7 +150,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -173,7 +173,7 @@ describe("integrations:get command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("chat:*");
+      expect(stdout).toContain("chat:.*");
     });
 
     it("should display chat room filter", async () => {
@@ -219,7 +219,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -253,7 +253,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -339,7 +339,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {

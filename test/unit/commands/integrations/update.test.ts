@@ -27,7 +27,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -44,7 +44,7 @@ describe("integrations:update command", () => {
         ...mockIntegration,
         source: {
           ...mockIntegration.source,
-          channelFilter: "messages:*",
+          channelFilter: "messages:.*",
         },
       };
 
@@ -59,7 +59,7 @@ describe("integrations:update command", () => {
         .reply(200, updatedIntegration);
 
       const { stdout, stderr } = await runCommand(
-        ["integrations:update", mockRuleId, "--channel-filter", "messages:*"],
+        ["integrations:update", mockRuleId, "--channel-filter", "messages:.*"],
         import.meta.url,
       );
 
@@ -122,7 +122,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -168,7 +168,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -236,7 +236,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -344,7 +344,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -397,7 +397,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -414,7 +414,7 @@ describe("integrations:update command", () => {
         ...mockIntegration,
         source: {
           ...mockIntegration.source,
-          channelFilter: "new:*",
+          channelFilter: "new:.*",
         },
       };
 
@@ -446,7 +446,7 @@ describe("integrations:update command", () => {
           "--app",
           appId,
           "--channel-filter",
-          "new:*",
+          "new:.*",
         ],
         import.meta.url,
       );

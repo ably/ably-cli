@@ -25,7 +25,7 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably integrations update rule123 --status disabled",
-    '$ ably integrations update rule123 --channel-filter "chat:*"',
+    '$ ably integrations update rule123 --channel-filter "chat:.*"',
     '$ ably integrations update rule123 --chat-room-filter "room:.*"',
     '$ ably integrations update rule123 --target-url "https://new-example.com/webhook"',
     "$ ably integrations update rule123 --status disabled --json",
