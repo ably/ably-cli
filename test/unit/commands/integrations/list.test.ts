@@ -101,6 +101,66 @@ describe("integrations:list command", () => {
       expect(stdout).toContain("Source Type: channel.message");
       expect(stdout).toContain("Channel Filter: chat:*");
     });
+
+    it("should display chat room filter in human-readable output", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const integrationsWithChatRoomFilter = [
+        mockRule({
+          id: "rule-003",
+          appId,
+          chatRoomFilter: "room:*",
+          source: { channelFilter: "", type: "room.message" },
+          target: { url: "https://example.com/webhook", format: "json" },
+        }),
+      ];
+      nockControl()
+        .get(`/v1/apps/${appId}/rules`)
+        .reply(200, integrationsWithChatRoomFilter);
+
+      const { stdout } = await runCommand(
+        ["integrations:list"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Chat Room Filter: room:*");
+    });
+
+    it("should include chatRoomFilter in JSON output", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const integrationsWithChatRoomFilter = [
+        mockRule({
+          id: "rule-003",
+          appId,
+          chatRoomFilter: "room:*",
+          source: { channelFilter: "", type: "room.message" },
+          target: { url: "https://example.com/webhook", format: "json" },
+        }),
+      ];
+      nockControl()
+        .get(`/v1/apps/${appId}/rules`)
+        .reply(200, integrationsWithChatRoomFilter);
+
+      const { stdout } = await runCommand(
+        ["integrations:list", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseJsonOutput(stdout);
+      expect(result.integrations[0]).toHaveProperty("chatRoomFilter", "room:*");
+    });
+
+    it("should output null chatRoomFilter in JSON when absent", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl().get(`/v1/apps/${appId}/rules`).reply(200, mockIntegrations);
+
+      const { stdout } = await runCommand(
+        ["integrations:list", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseJsonOutput(stdout);
+      expect(result.integrations[0]).toHaveProperty("chatRoomFilter", null);
+    });
   });
 
   standardFlagTests("integrations:list", import.meta.url, [

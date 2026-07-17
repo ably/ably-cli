@@ -59,6 +59,9 @@ export default class IntegrationsGetCommand extends ControlBaseCommand {
             `${formatLabel("Source Channel Filter")} ${rule.source.channelFilter}`,
           );
         }
+        if (rule.chatRoomFilter) {
+          this.log(`${formatLabel("Chat Room Filter")} ${rule.chatRoomFilter}`);
+        }
         this.log(`${formatLabel("Source Type")} ${rule.source.type}`);
         this.log(
           `${formatLabel("Target")} ${this.formatJsonOutput(structuredClone(rule.target) as Record<string, unknown>, flags).replaceAll("\n", "\n  ")}`,

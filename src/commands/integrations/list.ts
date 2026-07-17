@@ -46,6 +46,7 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
             hasMore,
             integrations: integrations.map((integration) => ({
               appId: integration.appId,
+              chatRoomFilter: integration.chatRoomFilter || null,
               created: new Date(integration.created).toISOString(),
               id: integration.id,
               modified: new Date(integration.modified).toISOString(),
@@ -79,6 +80,9 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
           this.log(`  Source Type: ${integration.source.type}`);
           if (integration.source.channelFilter) {
             this.log(`  Channel Filter: ${integration.source.channelFilter}`);
+          }
+          if (integration.chatRoomFilter) {
+            this.log(`  Chat Room Filter: ${integration.chatRoomFilter}`);
           }
           this.log(
             `  Target: ${JSON.stringify(integration.target, null, 2).replaceAll("\n", "\n    ")}`,

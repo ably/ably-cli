@@ -99,6 +99,7 @@ export interface Rule {
     channelFilter: string;
     type: string;
   };
+  chatRoomFilter: string;
   target: unknown;
   version: string;
 }

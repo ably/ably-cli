@@ -59,6 +59,7 @@ export interface MockRule {
   version: string;
   created: number;
   modified: number;
+  chatRoomFilter?: string;
   source: { channelFilter: string; type: string };
   target: Record<string, unknown>;
 }
