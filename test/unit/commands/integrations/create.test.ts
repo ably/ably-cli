@@ -68,11 +68,16 @@ describe("integrations:create command", () => {
         .reply(201, {
           id: mockRuleId,
           appId,
-          ruleType: "http",
-          requestMode: "single",
+          ruleType: "http/before-publish",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
           chatRoomFilter: "room:.*",
           source: {
-            channelFilter: "",
             type: "chat.message",
           },
           target: {
@@ -86,7 +91,7 @@ describe("integrations:create command", () => {
         [
           "integrations:create",
           "--rule-type",
-          "http",
+          "http/before-publish",
           "--source-type",
           "chat.message",
           "--chat-room-filter",
@@ -99,6 +104,8 @@ describe("integrations:create command", () => {
 
       expect(stdout).toContain("Chat Room Filter");
       expect(stdout).toContain("room:.*");
+      expect(stdout).toContain("Invocation Mode");
+      expect(stdout).toContain("BEFORE_PUBLISH");
     });
 
     it("should create an AMQP integration successfully", async () => {
@@ -480,16 +487,26 @@ describe("integrations:create command", () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
         .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
-          return body.chatRoomFilter === "room:.*";
+          const source = body.source as Record<string, unknown>;
+          return (
+            body.chatRoomFilter === "room:.*" &&
+            !("channelFilter" in source) &&
+            body.requestMode === undefined
+          );
         })
         .reply(201, {
           id: mockRuleId,
           appId,
-          ruleType: "http",
-          requestMode: "single",
+          ruleType: "http/before-publish",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
           chatRoomFilter: "room:.*",
           source: {
-            channelFilter: "",
             type: "chat.message",
           },
           target: {
@@ -504,7 +521,7 @@ describe("integrations:create command", () => {
         [
           "integrations:create",
           "--rule-type",
-          "http",
+          "http/before-publish",
           "--source-type",
           "chat.message",
           "--chat-room-filter",
@@ -522,6 +539,462 @@ describe("integrations:create command", () => {
       expect(integration).toHaveProperty("chatRoomFilter", "room:.*");
       const source = integration.source as Record<string, unknown>;
       expect(source.type).toBe("chat.message");
+    });
+  });
+
+  describe("chat rule types", () => {
+    it("should create a hive/text-model-only rule with thresholds and beforePublishConfig", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          const target = body.target as Record<string, unknown>;
+          return (
+            body.invocationMode === "BEFORE_PUBLISH" &&
+            JSON.stringify(body.beforePublishConfig) ===
+              JSON.stringify({
+                failedAction: "REJECT",
+                maxRetries: 3,
+                retryTimeout: 3000,
+                tooManyRequestsAction: "RETRY",
+              }) &&
+            target.apiKey === "hive-key" &&
+            JSON.stringify(target.thresholds) ===
+              JSON.stringify({ bullying: 2 })
+          );
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "hive/text-model-only",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
+          source: { type: "chat.message" },
+          target: {
+            apiKey: "hive-key",
+            modelUrl: null,
+            thresholds: { bullying: 2 },
+          },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "hive/text-model-only",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "hive-key",
+          "--threshold",
+          "bullying=2",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should create a hive/dashboard rule with AFTER_PUBLISH and no beforePublishConfig", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          return (
+            body.invocationMode === "AFTER_PUBLISH" &&
+            !("beforePublishConfig" in body) &&
+            !("requestMode" in body)
+          );
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "hive/dashboard",
+          invocationMode: "AFTER_PUBLISH",
+          source: { type: "chat.message" },
+          target: { apiKey: "dash-key" },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "hive/dashboard",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "dash-key",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should require --target-api-key for hive/dashboard", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "hive/dashboard",
+          "--source-type",
+          "chat.message",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /target-api-key.*required.*hive\/dashboard/i,
+      );
+    });
+
+    it("should create a bodyguard/text-moderation rule", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          const target = body.target as Record<string, unknown>;
+          return target.apiKey === "bg-key" && target.channelId === "chan-1";
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "bodyguard/text-moderation",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
+          source: { type: "chat.message" },
+          target: { apiKey: "bg-key", channelId: "chan-1" },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "bodyguard/text-moderation",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "bg-key",
+          "--target-channel-id",
+          "chan-1",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should require --target-api-key and --target-channel-id for bodyguard/text-moderation", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "bodyguard/text-moderation",
+          "--source-type",
+          "chat.message",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/target-api-key.*target-channel-id/i);
+    });
+
+    it("should create a tisane/text-moderation rule with thresholds and default language", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          const target = body.target as Record<string, unknown>;
+          return (
+            target.apiKey === "tisane-key" &&
+            target.defaultLanguage === "*" &&
+            JSON.stringify(target.thresholds) ===
+              JSON.stringify({ allegation: 1, profanity: 1 })
+          );
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "tisane/text-moderation",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
+          source: { type: "chat.message" },
+          target: {
+            apiKey: "tisane-key",
+            modelUrl: null,
+            thresholds: { allegation: 1, profanity: 1 },
+            defaultLanguage: "*",
+          },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "tisane/text-moderation",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "tisane-key",
+          "--threshold",
+          "allegation=1",
+          "--threshold",
+          "profanity=1",
+          "--default-language",
+          "*",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should create an azure/text-moderation rule", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          const target = body.target as Record<string, unknown>;
+          return (
+            target.apiKey === "azure-key" &&
+            target.endpoint === "https://abc.cognitiveservices.azure.com" &&
+            JSON.stringify(target.thresholds) === JSON.stringify({ Hate: 2 })
+          );
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "azure/text-moderation",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
+          source: { type: "chat.message" },
+          target: {
+            apiKey: "azure-key",
+            endpoint: "https://abc.cognitiveservices.azure.com",
+            thresholds: { Hate: 2 },
+          },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "azure/text-moderation",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "azure-key",
+          "--target-endpoint",
+          "https://abc.cognitiveservices.azure.com",
+          "--threshold",
+          "Hate=2",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should require --target-api-key and --target-endpoint for azure/text-moderation", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "azure/text-moderation",
+          "--source-type",
+          "chat.message",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/target-api-key.*target-endpoint/i);
+    });
+
+    it("should create an aws/lambda/before-publish rule with credentials authentication", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          const target = body.target as Record<string, unknown>;
+          const authentication = target.authentication as Record<
+            string,
+            unknown
+          >;
+          return (
+            target.functionName === "MyFunction" &&
+            target.region === "eu-west-1" &&
+            authentication.authenticationMode === "credentials" &&
+            authentication.accessKeyId === "AKIA123" &&
+            authentication.secretAccessKey === "secret123"
+          );
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "aws/lambda/before-publish",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
+          source: { type: "chat.message" },
+          target: {
+            functionName: "MyFunction",
+            region: "eu-west-1",
+            authentication: {
+              authenticationMode: "credentials",
+              accessKeyId: "AKIA123",
+            },
+          },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "aws/lambda/before-publish",
+          "--source-type",
+          "chat.message",
+          "--target-function-name",
+          "MyFunction",
+          "--target-region",
+          "eu-west-1",
+          "--target-access-key-id",
+          "AKIA123",
+          "--target-secret-access-key",
+          "secret123",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should require all target flags for aws/lambda/before-publish", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "aws/lambda/before-publish",
+          "--source-type",
+          "chat.message",
+          "--target-function-name",
+          "MyFunction",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /target-function-name.*target-region.*target-access-key-id.*target-secret-access-key/i,
+      );
+    });
+
+    it("should override beforePublishConfig defaults with flags", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          return (
+            JSON.stringify(body.beforePublishConfig) ===
+            JSON.stringify({
+              failedAction: "IGNORE",
+              maxRetries: 5,
+              retryTimeout: 5000,
+              tooManyRequestsAction: "DROP",
+            })
+          );
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "http/before-publish",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 5000,
+            maxRetries: 5,
+            failedAction: "IGNORE",
+            tooManyRequestsAction: "DROP",
+          },
+          source: { type: "chat.message" },
+          target: { url: "https://example.com/webhook" },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "http/before-publish",
+          "--source-type",
+          "chat.message",
+          "--target-url",
+          "https://example.com/webhook",
+          "--retry-timeout",
+          "5000",
+          "--max-retries",
+          "5",
+          "--failed-action",
+          "IGNORE",
+          "--too-many-requests-action",
+          "DROP",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
     });
   });
 

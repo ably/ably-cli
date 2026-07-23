@@ -90,27 +90,41 @@ export interface Rule {
     self: string;
   };
   appId: string;
+  beforePublishConfig?: {
+    failedAction: string;
+    maxRetries: number;
+    retryTimeout: number;
+    tooManyRequestsAction: string;
+  };
   created: number;
   id: string;
+  invocationMode?: string;
   modified: number;
-  requestMode: string;
+  requestMode?: string;
   ruleType: string;
   source: {
-    channelFilter: string;
+    channelFilter?: string;
     type: string;
   };
-  chatRoomFilter: string;
+  chatRoomFilter?: string;
   target: unknown;
   version: string;
 }
 
 // Define RuleData interface for rule creation and updates
 export interface RuleData {
+  beforePublishConfig?: {
+    failedAction: string;
+    maxRetries: number;
+    retryTimeout: number;
+    tooManyRequestsAction: string;
+  };
   chatRoomFilter?: string;
-  requestMode: string;
+  invocationMode?: string;
+  requestMode?: string;
   ruleType: string;
   source: {
-    channelFilter: string;
+    channelFilter?: string;
     type: string;
   };
   status?: "disabled" | "enabled";

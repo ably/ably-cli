@@ -49,8 +49,9 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
               chatRoomFilter: integration.chatRoomFilter || null,
               created: new Date(integration.created).toISOString(),
               id: integration.id,
+              invocationMode: integration.invocationMode || null,
               modified: new Date(integration.modified).toISOString(),
-              requestMode: integration.requestMode,
+              requestMode: integration.requestMode || null,
               source: {
                 channelFilter: integration.source.channelFilter || null,
                 type: integration.source.type,
@@ -76,7 +77,14 @@ export default class IntegrationsListCommand extends ControlBaseCommand {
           this.log(formatHeading(`Integration ID: ${integration.id}`));
           this.log(`  App ID: ${integration.appId}`);
           this.log(`  Type: ${integration.ruleType}`);
-          this.log(`  Request Mode: ${integration.requestMode}`);
+          if (integration.requestMode) {
+            this.log(`  Request Mode: ${integration.requestMode}`);
+          }
+
+          if (integration.invocationMode) {
+            this.log(`  Invocation Mode: ${integration.invocationMode}`);
+          }
+
           this.log(`  Source Type: ${integration.source.type}`);
           if (integration.source.channelFilter) {
             this.log(`  Channel Filter: ${integration.source.channelFilter}`);
