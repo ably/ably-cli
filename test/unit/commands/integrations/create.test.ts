@@ -543,6 +543,88 @@ describe("integrations:create command", () => {
   });
 
   describe("chat rule types", () => {
+    it("should reject a --threshold value with an empty number", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "hive/text-model-only",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "hive-key",
+          "--threshold",
+          "bullying=",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/Invalid --threshold value "bullying="/);
+    });
+
+    it("should reject a --threshold value with more than one '='", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "hive/text-model-only",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "hive-key",
+          "--threshold",
+          "bullying=2=3",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /Invalid --threshold value "bullying=2=3"/,
+      );
+    });
+
+    it("should reject a chat rule type combined with a non-chat.message source type", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "http/before-publish",
+          "--source-type",
+          "channel.message",
+          "--target-url",
+          "https://example.com/webhook",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /--source-type must be "chat.message" for http\/before-publish/,
+      );
+    });
+
+    it("should reject a channel rule type combined with chat.message source type", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "http",
+          "--source-type",
+          "chat.message",
+          "--target-url",
+          "https://example.com/webhook",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /"chat.message" requires a chat rule type/,
+      );
+    });
+
     it("should create a hive/text-model-only rule with thresholds and beforePublishConfig", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
@@ -935,8 +1017,9 @@ describe("integrations:create command", () => {
 
       expect(error).toBeDefined();
       expect(error?.message).toMatch(
-        /target-function-name.*target-region.*target-access-key-id.*target-secret-access-key/i,
+        /target-region.*target-access-key-id.*target-secret-access-key/i,
       );
+      expect(error?.message).not.toMatch(/target-function-name/i);
     });
 
     it("should override beforePublishConfig defaults with flags", async () => {

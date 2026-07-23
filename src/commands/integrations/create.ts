@@ -1,65 +1,153 @@
-import { Flags } from "@oclif/core";
+import { Flags, Interfaces } from "@oclif/core";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import type { RuleData } from "../../services/control-api.js";
 import { formatLabel, formatResource } from "../../utils/output.js";
 
-// Rule types that are sourced from Ably Chat rooms and invoked either
-// before or after a chat message is published, rather than the classic
-// Reactor-style channel rules (http, amqp, kinesis, etc.).
-const CHAT_RULE_TYPES = new Set([
-  "hive/text-model-only",
-  "hive/dashboard",
-  "aws/lambda/before-publish",
-  "http/before-publish",
-  "bodyguard/text-moderation",
-  "tisane/text-moderation",
-  "azure/text-moderation",
-]);
-
-// The only chat rule type invoked after publish; every other chat rule
-// type runs before publish and requires a beforePublishConfig.
-const AFTER_PUBLISH_CHAT_RULE_TYPES = new Set(["hive/dashboard"]);
-
-interface BeforePublishConfig {
-  failedAction: string;
-  maxRetries: number;
-  retryTimeout: number;
-  tooManyRequestsAction: string;
-}
-
-// Interface for basic integration data structure
-interface IntegrationData {
-  beforePublishConfig?: BeforePublishConfig;
-  chatRoomFilter?: string;
-  invocationMode?: string;
-  requestMode?: string;
-  ruleType: string; // API property name
-  source: {
-    channelFilter?: string;
-    type: string;
-  };
-  status: "disabled" | "enabled";
-  target: Record<string, unknown>; // Target is highly variable
-}
+type FailFn = (message: string) => never;
+type CreateFlags = Interfaces.InferredFlags<
+  typeof IntegrationsCreateCommand.flags
+>;
 
 // Parses repeatable "key=value" threshold flags into a numeric map, e.g.
-// ["bullying=2", "sexual=1"] -> { bullying: 2, sexual: 1 }
+// ["bullying=2", "hate=1"] -> { bullying: 2, hate: 1 }. Rejects entries
+// with a missing/blank/whitespace-only value or more than one "=" rather
+// than silently coercing them — Number() trims and parses "" and " " as 0.
 function parseThresholds(
   entries: string[] | undefined,
-  fail: (message: string) => never,
+  fail: FailFn,
 ): Record<string, number> {
   const thresholds: Record<string, number> = {};
   for (const entry of entries ?? []) {
-    const [key, rawValue] = entry.split("=");
-    if (!key || rawValue === undefined || Number.isNaN(Number(rawValue))) {
+    const parts = entry.split("=");
+    const [key, rawValue] = parts;
+    const trimmedValue = rawValue?.trim();
+    if (
+      parts.length !== 2 ||
+      !key ||
+      !trimmedValue ||
+      Number.isNaN(Number(trimmedValue))
+    ) {
       fail(`Invalid --threshold value "${entry}". Expected format: key=number`);
     }
 
-    thresholds[key] = Number(rawValue);
+    thresholds[key] = Number(trimmedValue);
   }
 
   return thresholds;
 }
+
+// Shared base for the moderation-vendor target shapes (hive/text-model-only,
+// tisane/text-moderation, azure/text-moderation), which all require an API
+// key and numeric thresholds, plus their own vendor-specific fields on top.
+function buildModerationTarget(
+  flags: CreateFlags,
+  fail: FailFn,
+  extra: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    apiKey: flags["target-api-key"],
+    thresholds: parseThresholds(flags.threshold, fail),
+    ...extra,
+  };
+}
+
+// Joins flag names into a human-readable "required" message, e.g.
+// ["a"] -> "--a", ["a", "b"] -> "--a and --b",
+// ["a", "b", "c"] -> "--a, --b, and --c"
+function joinRequiredFlags(names: string[]): string {
+  const flagNames = names.map((name) => `--${name}`);
+  if (flagNames.length <= 2) return flagNames.join(" and ");
+  return `${flagNames.slice(0, -1).join(", ")}, and ${flagNames.at(-1)}`;
+}
+
+// Chat-sourced rule types use a structurally different schema from the
+// classic Reactor-style channel rules (http, amqp, kinesis, etc.):
+// invocationMode + beforePublishConfig instead of requestMode, and each has
+// its own vendor-specific target shape. This table is the single source of
+// truth for that shape — required target flags, the target payload builder,
+// and the invocation mode — so a new chat rule type only needs one entry
+// here plus a matching --rule-type option, rather than edits scattered
+// across parallel lists and a switch statement.
+interface ChatRuleTypeConfig {
+  buildTarget: (flags: CreateFlags, fail: FailFn) => Record<string, unknown>;
+  invocationMode: "AFTER_PUBLISH" | "BEFORE_PUBLISH";
+  requiredTargetFlags: string[];
+}
+
+const CHAT_RULE_TYPES: Record<string, ChatRuleTypeConfig> = {
+  "aws/lambda/before-publish": {
+    buildTarget: (flags) => ({
+      authentication: {
+        accessKeyId: flags["target-access-key-id"],
+        authenticationMode: "credentials",
+        secretAccessKey: flags["target-secret-access-key"],
+      },
+      functionName: flags["target-function-name"],
+      region: flags["target-region"],
+    }),
+    invocationMode: "BEFORE_PUBLISH",
+    requiredTargetFlags: [
+      "target-function-name",
+      "target-region",
+      "target-access-key-id",
+      "target-secret-access-key",
+    ],
+  },
+  "azure/text-moderation": {
+    buildTarget: (flags, fail) =>
+      buildModerationTarget(flags, fail, {
+        endpoint: flags["target-endpoint"],
+      }),
+    invocationMode: "BEFORE_PUBLISH",
+    requiredTargetFlags: ["target-api-key", "target-endpoint"],
+  },
+  "bodyguard/text-moderation": {
+    buildTarget: (flags) => ({
+      apiKey: flags["target-api-key"],
+      channelId: flags["target-channel-id"],
+    }),
+    invocationMode: "BEFORE_PUBLISH",
+    requiredTargetFlags: ["target-api-key", "target-channel-id"],
+  },
+  "hive/dashboard": {
+    buildTarget: (flags) => ({
+      apiKey: flags["target-api-key"],
+    }),
+    invocationMode: "AFTER_PUBLISH",
+    requiredTargetFlags: ["target-api-key"],
+  },
+  "hive/text-model-only": {
+    buildTarget: (flags, fail) =>
+      buildModerationTarget(
+        flags,
+        fail,
+        flags["target-model-url"]
+          ? { modelUrl: flags["target-model-url"] }
+          : {},
+      ),
+    invocationMode: "BEFORE_PUBLISH",
+    requiredTargetFlags: ["target-api-key"],
+  },
+  "http/before-publish": {
+    buildTarget: (flags) => ({ url: flags["target-url"] }),
+    invocationMode: "BEFORE_PUBLISH",
+    requiredTargetFlags: ["target-url"],
+  },
+  "tisane/text-moderation": {
+    buildTarget: (flags, fail) =>
+      buildModerationTarget(flags, fail, {
+        ...(flags["default-language"] && {
+          defaultLanguage: flags["default-language"],
+        }),
+        ...(flags["target-model-url"] && {
+          modelUrl: flags["target-model-url"],
+        }),
+      }),
+    invocationMode: "BEFORE_PUBLISH",
+    requiredTargetFlags: ["target-api-key"],
+  },
+};
 
 export default class IntegrationsCreateCommand extends ControlBaseCommand {
   static description = "Create an integration";
@@ -212,13 +300,24 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
 
     const appId = await this.requireAppId(flags);
     const ruleType = flags["rule-type"];
-    const fail = (message: string): never =>
+    const chatRuleConfig = CHAT_RULE_TYPES[ruleType];
+    const fail: FailFn = (message) =>
       this.fail(message, flags, "integrationCreate");
+
+    if (chatRuleConfig && flags["source-type"] !== "chat.message") {
+      fail(`--source-type must be "chat.message" for ${ruleType} integrations`);
+    }
+
+    if (!chatRuleConfig && flags["source-type"] === "chat.message") {
+      fail(
+        `--source-type "chat.message" requires a chat rule type (e.g. --rule-type "http/before-publish"); "${ruleType}" is a channel-sourced rule type`,
+      );
+    }
 
     try {
       const controlApi = this.createControlApi(flags);
       // Prepare integration data
-      const integrationData: IntegrationData = {
+      const integrationData: RuleData = {
         ruleType, // API property name
         source: {
           type: flags["source-type"],
@@ -236,14 +335,10 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
         integrationData.chatRoomFilter = flags["chat-room-filter"];
       }
 
-      if (CHAT_RULE_TYPES.has(ruleType)) {
-        integrationData.invocationMode = AFTER_PUBLISH_CHAT_RULE_TYPES.has(
-          ruleType,
-        )
-          ? "AFTER_PUBLISH"
-          : "BEFORE_PUBLISH";
+      if (chatRuleConfig) {
+        integrationData.invocationMode = chatRuleConfig.invocationMode;
 
-        if (integrationData.invocationMode === "BEFORE_PUBLISH") {
+        if (chatRuleConfig.invocationMode === "BEFORE_PUBLISH") {
           integrationData.beforePublishConfig = {
             failedAction: flags["failed-action"],
             maxRetries: flags["max-retries"],
@@ -251,159 +346,58 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
             tooManyRequestsAction: flags["too-many-requests-action"],
           };
         }
+
+        const missingFlags = chatRuleConfig.requiredTargetFlags.filter(
+          (flagName) => !flags[flagName as keyof CreateFlags],
+        );
+        if (missingFlags.length > 0) {
+          fail(
+            `${joinRequiredFlags(missingFlags)} ${missingFlags.length > 1 ? "are" : "is"} required for ${ruleType} integrations`,
+          );
+        }
+
+        integrationData.target = chatRuleConfig.buildTarget(flags, fail);
       } else {
         integrationData.requestMode = flags["request-mode"];
-      }
 
-      // Add target data based on integration type
-      switch (ruleType) {
-        case "http": {
-          if (!flags["target-url"]) {
-            fail("--target-url is required for HTTP integrations");
+        // Add target data based on integration type
+        switch (ruleType) {
+          case "http": {
+            if (!flags["target-url"]) {
+              fail("--target-url is required for HTTP integrations");
+            }
+
+            integrationData.target = {
+              enveloped: true,
+              format: "json",
+              url: flags["target-url"],
+            };
+            break;
           }
 
-          integrationData.target = {
-            enveloped: true,
-            format: "json",
-            url: flags["target-url"],
-          };
-          break;
-        }
+          case "amqp": {
+            // Simplified AMQP config for demo purposes
+            integrationData.target = {
+              enveloped: true,
+              exchangeName: "ably",
+              format: "json",
+              headers: {},
+              immediate: false,
+              mandatory: true,
+              persistent: true,
+              queueType: "classic",
+              routingKey: "events",
+            };
+            break;
+          }
 
-        case "amqp": {
-          // Simplified AMQP config for demo purposes
-          integrationData.target = {
-            enveloped: true,
-            exchangeName: "ably",
-            format: "json",
-            headers: {},
-            immediate: false,
-            mandatory: true,
-            persistent: true,
-            queueType: "classic",
-            routingKey: "events",
-          };
-          break;
-        }
-
-        case "http/before-publish": {
-          if (!flags["target-url"]) {
-            fail(
-              "--target-url is required for http/before-publish integrations",
+          default: {
+            this.logWarning(
+              `Using default target for ${ruleType}. In a real implementation, more target options would be required.`,
+              flags,
             );
+            integrationData.target = { enveloped: true, format: "json" };
           }
-
-          integrationData.target = { url: flags["target-url"] };
-          break;
-        }
-
-        case "hive/text-model-only": {
-          if (!flags["target-api-key"]) {
-            fail(
-              "--target-api-key is required for hive/text-model-only integrations",
-            );
-          }
-
-          integrationData.target = {
-            apiKey: flags["target-api-key"],
-            thresholds: parseThresholds(flags.threshold, fail),
-            ...(flags["target-model-url"] && {
-              modelUrl: flags["target-model-url"],
-            }),
-          };
-          break;
-        }
-
-        case "hive/dashboard": {
-          if (!flags["target-api-key"]) {
-            fail(
-              "--target-api-key is required for hive/dashboard integrations",
-            );
-          }
-
-          integrationData.target = { apiKey: flags["target-api-key"] };
-          break;
-        }
-
-        case "bodyguard/text-moderation": {
-          if (!flags["target-api-key"] || !flags["target-channel-id"]) {
-            fail(
-              "--target-api-key and --target-channel-id are required for bodyguard/text-moderation integrations",
-            );
-          }
-
-          integrationData.target = {
-            apiKey: flags["target-api-key"],
-            channelId: flags["target-channel-id"],
-          };
-          break;
-        }
-
-        case "tisane/text-moderation": {
-          if (!flags["target-api-key"]) {
-            fail(
-              "--target-api-key is required for tisane/text-moderation integrations",
-            );
-          }
-
-          integrationData.target = {
-            apiKey: flags["target-api-key"],
-            thresholds: parseThresholds(flags.threshold, fail),
-            ...(flags["default-language"] && {
-              defaultLanguage: flags["default-language"],
-            }),
-            ...(flags["target-model-url"] && {
-              modelUrl: flags["target-model-url"],
-            }),
-          };
-          break;
-        }
-
-        case "azure/text-moderation": {
-          if (!flags["target-api-key"] || !flags["target-endpoint"]) {
-            fail(
-              "--target-api-key and --target-endpoint are required for azure/text-moderation integrations",
-            );
-          }
-
-          integrationData.target = {
-            apiKey: flags["target-api-key"],
-            endpoint: flags["target-endpoint"],
-            thresholds: parseThresholds(flags.threshold, fail),
-          };
-          break;
-        }
-
-        case "aws/lambda/before-publish": {
-          if (
-            !flags["target-function-name"] ||
-            !flags["target-region"] ||
-            !flags["target-access-key-id"] ||
-            !flags["target-secret-access-key"]
-          ) {
-            fail(
-              "--target-function-name, --target-region, --target-access-key-id, and --target-secret-access-key are required for aws/lambda/before-publish integrations",
-            );
-          }
-
-          integrationData.target = {
-            authentication: {
-              accessKeyId: flags["target-access-key-id"],
-              authenticationMode: "credentials",
-              secretAccessKey: flags["target-secret-access-key"],
-            },
-            functionName: flags["target-function-name"],
-            region: flags["target-region"],
-          };
-          break;
-        }
-
-        default: {
-          this.logWarning(
-            `Using default target for ${ruleType}. In a real implementation, more target options would be required.`,
-            flags,
-          );
-          integrationData.target = { enveloped: true, format: "json" };
         }
       }
 

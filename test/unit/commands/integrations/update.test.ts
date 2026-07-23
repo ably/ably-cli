@@ -114,6 +114,47 @@ describe("integrations:update command", () => {
       expect(stdout).toContain("Chat Room Filter: rooms:.*");
     });
 
+    it("should not print an undefined request mode and should print invocation mode for chat rule types", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http/before-publish",
+        invocationMode: "BEFORE_PUBLISH",
+        chatRoomFilter: "room:.*",
+        source: {
+          type: "chat.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+      const updatedIntegration = {
+        ...mockIntegration,
+        chatRoomFilter: "rooms:.*",
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, updatedIntegration);
+
+      const { stdout } = await runCommand(
+        ["integrations:update", mockRuleId, "--chat-room-filter", "rooms:.*"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Invocation Mode: BEFORE_PUBLISH");
+      expect(stdout).not.toContain("Request Mode:");
+    });
+
     it("should update target URL for HTTP integrations", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {
