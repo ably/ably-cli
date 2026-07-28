@@ -22,6 +22,7 @@ export default [
       "**/coverage/**",
       "*.config.js",
       "examples/**", // Ignore all files in examples directory
+      "poc/**", // Research spikes: standalone code targeting other compilers
       "docs/workplans/resources/**", // Ignore resource TSX used for documentation
       "oclif.manifest.json",
       "**/tmp/**",
