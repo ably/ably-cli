@@ -125,17 +125,37 @@ ably accounts login --local --url http://localhost:8081 --json
 
 ---
 
-## One-off overrides without a profile
+## Without a profile
 
-If you do not want to store a profile, the hidden dev flags still work and take precedence over stored values on the command they are passed to:
+If you do not want to store anything, two environment variables are enough:
 
 ```bash
-export ABLY_API_KEY="localapp.keyid:keysecret"
-export ABLY_ENDPOINT=localhost
-ably channels publish my-channel "hello" --tls=false --port 8081
+ABLY_URL=http://localhost:8081 \
+ABLY_API_KEY=appId.keyId:keySecret \
+  ably channels publish my-channel "hello"
 ```
 
-Set `ABLY_SHOW_DEV_FLAGS=true` to un-hide `--port`, `--tls-port`, `--tls`, `--control-host` and `--endpoint` in `--help` output. Note that `ABLY_ENDPOINT` only sets the host — there is no environment variable for the port, which is the main reason to store a profile instead.
+`ABLY_URL` sets host, port and TLS in one value. The scheme is optional for loopback hosts, so `ABLY_URL=localhost:8081` is equivalent. A path is rejected rather than silently discarded, since Ably routes by host.
+
+The same value is available as a flag, for a single command rather than a whole shell:
+
+```bash
+ably channels publish my-channel "hello" --url http://localhost:8081
+```
+
+### Precedence
+
+For the data plane, the first source that supplies routing wins:
+
+```
+--url  >  ABLY_URL  >  ABLY_ENDPOINT  >  profile  >  SDK default
+```
+
+`--port`, `--tls-port` and `--tls` are applied on top of whichever source won, so they can override a single field — `--url http://localhost:8081 --port 1234` targets `localhost:1234`.
+
+`ABLY_ENDPOINT` predates the URL forms and sets the **host only**, keeping the port and TLS setting from the profile. Prefer `ABLY_URL` unless you specifically want that behaviour.
+
+`--url`, `--port`, `--tls-port` and `--tls` are hidden from `--help` by default; set `ABLY_SHOW_DEV_FLAGS=true` to show them.
 
 ---
 

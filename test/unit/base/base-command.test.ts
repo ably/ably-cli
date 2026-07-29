@@ -766,6 +766,96 @@ describe("AblyBaseCommand", function () {
       delete process.env.ABLY_ENDPOINT;
     });
 
+    it("applies ABLY_URL as host, port and TLS together", function () {
+      process.env.ABLY_URL = "http://localhost:8081";
+      configManagerStub.getDataPlane.mockReturnValue();
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.endpoint).toBe("localhost");
+      expect(clientOptions.tls).toBe(false);
+      expect(clientOptions.port).toBe(8081);
+      expect(clientOptions.tlsPort).toBeUndefined();
+
+      delete process.env.ABLY_URL;
+    });
+
+    it("accepts a schemeless ABLY_URL for loopback hosts", function () {
+      process.env.ABLY_URL = "localhost:8081";
+      configManagerStub.getDataPlane.mockReturnValue();
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.endpoint).toBe("localhost");
+      expect(clientOptions.tls).toBe(false);
+      expect(clientOptions.port).toBe(8081);
+
+      delete process.env.ABLY_URL;
+    });
+
+    it("lets ABLY_URL win over ABLY_ENDPOINT and the profile", function () {
+      process.env.ABLY_URL = "http://localhost:9091";
+      process.env.ABLY_ENDPOINT = "ignored.example.com";
+      configManagerStub.getDataPlane.mockReturnValue({
+        endpoint: "localhost",
+        port: 8081,
+        tls: false,
+      });
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.endpoint).toBe("localhost");
+      expect(clientOptions.port).toBe(9091);
+
+      delete process.env.ABLY_URL;
+      delete process.env.ABLY_ENDPOINT;
+    });
+
+    it("lets --url win over ABLY_URL", function () {
+      process.env.ABLY_URL = "http://localhost:9091";
+      configManagerStub.getDataPlane.mockReturnValue();
+
+      const clientOptions = command.testGetClientOptions({
+        url: "http://localhost:7071",
+      });
+
+      expect(clientOptions.port).toBe(7071);
+
+      delete process.env.ABLY_URL;
+    });
+
+    it("lets an explicit --port override a --url port", function () {
+      configManagerStub.getDataPlane.mockReturnValue();
+
+      const clientOptions = command.testGetClientOptions({
+        port: 1234,
+        url: "http://localhost:8081",
+      });
+
+      expect(clientOptions.endpoint).toBe("localhost");
+      expect(clientOptions.port).toBe(1234);
+    });
+
+    it("fails on an ABLY_URL that includes a path", function () {
+      process.env.ABLY_URL = "http://localhost:8081/realtime";
+      configManagerStub.getDataPlane.mockReturnValue();
+
+      expect(() => command.testGetClientOptions({})).toThrow(
+        /must not include a path/,
+      );
+
+      delete process.env.ABLY_URL;
+    });
+
+    it("fails on an unparseable ABLY_URL, naming the source", function () {
+      process.env.ABLY_URL = "ws://localhost:8081";
+      configManagerStub.getDataPlane.mockReturnValue();
+
+      expect(() => command.testGetClientOptions({})).toThrow(/ABLY_URL/);
+
+      delete process.env.ABLY_URL;
+    });
+
     it("leaves routing options unset for a managed account", function () {
       // A managed account has no routing overrides stored.
       configManagerStub.getDataPlane.mockReturnValue();

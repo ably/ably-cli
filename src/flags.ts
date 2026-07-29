@@ -25,9 +25,17 @@ export const coreGlobalFlags = {
 };
 
 /**
- * Hidden flags for product API (Ably SDK) commands — port, tls, tls-port.
+ * Hidden flags for product API (Ably SDK) commands — url, port, tls, tls-port.
+ *
+ * `--url` sets host, port and TLS together, which is what pointing at a local
+ * server needs. The individual flags below override single fields on top of it.
  */
 export const hiddenProductApiFlags = {
+  url: Flags.string({
+    description:
+      "Route product API calls to this URL, e.g. http://localhost:8081",
+    hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
+  }),
   port: Flags.integer({
     description: "Override the port for product API calls",
     hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",

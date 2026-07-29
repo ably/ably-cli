@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import {
   ConfigManager,
   createConfigManager,
+  type DataPlaneConfig,
 } from "./services/config-manager.js";
 import { ControlApi } from "./services/control-api.js";
 import {
@@ -14,8 +15,12 @@ import {
   extractKeyNameFromApiKey,
 } from "./utils/api-key.js";
 import { CommandError } from "./errors/command-error.js";
-import { formatServerUrl } from "./utils/server-url.js";
-import { getFriendlyAblyErrorHint } from "./utils/errors.js";
+import {
+  formatServerUrl,
+  parseServerUrl,
+  type ServerUrl,
+} from "./utils/server-url.js";
+import { errorMessage, getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { promptForConfirmation } from "./utils/prompt-confirmation.js";
@@ -739,9 +744,72 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   /**
+   * Resolve host, port and TLS for the data plane from the first source that
+   * supplies them: `--url`, `ABLY_URL`, `ABLY_ENDPOINT`, then the account
+   * profile. The individual `--port`/`--tls-port`/`--tls` flags are applied by
+   * the caller on top, so they can override a single field.
+   *
+   * `ABLY_ENDPOINT` names a host only and predates the URL forms, so it keeps
+   * the profile's port and TLS rather than resetting them.
+   */
+  private resolveDataPlaneRouting(
+    flags: BaseFlags,
+  ): DataPlaneConfig | undefined {
+    if (flags.url) {
+      return this.routingFromUrl(flags.url, "--url", flags);
+    }
+
+    if (process.env.ABLY_URL) {
+      return this.routingFromUrl(process.env.ABLY_URL, "ABLY_URL", flags);
+    }
+
+    const profile = this.configManager.getDataPlane();
+
+    if (process.env.ABLY_ENDPOINT) {
+      return {
+        endpoint: process.env.ABLY_ENDPOINT,
+        port: profile?.port,
+        tls: profile?.tls,
+      };
+    }
+
+    return profile;
+  }
+
+  /** Parse a routing URL, failing the command with the source named. */
+  private routingFromUrl(
+    raw: string,
+    source: string,
+    flags: BaseFlags,
+  ): DataPlaneConfig {
+    let parsed: ServerUrl;
+    try {
+      parsed = parseServerUrl(raw);
+    } catch (error) {
+      this.fail(
+        `Invalid ${source} value: ${errorMessage(error)}`,
+        flags,
+        "routing",
+      );
+    }
+
+    // The SDK routes by hostname, so a path would be silently discarded.
+    if (parsed.path) {
+      this.fail(
+        `${source} must not include a path (got "${parsed.path}"). Ably routes by host, so use a value like http://localhost:8081.`,
+        flags,
+        "routing",
+      );
+    }
+
+    return { endpoint: parsed.host, port: parsed.port, tls: parsed.tls };
+  }
+
+  /**
    * Render the effective endpoint when an environment variable redirects the
    * command away from what the current profile is configured with, or
-   * undefined when the profile's own routing is in force.
+   * undefined when the profile's own routing is in force. Flags are excluded
+   * deliberately: they are explicit on the command line and need no reminder.
    */
   private formatRoutingOverride(showAppInfo: boolean): string | undefined {
     if (!showAppInfo) {
@@ -749,20 +817,27 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       return process.env.ABLY_CONTROL_HOST;
     }
 
-    const override = process.env.ABLY_ENDPOINT;
-    if (!override) return undefined;
+    if (!process.env.ABLY_URL && !process.env.ABLY_ENDPOINT) return undefined;
 
-    const dataPlane = this.configManager.getDataPlane();
+    const effective = this.resolveDataPlaneRouting({});
+    if (!effective?.endpoint) return undefined;
+
     // Setting the env var to what the profile already says is not a redirect.
-    if (override === dataPlane?.endpoint) return undefined;
+    const profile = this.configManager.getDataPlane();
+    if (
+      profile &&
+      effective.endpoint === profile.endpoint &&
+      effective.port === profile.port &&
+      effective.tls === profile.tls
+    ) {
+      return undefined;
+    }
 
-    // ABLY_ENDPOINT only replaces the host; port and TLS still come from the
-    // profile, so show the combination that traffic will actually use.
     return formatServerUrl({
-      host: override,
+      host: effective.endpoint,
       path: "",
-      port: dataPlane?.port,
-      tls: dataPlane?.tls ?? true,
+      port: effective.port,
+      tls: effective.tls ?? true,
     });
   }
 
@@ -1114,15 +1189,14 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
     }
 
-    // Data plane routing: flags → env → account config. Local server accounts
-    // persist host, port and TLS together (see `ably accounts login --local`),
-    // so a stored profile targets localhost without repeating dev flags on
-    // every command. Explicit flags still win, for one-off overrides.
-    const dataPlane = this.configManager.getDataPlane();
+    // Data plane routing: --url → ABLY_URL → ABLY_ENDPOINT → account config,
+    // with the individual --port/--tls-port/--tls flags overriding single
+    // fields on top. The URL forms set host, port and TLS together, which is
+    // what a local server needs; ABLY_ENDPOINT is host-only and predates them.
+    const dataPlane = this.resolveDataPlaneRouting(flags);
 
-    const endpoint = process.env.ABLY_ENDPOINT || dataPlane?.endpoint;
-    if (endpoint) {
-      options.endpoint = endpoint;
+    if (dataPlane?.endpoint) {
+      options.endpoint = dataPlane.endpoint;
     }
 
     if (flags.tls !== undefined) {
@@ -1132,7 +1206,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     // The SDK reads `port` when TLS is off and `tlsPort` when it is on, so the
-    // single stored port has to be routed to whichever one is live.
+    // single resolved port has to be routed to whichever one is live.
     const tlsEnabled = options.tls !== false;
 
     if (flags.port !== undefined) {

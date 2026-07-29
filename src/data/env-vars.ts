@@ -299,7 +299,7 @@ const ABLY_ENDPOINT = new EnvVarEntry(
   "Override Realtime/REST API endpoint",
   "Hostname or URL (passed as-is, no normalization)",
   "SDK default",
-  "**`ABLY_ENDPOINT`** > account config endpoint > SDK default",
+  "`--url` > **`ABLY_URL`** > **`ABLY_ENDPOINT`** > account config endpoint > SDK default",
   ["channels", "rooms", "spaces", "connections", "bench", "logs"],
   "Override the Ably Realtime/REST API endpoint for all data plane commands.",
   new Example([
@@ -307,14 +307,46 @@ const ABLY_ENDPOINT = new EnvVarEntry(
     `ably channels publish my-channel "Hello"`,
   ]),
   [
-    new DetailSection("Local servers", [
+    new DetailSection("Host only", [
       {
         kind: "paragraph",
-        text: "Sets the **host only** — there is no environment variable for the port. Pair it with the hidden `--port`, `--tls-port` and `--tls` flags for one-off use.",
+        text: "Sets the **host only**, keeping the port and TLS setting from the current profile.",
       },
       {
         kind: "important",
-        text: "To store host, port and TLS together so they apply to every command, run `ably accounts login --local --url http://localhost:8081` instead.",
+        text: "To set host, port and TLS together — what pointing at a local server needs — use `ABLY_URL` instead.",
+      },
+    ]),
+  ],
+);
+
+const ABLY_URL = new EnvVarEntry(
+  "ABLY_URL",
+  "Host Override",
+  "Route Realtime/REST API calls to a URL",
+  "Full URL, e.g. `http://localhost:8081` (scheme optional for loopback hosts)",
+  "SDK default",
+  "`--url` > **`ABLY_URL`** > `ABLY_ENDPOINT` > account config endpoint > SDK default",
+  ["channels", "rooms", "spaces", "connections", "bench", "logs"],
+  "Point all data plane commands at a specific server, typically one running locally.",
+  new Example([
+    `export ABLY_URL="http://localhost:8081"`,
+    `export ABLY_API_KEY="appId.keyId:keySecret"`,
+    `ably channels publish my-channel "Hello"`,
+  ]),
+  [
+    new DetailSection("Behaviour", [
+      {
+        kind: "paragraph",
+        text: "Sets host, port and TLS in one value, unlike `ABLY_ENDPOINT` which sets only the host. A missing scheme defaults to `http` for loopback hosts and `https` otherwise, so `localhost:8081` and `http://localhost:8081` are equivalent.",
+      },
+      {
+        kind: "paragraph",
+        text: "The URL must not include a path — Ably routes by host, so a path would be silently discarded.",
+      },
+      {
+        kind: "important",
+        text: "For repeated use, `ably accounts login --local --url http://localhost:8081` stores the same routing as a profile so no environment variable is needed.",
       },
     ]),
   ],
@@ -509,6 +541,7 @@ export const ENV_VARS_DATA: EnvVarsData = new EnvVarsData(
     ABLY_API_KEY,
     ABLY_TOKEN,
     ABLY_ACCESS_TOKEN,
+    ABLY_URL,
     ABLY_ENDPOINT,
     ABLY_APP_ID,
     ABLY_CLI_CONFIG_DIR,

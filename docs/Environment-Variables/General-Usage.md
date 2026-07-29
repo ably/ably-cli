@@ -18,6 +18,7 @@ These environment variables are most commonly used during development as well as
 | `ABLY_HISTORY_FILE` | Configuration | Custom history file location | `~/.ably/history` |
 | `ABLY_CLI_DEFAULT_DURATION` | Behavior | Auto-exit long-running commands (seconds) | None (forever) |
 | `ABLY_CLI_NON_INTERACTIVE` | Behavior | Auto-confirm "Did you mean?" prompts | Not set |
-| `ABLY_ENDPOINT` | Host Override | Override Realtime/REST API endpoint | SDK default |
+| `ABLY_URL` | Host Override | Route Realtime/REST API calls to a URL | SDK default |
+| `ABLY_ENDPOINT` | Host Override | Override Realtime/REST API endpoint (host only) | SDK default |
 
 > For development, testing, debugging, and internal variables, see [Development Stage Usage](Development-Usage.md).
