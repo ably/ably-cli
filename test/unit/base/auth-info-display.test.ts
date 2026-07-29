@@ -63,6 +63,8 @@ describe("Auth Info Display", function () {
     getAppName: ReturnType<typeof vi.fn>;
     getApiKey: ReturnType<typeof vi.fn>;
     getEndpoint: ReturnType<typeof vi.fn>;
+    getDataPlane: ReturnType<typeof vi.fn>;
+    getControlUrl: ReturnType<typeof vi.fn>;
     getKeyName: ReturnType<typeof vi.fn>;
     getAccessToken: ReturnType<typeof vi.fn>;
     getAppConfig: ReturnType<typeof vi.fn>;
@@ -73,6 +75,16 @@ describe("Auth Info Display", function () {
   let logStub: ReturnType<typeof vi.fn>;
   let debugStub: ReturnType<typeof vi.fn>;
 
+  /** Run displayAuthInfo and return the rendered "Using:" line. */
+  const usingLine = async (showAppInfo = true): Promise<string> => {
+    await command.testDisplayAuthInfo({}, showAppInfo);
+    const outputCalls = logStub.mock.calls.map((call) => call[0]);
+    const line = outputCalls.find(
+      (output) => typeof output === "string" && output.includes("Using:"),
+    );
+    return typeof line === "string" ? line : "";
+  };
+
   beforeEach(function () {
     // Create mock config manager
     configManagerStub = {
@@ -81,6 +93,8 @@ describe("Auth Info Display", function () {
       getAppName: vi.fn(),
       getApiKey: vi.fn(),
       getEndpoint: vi.fn(),
+      getDataPlane: vi.fn(),
+      getControlUrl: vi.fn(),
       getKeyName: vi.fn(),
       getAccessToken: vi.fn(),
       getAppConfig: vi.fn(),
@@ -199,6 +213,87 @@ describe("Auth Info Display", function () {
         (output) => typeof output === "string" && output.includes("Using:"),
       );
       expect(outputWithUsingPrefix).toContain("Account=");
+    });
+
+    describe("endpoint override display", function () {
+      beforeEach(function () {
+        shouldHideAccountInfoStub.mockReturnValue(false);
+        delete process.env.ABLY_ENDPOINT;
+        delete process.env.ABLY_CONTROL_HOST;
+      });
+
+      afterEach(function () {
+        delete process.env.ABLY_ENDPOINT;
+        delete process.env.ABLY_CONTROL_HOST;
+      });
+
+      it("omits the endpoint for a profile with its own routing", async function () {
+        // A local server profile is a deliberate choice — not worth repeating.
+        configManagerStub.getDataPlane.mockReturnValue({
+          endpoint: "localhost",
+          port: 8081,
+          tls: false,
+        });
+
+        expect(await usingLine()).not.toContain("Endpoint=");
+      });
+
+      it("omits the endpoint for a managed account with no override", async function () {
+        configManagerStub.getDataPlane.mockReturnValue();
+
+        expect(await usingLine()).not.toContain("Endpoint=");
+      });
+
+      it("shows the endpoint when ABLY_ENDPOINT redirects a managed account", async function () {
+        process.env.ABLY_ENDPOINT = "other.example.com";
+        configManagerStub.getDataPlane.mockReturnValue();
+
+        expect(await usingLine()).toContain(
+          "Endpoint=https://other.example.com",
+        );
+      });
+
+      it("shows the endpoint when ABLY_ENDPOINT redirects away from the profile", async function () {
+        process.env.ABLY_ENDPOINT = "other.example.com";
+        configManagerStub.getDataPlane.mockReturnValue({
+          endpoint: "localhost",
+          port: 8081,
+          tls: false,
+        });
+
+        // Port and TLS still come from the profile, so the displayed URL is
+        // the combination traffic will actually use.
+        expect(await usingLine()).toContain(
+          "Endpoint=http://other.example.com:8081",
+        );
+      });
+
+      it("omits the endpoint when ABLY_ENDPOINT matches the profile", async function () {
+        process.env.ABLY_ENDPOINT = "localhost";
+        configManagerStub.getDataPlane.mockReturnValue({
+          endpoint: "localhost",
+          port: 8081,
+          tls: false,
+        });
+
+        expect(await usingLine()).not.toContain("Endpoint=");
+      });
+
+      it("shows ABLY_CONTROL_HOST on control plane commands", async function () {
+        process.env.ABLY_CONTROL_HOST = "control.example.com";
+
+        expect(await usingLine(false)).toContain(
+          "Endpoint=control.example.com",
+        );
+      });
+
+      it("omits the endpoint on control plane commands with no override", async function () {
+        configManagerStub.getControlUrl.mockReturnValue(
+          "http://localhost:8082",
+        );
+
+        expect(await usingLine(false)).not.toContain("Endpoint=");
+      });
     });
 
     it("should not display anything when there are no parts to show", async function () {

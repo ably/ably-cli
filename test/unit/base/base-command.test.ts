@@ -96,6 +96,7 @@ type MockConfigManager = ConfigManager & {
   getApiKey: ReturnType<typeof vi.fn>;
   getAccessToken: ReturnType<typeof vi.fn>;
   getEndpoint: ReturnType<typeof vi.fn>;
+  getDataPlane: ReturnType<typeof vi.fn>;
   selectKey: ReturnType<typeof vi.fn>;
   selectApp: ReturnType<typeof vi.fn>;
   setCurrentApp: ReturnType<typeof vi.fn>;
@@ -135,6 +136,7 @@ describe("AblyBaseCommand", function () {
       getApiKey: vi.fn(),
       getAccessToken: vi.fn(),
       getEndpoint: vi.fn(),
+      getDataPlane: vi.fn(),
       selectKey: vi.fn(),
       selectApp: vi.fn(),
       setCurrentApp: vi.fn(),
@@ -675,6 +677,105 @@ describe("AblyBaseCommand", function () {
 
       delete process.env.ABLY_ENDPOINT;
       delete process.env.ABLY_API_KEY;
+    });
+  });
+
+  describe("local server data plane resolution", function () {
+    beforeEach(function () {
+      delete process.env.ABLY_ENDPOINT;
+      process.env.ABLY_API_KEY = "test-key:secret";
+    });
+
+    afterEach(function () {
+      delete process.env.ABLY_API_KEY;
+    });
+
+    it("applies a stored plaintext endpoint, port and tls setting", function () {
+      configManagerStub.getDataPlane.mockReturnValue({
+        endpoint: "localhost",
+        port: 8081,
+        tls: false,
+      });
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.endpoint).toBe("localhost");
+      expect(clientOptions.tls).toBe(false);
+      expect(clientOptions.port).toBe(8081);
+      // With TLS off the SDK reads `port`, so tlsPort must stay unset.
+      expect(clientOptions.tlsPort).toBeUndefined();
+    });
+
+    it("routes a stored port to tlsPort when TLS is on", function () {
+      configManagerStub.getDataPlane.mockReturnValue({
+        endpoint: "server.example.com",
+        port: 8443,
+        tls: true,
+      });
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.tls).toBe(true);
+      expect(clientOptions.tlsPort).toBe(8443);
+      expect(clientOptions.port).toBeUndefined();
+    });
+
+    it("treats an unset tls value as TLS enabled", function () {
+      configManagerStub.getDataPlane.mockReturnValue({
+        endpoint: "server.example.com",
+        port: 8443,
+      });
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.tlsPort).toBe(8443);
+      expect(clientOptions.port).toBeUndefined();
+    });
+
+    it("lets explicit flags override stored values", function () {
+      configManagerStub.getDataPlane.mockReturnValue({
+        endpoint: "localhost",
+        port: 8081,
+        tls: false,
+      });
+
+      const clientOptions = command.testGetClientOptions({
+        port: 9999,
+        tls: "true",
+        "tls-port": 8443,
+      });
+
+      expect(clientOptions.tls).toBe(true);
+      expect(clientOptions.port).toBe(9999);
+      expect(clientOptions.tlsPort).toBe(8443);
+    });
+
+    it("lets ABLY_ENDPOINT override the stored endpoint but keep the stored port", function () {
+      process.env.ABLY_ENDPOINT = "other.example.com";
+      configManagerStub.getDataPlane.mockReturnValue({
+        endpoint: "localhost",
+        port: 8081,
+        tls: false,
+      });
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.endpoint).toBe("other.example.com");
+      expect(clientOptions.port).toBe(8081);
+
+      delete process.env.ABLY_ENDPOINT;
+    });
+
+    it("leaves routing options unset for a managed account", function () {
+      // A managed account has no routing overrides stored.
+      configManagerStub.getDataPlane.mockReturnValue();
+
+      const clientOptions = command.testGetClientOptions({});
+
+      expect(clientOptions.endpoint).toBeUndefined();
+      expect(clientOptions.tls).toBeUndefined();
+      expect(clientOptions.port).toBeUndefined();
+      expect(clientOptions.tlsPort).toBeUndefined();
     });
   });
 });

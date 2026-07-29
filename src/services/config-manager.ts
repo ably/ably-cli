@@ -14,9 +14,23 @@ export interface AppConfig {
   keyName?: string;
 }
 
+/**
+ * Data plane routing for an account, as supplied by `--endpoint` (managed) or
+ * decomposed from `--url` (local server). Mirrors the SDK's client options:
+ * `endpoint` is a bare hostname, and the port applies to `tlsPort` or `port`
+ * depending on `tls`.
+ */
+export interface DataPlaneConfig {
+  endpoint?: string;
+  port?: number;
+  tls?: boolean;
+}
+
 export interface AccountConfig {
   // Legacy: pre-OAuth configs store the access token directly on the account.
   // OAuth accounts use oauthSessionKey to reference a shared OAuthSession instead.
+  // Local server accounts reuse this field for the Control API access token,
+  // which has no refresh flow.
   // Do not remove — needed for backward compatibility with existing configs.
   accessToken?: string;
   accessTokenExpiresAt?: number;
@@ -25,10 +39,16 @@ export interface AccountConfig {
   apps?: {
     [appId: string]: AppConfig;
   };
-  authMethod?: "oauth";
+  authMethod?: "apiKey" | "oauth";
   controlHost?: string;
+  // Full base URL (scheme, host, port, optional path prefix) for a locally-run
+  // control plane. Takes precedence over controlHost, which cannot express a
+  // port or a plaintext scheme.
+  controlUrl?: string;
   currentAppId?: string;
   endpoint?: string;
+  port?: number;
+  tls?: boolean;
   // OAuth authorization server host (ably.com or a review-app override).
   // Kept separate from controlHost so the session key and token-refresh
   // traffic always targets the host that actually minted the tokens.
@@ -79,6 +99,15 @@ export interface ConfigManager {
       userEmail: string;
     },
   ): void;
+  storeLocalAccount(
+    alias: string,
+    info: {
+      accessToken?: string;
+      accountName: string;
+      controlUrl?: string;
+      dataPlane: DataPlaneConfig;
+    },
+  ): void;
   switchAccount(alias: string): boolean;
   removeAccount(alias: string): boolean;
 
@@ -107,7 +136,7 @@ export interface ConfigManager {
       }
     | undefined;
   isAccessTokenExpired(): boolean;
-  getAuthMethod(alias?: string): "oauth" | undefined;
+  getAuthMethod(alias?: string): "apiKey" | "oauth" | undefined;
   getAliasesForOAuthSession(alias: string): string[];
   clearOAuthSession(alias?: string): void;
 
@@ -135,6 +164,8 @@ export interface ConfigManager {
   // Endpoint management
   getEndpoint(alias?: string): string | undefined;
   storeEndpoint(endpoint: string, alias?: string): void;
+  getDataPlane(alias?: string): DataPlaneConfig | undefined;
+  getControlUrl(alias?: string): string | undefined;
 
   // Help context (AI conversation)
   getHelpContext():
@@ -263,6 +294,36 @@ export class TomlConfigManager implements ConfigManager {
 
     const currentAccount = this.getCurrentAccount();
     return currentAccount?.endpoint;
+  }
+
+  // Get the full data plane routing config for the current account or alias
+  public getDataPlane(alias?: string): DataPlaneConfig | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account) return undefined;
+
+    if (
+      account.endpoint === undefined &&
+      account.port === undefined &&
+      account.tls === undefined
+    ) {
+      return undefined;
+    }
+
+    return {
+      endpoint: account.endpoint,
+      port: account.port,
+      tls: account.tls,
+    };
+  }
+
+  // Get the control plane base URL for the current account or alias
+  public getControlUrl(alias?: string): string | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    return account?.controlUrl;
   }
 
   // Get path to config file
@@ -478,6 +539,52 @@ export class TomlConfigManager implements ConfigManager {
     }
 
     this.config.accounts[targetAlias].endpoint = endpoint;
+    this.saveConfig();
+  }
+
+  // Store a local server account. Unlike storeOAuthTokens there is no
+  // authorization server involved: the API key is supplied directly by the
+  // user, and the optional Control API token is stored on the account itself
+  // because a local control plane has no refresh flow.
+  public storeLocalAccount(
+    alias: string,
+    info: {
+      accessToken?: string;
+      accountName: string;
+      controlUrl?: string;
+      dataPlane: DataPlaneConfig;
+    },
+  ): void {
+    const existing = this.config.accounts[alias];
+
+    this.config.accounts[alias] = {
+      ...existing,
+      accessToken: info.accessToken,
+      accountId: existing?.accountId ?? "",
+      accountName: info.accountName,
+      apps: existing?.apps ?? {},
+      authMethod: "apiKey",
+      controlUrl: info.controlUrl,
+      currentAppId: existing?.currentAppId,
+      endpoint: info.dataPlane.endpoint,
+      port: info.dataPlane.port,
+      tls: info.dataPlane.tls,
+      userEmail: existing?.userEmail ?? "",
+    };
+
+    // A local account never references an OAuth session. Drop any fields
+    // carried over by the spread so re-logging in over a previous managed
+    // account with the same alias cannot leave stale OAuth state behind.
+    delete this.config.accounts[alias].accessTokenExpiresAt;
+    delete this.config.accounts[alias].controlHost;
+    delete this.config.accounts[alias].oauthHost;
+    delete this.config.accounts[alias].oauthSessionKey;
+    delete this.config.accounts[alias].tokenId;
+
+    if (!this.config.current || !this.config.current.account) {
+      this.config.current = { account: alias };
+    }
+
     this.saveConfig();
   }
 
@@ -703,7 +810,7 @@ export class TomlConfigManager implements ConfigManager {
   }
 
   // Get the auth method for the current account or specific alias
-  public getAuthMethod(alias?: string): "oauth" | undefined {
+  public getAuthMethod(alias?: string): "apiKey" | "oauth" | undefined {
     const account = alias
       ? this.config.accounts[alias]
       : this.getCurrentAccount();

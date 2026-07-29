@@ -145,7 +145,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
 
         // Show cached information
         this.log(
-          `${formatLabel("Account (cached)")} ${chalk.cyan.bold(currentAccount.accountName)} ${chalk.gray(`(${currentAccount.accountId})`)}`,
+          `${formatLabel("Account (cached)")} ${chalk.cyan.bold(currentAccount.accountName)}${currentAccount.accountId ? ` ${chalk.gray(`(${currentAccount.accountId})`)}` : ""}`,
         );
 
         if (currentAccount.userEmail) {

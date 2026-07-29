@@ -7,7 +7,10 @@ export interface BaseFlags {
   "api-key"?: string; // Not a CLI flag; set internally by ensureAppAndKey
   "client-id"?: string;
   "control-host"?: string;
+  "control-url"?: string;
   "dashboard-host"?: string;
+  local?: boolean;
+  url?: string;
   "oauth-host"?: string;
   endpoint?: string;
   port?: number;

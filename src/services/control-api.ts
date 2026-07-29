@@ -7,6 +7,10 @@ import type { TokenRefreshMiddleware } from "./token-refresh-middleware.js";
 export interface ControlApiOptions {
   accessToken: string;
   controlHost?: string;
+  // Full base URL for a locally-run control plane, e.g.
+  // "http://localhost:8082". Takes precedence over controlHost, which is only
+  // a hostname and so cannot express a port or a plaintext scheme.
+  controlUrl?: string;
   logErrors?: boolean;
   tokenRefreshMiddleware?: TokenRefreshMiddleware;
 }
@@ -188,12 +192,14 @@ export interface AccountSummary {
 export class ControlApi {
   private accessToken: string;
   private controlHost: string;
+  private controlUrl?: string;
   private logErrors: boolean;
   private tokenRefreshMiddleware?: TokenRefreshMiddleware;
 
   constructor(options: ControlApiOptions) {
     this.accessToken = options.accessToken;
     this.controlHost = options.controlHost || "control.ably.net";
+    this.controlUrl = options.controlUrl;
     this.tokenRefreshMiddleware = options.tokenRefreshMiddleware;
     // Explicit options.logErrors overrides env var; otherwise suppress in CI/test
     if (options.logErrors === undefined) {
@@ -205,6 +211,33 @@ export class ControlApi {
     } else {
       this.logErrors = options.logErrors;
     }
+  }
+
+  /**
+   * Resolve the base URL that request paths are appended to.
+   *
+   * The dedicated Control API service (control.ably.net) serves at `/v1/`,
+   * while the website itself (ably.com and Heroku review apps) proxies the
+   * Control API at `/api/v1/`. For host-only configuration we infer which is
+   * which; an explicit controlUrl states it directly, and a locally-run
+   * control plane is the dedicated service, so it defaults to `/v1`.
+   */
+  private baseUrl(): string {
+    if (this.controlUrl) {
+      const base = this.controlUrl.replace(/\/+$/, "");
+      // A caller-supplied path is treated as the full prefix; only append the
+      // default when the URL is a bare origin.
+      const hasPath = new URL(base).pathname !== "/";
+      return hasPath ? base : `${base}/v1`;
+    }
+
+    // Match hosts whose first label starts with "control" so both `control.`
+    // and `control-*.` variants route correctly, case insensitively so
+    // ABLY_CONTROL_HOST values aren't locale-sensitive.
+    const isControlService = /^control[-.]/i.test(this.controlHost);
+    const scheme = this.controlHost.includes("local") ? "http" : "https";
+    const prefix = isControlService ? "/v1" : "/api/v1";
+    return `${scheme}://${this.controlHost}${prefix}`;
   }
 
   // Ask a question to the Ably AI agent
@@ -566,15 +599,7 @@ export class ControlApi {
         await this.tokenRefreshMiddleware.getValidAccessToken();
     }
 
-    // The dedicated Control API service (control.ably.net) serves at `/v1/`.
-    // The website itself (ably.com and Heroku review apps) proxies the
-    // Control API at `/api/v1/`. Match hosts whose first label starts with
-    // "control" so both `control.` and `control-*.` variants route correctly,
-    // case insensitively so ABLY_CONTROL_HOST values aren't locale-sensitive.
-    const isControlService = /^control[-.]/i.test(this.controlHost);
-    const scheme = this.controlHost.includes("local") ? "http" : "https";
-    const prefix = isControlService ? "/v1" : "/api/v1";
-    const url = `${scheme}://${this.controlHost}${prefix}${path}`;
+    const url = `${this.baseUrl()}${path}`;
 
     const isFormData = body instanceof FormData;
     const options: RequestInit = {

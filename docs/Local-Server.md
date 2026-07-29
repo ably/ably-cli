@@ -1,0 +1,145 @@
+# Local Servers
+
+The CLI can target a locally-running Ably server instead of the managed service. A local server is stored as an ordinary account profile, so `ably accounts list`, `ably accounts current` and `ably accounts switch` all work as usual and every data plane command runs unchanged.
+
+---
+
+## Getting started
+
+The guided flow prompts for everything it needs:
+
+```bash
+ably accounts login --local
+```
+
+It asks for:
+
+1. **Data plane URL** — defaults to `http://localhost:8081`
+2. **API key** — for a key you already hold on the server (input is masked)
+3. **Whether the control plane is also running locally** — and if so, its URL and a Control API access token
+
+The explicit form skips the prompts and is what you want in scripts:
+
+```bash
+# Data plane only
+ably accounts login --local --url http://localhost:8081
+
+# Data plane and control plane
+ably accounts login --local \
+  --url http://localhost:8081 \
+  --control-url http://localhost:8082
+```
+
+Passing `--url` disables the prompts for the data plane URL and the control plane question; the API key and Control API token still prompt unless supplied via the environment (see [Non-interactive use](#non-interactive-use)).
+
+Once logged in, everything works as it does against the managed service:
+
+```bash
+ably channels publish my-channel "hello"
+ably channels subscribe my-channel
+ably accounts switch production   # back to a managed account
+ably accounts switch local        # and back again
+```
+
+---
+
+## URLs
+
+Both `--url` and `--control-url` take a full URL. A missing scheme defaults to `http` for loopback hosts (`localhost`, `127.0.0.1`, `::1`) and `https` for everything else, so `--url localhost:8081` and `--url http://localhost:8081` are equivalent.
+
+The data plane URL must not include a path: Ably routes by hostname, so a path would be silently discarded. The control plane URL may include one — if it does, it is used verbatim as the API prefix; if it does not, `/v1` is appended (matching the dedicated Control API service).
+
+Internally the data plane URL is decomposed into the SDK's `endpoint`, `port`/`tlsPort` and `tls` client options and stored on the account, which is why you do not need to repeat host or port flags on individual commands.
+
+---
+
+## The API key is the only data plane credential
+
+There is no OAuth flow and no account directory on a local server. The app ID is read from the API key itself (`<appId>.<keyId>:<keySecret>`), so the key is the only thing you need to supply for the data plane to work.
+
+The key is validated for shape at login. A key without the `<appId>.<keyId>:<keySecret>` structure is rejected with a message rather than being stored and failing later.
+
+---
+
+## Running only the data plane
+
+Running the control plane locally is optional. When you log in without `--control-url`, control plane commands (`ably apps`, `ably auth keys`, `ably integrations`, `ably queues`, `ably stats`) fail immediately with:
+
+```
+Control API commands aren't available for local server "local" because it was configured without a control plane URL.
+Re-run "ably accounts login --local" with --control-url if you are running the control plane locally, or switch to a managed account with "ably accounts switch".
+```
+
+This is deliberate: without the guard those commands would silently query the managed Control API at `control.ably.net` while a local profile is selected.
+
+To add a control plane later, re-run `ably accounts login --local` with `--control-url`.
+
+---
+
+## Knowing which server you are on
+
+The account name in the "Using:" banner is the profile's alias, so the banner names the server you are on the same way it names a managed account:
+
+```
+Using: Account=dev • App=Local App (localapp) • Key=Local Key (localapp.keyid)
+```
+
+The endpoint itself is not repeated on every command — it is part of the profile you deliberately configured. Run `ably accounts current` or `ably accounts list` to see the stored URL.
+
+An `Endpoint=` field appears only when an environment variable redirects a command away from its profile, since that is ambient state you may have forgotten you exported:
+
+```
+$ export ABLY_ENDPOINT=other.example.com
+$ ably channels publish my-channel "hello"
+Using: Account=dev • Endpoint=http://other.example.com:8081 • App=…
+```
+
+Note that `ABLY_ENDPOINT` replaces only the host — the port and TLS setting still come from the profile, which is why the displayed URL is the combination that traffic will actually use. On control plane commands the equivalent override is `ABLY_CONTROL_HOST`.
+
+---
+
+## Aliases
+
+Local logins default to the alias `local`, and the alias becomes the profile's account name — a local server has no server-side identity to name it by. Re-running against a different URL updates that profile in place and warns you first. Use `--alias` to keep several servers side by side:
+
+```bash
+ably accounts login --local --url http://localhost:8081 --alias dev
+ably accounts login --local --url http://localhost:9091 --alias staging-local
+ably accounts switch dev
+```
+
+---
+
+## Non-interactive use
+
+With `--json` the CLI cannot prompt, so credentials must come from the environment and `--url` is required:
+
+```bash
+export ABLY_API_KEY="localapp.keyid:keysecret"
+export ABLY_ACCESS_TOKEN="local-control-token"   # only if using --control-url
+
+ably accounts login --local --url http://localhost:8081 --json
+```
+
+`ABLY_API_KEY` and `ABLY_ACCESS_TOKEN` are also used in place of the prompts in interactive mode when they are set.
+
+---
+
+## One-off overrides without a profile
+
+If you do not want to store a profile, the hidden dev flags still work and take precedence over stored values on the command they are passed to:
+
+```bash
+export ABLY_API_KEY="localapp.keyid:keysecret"
+export ABLY_ENDPOINT=localhost
+ably channels publish my-channel "hello" --tls=false --port 8081
+```
+
+Set `ABLY_SHOW_DEV_FLAGS=true` to un-hide `--port`, `--tls-port`, `--tls`, `--control-host` and `--endpoint` in `--help` output. Note that `ABLY_ENDPOINT` only sets the host — there is no environment variable for the port, which is the main reason to store a profile instead.
+
+---
+
+## Related
+
+- [Environment Variables — General Usage](Environment-Variables/General-Usage.md)
+- [Project Structure](Project-Structure.md)

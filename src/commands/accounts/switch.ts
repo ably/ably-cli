@@ -276,6 +276,25 @@ export default class AccountsSwitch extends ControlBaseCommand {
       this.configManager.storeEndpoint(flags.endpoint as string);
     }
 
+    // A local server account with no control plane has no /me endpoint to
+    // verify against, so report the switch and stop rather than emitting a
+    // spurious token-verification warning.
+    if (
+      this.configManager.getAuthMethod() === "apiKey" &&
+      !this.configManager.getControlUrl()
+    ) {
+      const endpoint = this.configManager.getEndpoint();
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult({ account: { alias, authMethod: "apiKey" } }, flags);
+      } else {
+        this.logSuccessMessage(
+          `Switched to local server ${formatResource(alias)}${endpoint ? ` (${endpoint})` : ""}.`,
+          flags,
+        );
+      }
+      return;
+    }
+
     // Verify the account is valid by making an API call.
     try {
       const controlApi = this.createControlApi(flags);

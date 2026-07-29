@@ -87,6 +87,32 @@ export const oauthHostFlag = {
 };
 
 /**
+ * Local server flags for `accounts login` only.
+ *
+ * `--url` and `--control-url` are full URLs rather than the SDK's separate
+ * host/port/tls options: one value is easier to supply and is decomposed by
+ * `parseServerUrl()` at login time.
+ */
+export const localServerFlags = {
+  // No default: oclif's dependsOn treats a defaulted flag as always present,
+  // which would stop it rejecting --url without --local.
+  local: Flags.boolean({
+    description:
+      "Log in to a locally-running Ably server instead of the managed service",
+  }),
+  url: Flags.string({
+    dependsOn: ["local"],
+    description:
+      "Data plane URL of the local server (e.g. http://localhost:8081)",
+  }),
+  "control-url": Flags.string({
+    dependsOn: ["local"],
+    description:
+      "Control plane URL of the local server, if you are running it locally (e.g. http://localhost:8082)",
+  }),
+};
+
+/**
  * endpoint flag for login / accounts switch commands only.
  */
 export const endpointFlag = {

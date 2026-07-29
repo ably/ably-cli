@@ -23,6 +23,32 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
       ? undefined
       : this.configManager.getCurrentAccount();
 
+    // Routing is resolved from the selected account even when the token comes
+    // from the environment — the local control plane URL is a property of the
+    // profile, not of the credentials.
+    const currentAccount = this.configManager.getCurrentAccount();
+    const hasHostOverride = Boolean(
+      flags["control-host"] || process.env.ABLY_CONTROL_HOST,
+    );
+    const controlUrl = hasHostOverride
+      ? undefined
+      : this.configManager.getControlUrl();
+
+    // A local server account only reaches a control plane if one was given at
+    // login. Fail with a pointer rather than silently querying the managed
+    // Control API while a local profile is selected.
+    if (
+      currentAccount?.authMethod === "apiKey" &&
+      !controlUrl &&
+      !hasHostOverride
+    ) {
+      this.fail(
+        `Control API commands aren't available for local server "${this.configManager.getCurrentAccountAlias()}" because it was configured without a control plane URL.\nRe-run "ably accounts login --local" with --control-url if you are running the control plane locally, or switch to a managed account with "ably accounts switch".`,
+        flags,
+        "auth",
+      );
+    }
+
     if (!accessToken) {
       if (!account) {
         this.fail(
@@ -77,6 +103,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     return new ControlApi({
       accessToken,
       controlHost,
+      controlUrl,
       tokenRefreshMiddleware,
     });
   }

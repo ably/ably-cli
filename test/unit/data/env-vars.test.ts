@@ -76,7 +76,7 @@ describe("ENV_VARS_DATA", () => {
     expect(byName.ABLY_HISTORY_FILE.details).toHaveLength(1);
     expect(byName.ABLY_CLI_DEFAULT_DURATION.details).toHaveLength(0);
     expect(byName.ABLY_CLI_NON_INTERACTIVE.details).toHaveLength(1);
-    expect(byName.ABLY_ENDPOINT.details).toHaveLength(0);
+    expect(byName.ABLY_ENDPOINT.details).toHaveLength(1);
   });
 
   it("only the documented primary URLs appear inline in variable entries", () => {

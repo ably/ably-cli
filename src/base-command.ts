@@ -14,6 +14,7 @@ import {
   extractKeyNameFromApiKey,
 } from "./utils/api-key.js";
 import { CommandError } from "./errors/command-error.js";
+import { formatServerUrl } from "./utils/server-url.js";
 import { getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
@@ -619,6 +620,17 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       );
     }
 
+    // Surface routing only when an environment variable overrides the profile.
+    // A profile's own endpoint is a deliberate, persistent choice that the
+    // account name already identifies — repeating it on every command is noise.
+    // An env var, by contrast, is ambient and easy to forget you exported.
+    const routingOverride = this.formatRoutingOverride(showAppInfo);
+    if (routingOverride) {
+      displayParts.push(
+        `${chalk.blue("Endpoint=")}${chalk.blue.bold(routingOverride)}`,
+      );
+    }
+
     // For data plane commands, show app and auth info
     if (showAppInfo) {
       // Get app info
@@ -626,8 +638,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       if (appId) {
         let appName = this.configManager.getAppName(appId);
 
-        // If app name is missing, try to fetch it from the API and update config
-        if (!appName) {
+        // If app name is missing, try to fetch it from the API and update config.
+        // Local server accounts with no control plane configured have nowhere
+        // to look it up, so skip straight to the fallback label.
+        const hasControlPlane =
+          this.configManager.getAuthMethod() !== "apiKey" ||
+          Boolean(this.configManager.getControlUrl());
+        if (!appName && !hasControlPlane) {
+          appName = "Unknown App";
+        } else if (!appName) {
           try {
             // Get access token for control API
             const accessToken =
@@ -648,6 +667,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
                   flags["control-host"] ??
                   process.env.ABLY_CONTROL_HOST ??
                   account?.controlHost,
+                controlUrl: this.configManager.getControlUrl(),
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;
@@ -717,6 +737,34 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       );
       this.log(""); // Add blank line for readability
     }
+  }
+
+  /**
+   * Render the effective endpoint when an environment variable redirects the
+   * command away from what the current profile is configured with, or
+   * undefined when the profile's own routing is in force.
+   */
+  private formatRoutingOverride(showAppInfo: boolean): string | undefined {
+    if (!showAppInfo) {
+      // Control plane: ABLY_CONTROL_HOST is the only ambient override.
+      return process.env.ABLY_CONTROL_HOST;
+    }
+
+    const override = process.env.ABLY_ENDPOINT;
+    if (!override) return undefined;
+
+    const dataPlane = this.configManager.getDataPlane();
+    // Setting the env var to what the profile already says is not a redirect.
+    if (override === dataPlane?.endpoint) return undefined;
+
+    // ABLY_ENDPOINT only replaces the host; port and TLS still come from the
+    // profile, so show the combination that traffic will actually use.
+    return formatServerUrl({
+      host: override,
+      path: "",
+      port: dataPlane?.port,
+      tls: dataPlane?.tls ?? true,
+    });
   }
 
   /**
@@ -1067,23 +1115,37 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
     }
 
-    // Endpoint resolution: ABLY_ENDPOINT env → account config
-    const endpoint =
-      process.env.ABLY_ENDPOINT || this.configManager.getEndpoint();
+    // Data plane routing: flags → env → account config. Local server accounts
+    // persist host, port and TLS together (see `ably accounts login --local`),
+    // so a stored profile targets localhost without repeating dev flags on
+    // every command. Explicit flags still win, for one-off overrides.
+    const dataPlane = this.configManager.getDataPlane();
+
+    const endpoint = process.env.ABLY_ENDPOINT || dataPlane?.endpoint;
     if (endpoint) {
       options.endpoint = endpoint;
     }
 
-    if (flags.port) {
-      options.port = flags.port;
-    }
-
-    if (flags["tls-port"]) {
-      options.tlsPort = flags["tls-port"];
-    }
-
-    if (flags.tls) {
+    if (flags.tls !== undefined) {
       options.tls = flags.tls === "true";
+    } else if (dataPlane?.tls !== undefined) {
+      options.tls = dataPlane.tls;
+    }
+
+    // The SDK reads `port` when TLS is off and `tlsPort` when it is on, so the
+    // single stored port has to be routed to whichever one is live.
+    const tlsEnabled = options.tls !== false;
+
+    if (flags.port !== undefined) {
+      options.port = flags.port;
+    } else if (dataPlane?.port !== undefined && !tlsEnabled) {
+      options.port = dataPlane.port;
+    }
+
+    if (flags["tls-port"] !== undefined) {
+      options.tlsPort = flags["tls-port"];
+    } else if (dataPlane?.port !== undefined && tlsEnabled) {
+      options.tlsPort = dataPlane.port;
     }
 
     // Always add a log handler to control SDK output formatting and destination

@@ -71,10 +71,16 @@ export default class AccountsList extends ControlBaseCommand {
           titleStyle(`Account: ${alias}`) +
           (isCurrent ? chalk.green(" (current)") : ""),
       );
-      this.log(
-        `  ${formatLabel("Name")} ${account.accountName} (${account.accountId})`,
-      );
-      this.log(`  ${formatLabel("User")} ${account.userEmail}`);
+      // A local server account is named after its alias and has no
+      // server-assigned ID, so the Name line would just repeat the heading.
+      if (account.accountName !== alias || account.accountId) {
+        this.log(
+          `  ${formatLabel("Name")} ${account.accountName}${account.accountId ? ` (${account.accountId})` : ""}`,
+        );
+      }
+      if (account.userEmail) {
+        this.log(`  ${formatLabel("User")} ${account.userEmail}`);
+      }
 
       // Count number of apps configured for this account
       const appCount = account.apps ? Object.keys(account.apps).length : 0;

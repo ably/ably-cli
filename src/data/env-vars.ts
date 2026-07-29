@@ -306,7 +306,18 @@ const ABLY_ENDPOINT = new EnvVarEntry(
     `export ABLY_ENDPOINT="custom-endpoint.example.com"`,
     `ably channels publish my-channel "Hello"`,
   ]),
-  [],
+  [
+    new DetailSection("Local servers", [
+      {
+        kind: "paragraph",
+        text: "Sets the **host only** — there is no environment variable for the port. Pair it with the hidden `--port`, `--tls-port` and `--tls` flags for one-off use.",
+      },
+      {
+        kind: "important",
+        text: "To store host, port and TLS together so they apply to every command, run `ably accounts login --local --url http://localhost:8081` instead.",
+      },
+    ]),
+  ],
 );
 
 const AUTH_RESOLUTION_ORDER = new CrossCuttingSection(
