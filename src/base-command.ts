@@ -638,15 +638,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       if (appId) {
         let appName = this.configManager.getAppName(appId);
 
-        // If app name is missing, try to fetch it from the API and update config.
-        // Local server accounts with no control plane configured have nowhere
-        // to look it up, so skip straight to the fallback label.
+        // If the app name is missing, try to fetch it from the API and update
+        // config. Local server accounts with no control plane configured have
+        // nowhere to look it up, so skip the attempt entirely.
         const hasControlPlane =
           this.configManager.getAuthMethod() !== "apiKey" ||
           Boolean(this.configManager.getControlUrl());
-        if (!appName && !hasControlPlane) {
-          appName = "Unknown App";
-        } else if (!appName) {
+        if (!appName && hasControlPlane) {
           try {
             // Get access token for control API
             const accessToken =
@@ -659,7 +657,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
               // the user picked at login. Without the account fallback this
               // call silently targets control.ably.net even when the user
               // logged in against a review/staging deployment, the lookup
-              // 404s, and the banner downgrades to "Unknown App".
+              // 404s, and the banner degrades to showing the bare app ID.
               const account = this.configManager.getCurrentAccount();
               const controlApi = new ControlApi({
                 accessToken,
@@ -685,17 +683,18 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
                 // Even without an API key, persist the app name to avoid future lookups
                 this.configManager.storeAppInfo(appId, { appName: app.name });
               }
-            } else {
-              appName = "Unknown App";
             }
           } catch {
-            // If fetching fails, use fallback
-            appName = "Unknown App";
+            // Leave the name unresolved — the ID below still identifies the app.
           }
         }
 
+        // Only the name can be unknown; the ID always is known here. Showing
+        // it alone beats pairing a real ID with an invented "Unknown App".
         displayParts.push(
-          `${chalk.green("App=")}${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,
+          appName
+            ? `${chalk.green("App=")}${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`
+            : `${chalk.green("App=")}${chalk.green.bold(appId)}`,
         );
 
         // Check auth method - token or API key

@@ -404,6 +404,38 @@ describe("Auth Info Display", function () {
         nock.cleanAll();
       }
     });
+
+    describe("unresolved app name", function () {
+      beforeEach(function () {
+        shouldHideAccountInfoStub.mockReturnValue(false);
+        configManagerStub.getCurrentAppId.mockReturnValue("3p4xqQ");
+        configManagerStub.getAppName.mockReturnValue();
+        configManagerStub.getApiKey.mockReturnValue("3p4xqQ.keyid:secret");
+      });
+
+      it("shows the bare app ID rather than inventing a name", async function () {
+        // A local server account with no control plane has nowhere to look the
+        // name up. The ID is known, so pairing it with a placeholder would be
+        // stating something false.
+        configManagerStub.getAuthMethod.mockReturnValue("apiKey");
+        configManagerStub.getControlUrl.mockReturnValue();
+
+        const banner = await usingLine();
+
+        expect(banner).toContain("App=3p4xqQ");
+        expect(banner).not.toContain("Unknown App");
+        expect(banner).not.toContain("(3p4xqQ)");
+      });
+
+      it("pairs name and ID once the name is known", async function () {
+        configManagerStub.getAppName.mockReturnValue("My App");
+
+        const banner = await usingLine();
+
+        expect(banner).toContain("App=My App");
+        expect(banner).toContain("(3p4xqQ)");
+      });
+    });
   });
 
   describe("showAuthInfoIfNeeded", function () {
