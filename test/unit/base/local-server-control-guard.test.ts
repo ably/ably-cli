@@ -40,9 +40,16 @@ describe("local server control plane guard", () => {
       import.meta.url,
     );
 
-    const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
-    expect(result.error.message).toContain("aren't available for local server");
-    expect(result.error.message).toContain("--control-url");
+    const errors = parseNdjsonLines(stdout).filter((r) => r.type === "error");
+    // One failure, one record: the exit that fail() performs must not be
+    // reported a second time by the enclosing catch in runControlCommand.
+    expect(errors).toHaveLength(1);
+    expect(errors[0].error.message).toContain(
+      "aren't available for local server",
+    );
+    expect(errors[0].error.message).toContain("--control-url");
+    expect(errors[0].error.message).toContain("ABLY_CONTROL_HOST");
+    expect(JSON.stringify(errors)).not.toContain("Command exited with code");
   });
 
   it("routes control commands to the stored control URL when one is configured", async () => {

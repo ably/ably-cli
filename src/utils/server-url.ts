@@ -66,6 +66,21 @@ export function parseServerUrl(raw: string): ServerUrl {
     );
   }
 
+  // Nothing downstream can carry these, and dropping them silently would
+  // resurface later as an unrelated auth or routing error. Rejecting them is
+  // the same choice made for paths below.
+  if (url.username || url.password) {
+    throw new Error(
+      `Credentials are not supported in "${raw}". Pass the API key separately.`,
+    );
+  }
+
+  if (url.search || url.hash) {
+    throw new Error(
+      `Query strings and fragments are not supported in "${raw}". Expected a value like http://localhost:8081.`,
+    );
+  }
+
   const path = url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
 
   return {
@@ -84,4 +99,28 @@ export function formatServerUrl(server: ServerUrl): string {
   const scheme = server.tls ? "https" : "http";
   const port = server.port === undefined ? "" : `:${server.port}`;
   return `${scheme}://${server.host}${port}${server.path}`;
+}
+
+/**
+ * Render stored routing — the SDK's `endpoint`/`port`/`tls` triple, as held on
+ * an account or resolved from flags and environment — as a URL, or undefined
+ * when no endpoint is configured.
+ *
+ * Every place that reports which server a command is pointed at goes through
+ * this, so a server is always identified the same way: by URL, never by a bare
+ * hostname that hides the port and the scheme.
+ */
+export function formatEndpointUrl(routing?: {
+  endpoint?: string;
+  port?: number;
+  tls?: boolean;
+}): string | undefined {
+  if (!routing?.endpoint) return undefined;
+
+  return formatServerUrl({
+    host: routing.endpoint,
+    path: "",
+    port: routing.port,
+    tls: routing.tls ?? true,
+  });
 }

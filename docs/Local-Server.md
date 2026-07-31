@@ -49,6 +49,8 @@ Both `--url` and `--control-url` take a full URL. A missing scheme defaults to `
 
 The data plane URL must not include a path: Ably routes by hostname, so a path would be silently discarded. The control plane URL may include one — if it does, it is used verbatim as the API prefix; if it does not, `/v1` is appended (matching the dedicated Control API service).
 
+Embedded credentials, query strings and fragments are rejected for the same reason a path is: nothing downstream carries them, and dropping them silently would resurface later as an unrelated auth or routing error.
+
 Internally the data plane URL is decomposed into the SDK's `endpoint`, `port`/`tlsPort` and `tls` client options and stored on the account, which is why you do not need to repeat host or port flags on individual commands.
 
 ---
@@ -67,26 +69,52 @@ Running the control plane locally is optional. When you log in without `--contro
 
 ```
 Control API commands aren't available for local server "local" because it was configured without a control plane URL.
-Re-run "ably accounts login --local" with --control-url if you are running the control plane locally, or switch to a managed account with "ably accounts switch".
+Re-run "ably accounts login --local" with --control-url if you are running the control plane locally, set ABLY_CONTROL_HOST to send just this command to a hosted control plane, or switch to a managed account with "ably accounts switch".
 ```
 
 This is deliberate: without the guard those commands would silently query the managed Control API at `control.ably.net` while a local profile is selected.
 
-To add a control plane later, re-run `ably accounts login --local` with `--control-url`.
+To add a control plane later, re-run `ably accounts login --local` with `--control-url`. To reach a hosted control plane for a single command without leaving the local profile, set `ABLY_CONTROL_HOST` (with `ABLY_ACCESS_TOKEN` for a token it will accept).
+
+`ably accounts current` does not need a control plane: for a local profile without one it reports what is stored, rather than treating the absent control plane as an expired token.
 
 ---
 
 ## Knowing which server you are on
 
-The account name in the "Using:" banner is the profile's alias, so the banner names the server you are on the same way it names a managed account:
+Every command that talks to a non-default server says so in the "Using:" banner, as a URL:
 
 ```
-Using: Account=dev • App=Local App (localapp) • Key=Local Key (localapp.keyid)
+$ ably channels publish my-channel "hello"
+Using: Account=dev • Endpoint=http://localhost:8081 • App=localapp • Key=Local Key (localapp.keyid)
 ```
 
-The endpoint itself is not repeated on every command — it is part of the profile you deliberately configured. Run `ably accounts current` or `ably accounts list` to see the stored URL.
+The `Endpoint=` field is the server the command will actually reach, so a command run against localhost never looks identical to the same command run against production. It is omitted only for a managed account on Ably's own endpoints, where there is nothing to state. Control plane commands (`ably apps`, `ably auth keys`, …) show the control plane URL rather than the data plane one, since that is where their requests go.
 
-An `Endpoint=` field appears only when an environment variable redirects a command away from its profile, since that is ambient state you may have forgotten you exported:
+The same URL is reported by every command that describes an account:
+
+```
+$ ably accounts current
+Account: dev
+Endpoint: http://localhost:8081
+Control plane: http://localhost:8082
+Apps configured: 1
+Current App: localapp
+
+$ ably accounts list
+▶ Account: dev (current)
+  Endpoint: http://localhost:8081
+  Control plane: http://localhost:8082
+  Apps configured: 1
+  Current app: localapp (localapp)
+
+$ ably accounts switch dev
+✓ Switched to local server dev (http://localhost:8081).
+```
+
+With `--json`, the same routing is carried under a `dataPlane` object (`endpoint`, `port`, `tls`, `url`) alongside `controlUrl`, in the same shape from `accounts login --local`, `accounts current`, `accounts list` and `accounts switch`.
+
+An environment variable that redirects a command away from its profile shows up the same way, since the banner always names the effective target:
 
 ```
 $ export ABLY_ENDPOINT=other.example.com

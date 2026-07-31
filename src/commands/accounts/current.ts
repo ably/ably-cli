@@ -1,12 +1,15 @@
 import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
+import type { AccountConfig } from "../../services/config-manager.js";
+import type { BaseFlags } from "../../types/cli.js";
 import {
   extractAppIdFromApiKey,
   extractKeyNameFromApiKey,
 } from "../../utils/api-key.js";
 import { errorMessage } from "../../utils/errors.js";
 import { formatLabel } from "../../utils/output.js";
+import { formatEndpointUrl } from "../../utils/server-url.js";
 
 export default class AccountsCurrent extends ControlBaseCommand {
   static override description = "Show the current Ably account";
@@ -41,6 +44,17 @@ export default class AccountsCurrent extends ControlBaseCommand {
       );
     }
 
+    // A local server account with no control plane has no /me endpoint to
+    // verify against. Report what is stored and stop, rather than letting the
+    // control-plane guard surface as an expired-token warning.
+    if (
+      currentAccount.authMethod === "apiKey" &&
+      !this.configManager.getControlUrl()
+    ) {
+      this.showLocalAccount(currentAlias, flags);
+      return;
+    }
+
     // Verify the account by making an API call to get up-to-date information.
     // Route through createControlApi so OAuth accounts get the same
     // TokenRefreshMiddleware used by every other control command.
@@ -54,30 +68,8 @@ export default class AccountsCurrent extends ControlBaseCommand {
         ? Object.keys(currentAccount.apps).length
         : 0;
 
-      // Show current app if one is selected
-      const currentAppId = this.configManager.getCurrentAppId();
-      let currentApp: { id: string; name: string } | null = null;
-      let currentKey: { id: string; label: string } | null = null;
-
-      if (currentAppId) {
-        const appName =
-          this.configManager.getAppName(currentAppId) || currentAppId;
-        currentApp = { id: currentAppId, name: appName };
-
-        // Show current key if one is selected
-        const apiKey = this.configManager.getApiKey(currentAppId);
-        if (apiKey) {
-          const keyId =
-            this.configManager.getKeyId(currentAppId) ||
-            extractKeyNameFromApiKey(apiKey);
-          const keyName =
-            this.configManager.getKeyName(currentAppId) || "Unnamed key";
-          const formattedKeyName = keyId.includes(".")
-            ? keyId
-            : `${currentAppId}.${keyId}`;
-          currentKey = { id: formattedKeyName, label: keyName };
-        }
-      }
+      const { currentApp, currentKey } = this.getCurrentAppAndKey();
+      const server = this.serverUrls();
 
       if (this.shouldOutputJson(flags)) {
         this.logJsonResult(
@@ -89,6 +81,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
               appsConfigured: appCount,
               currentApp,
               currentKey,
+              ...server.json,
             },
           },
           flags,
@@ -98,6 +91,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
           `${formatLabel("Account")} ${chalk.cyan.bold(account.name)} ${chalk.gray(`(${account.id})`)}`,
         );
         this.log(`${formatLabel("User")} ${chalk.cyan.bold(user.email)}`);
+        this.logServerUrls(server);
         this.log(
           `${formatLabel("Apps configured")} ${chalk.cyan.bold(appCount)}`,
         );
@@ -139,7 +133,7 @@ export default class AccountsCurrent extends ControlBaseCommand {
         );
         this.log(
           chalk.yellow(
-            `Consider logging in again with "ably accounts login --alias ${currentAlias}".`,
+            `Consider logging in again with "${this.reloginCommand(currentAlias, currentAccount)}".`,
           ),
         );
 
@@ -155,6 +149,156 @@ export default class AccountsCurrent extends ControlBaseCommand {
         }
       }
     }
+  }
+
+  /**
+   * Report a local server account from config alone.
+   *
+   * The alias, the server URL and the app read out of the API key are the whole
+   * of what a local server tells us — there is no account directory to query,
+   * so nothing here is unverified or stale.
+   */
+  private showLocalAccount(alias: string, flags: BaseFlags): void {
+    const account = this.configManager.getCurrentAccount()!;
+    const appCount = account.apps ? Object.keys(account.apps).length : 0;
+    const { currentApp, currentKey } = this.getCurrentAppAndKey();
+    const server = this.serverUrls();
+
+    if (this.shouldOutputJson(flags)) {
+      this.logJsonResult(
+        {
+          account: {
+            alias,
+            authMethod: "apiKey",
+            name: account.accountName || alias,
+            appsConfigured: appCount,
+            currentApp,
+            currentKey,
+            ...server.json,
+          },
+        },
+        flags,
+      );
+      return;
+    }
+
+    this.log(`${formatLabel("Account")} ${chalk.cyan.bold(alias)}`);
+    this.logServerUrls(server);
+    this.log(`${formatLabel("Apps configured")} ${chalk.cyan.bold(appCount)}`);
+
+    if (currentApp) {
+      // A local server has no control plane to resolve the name from, so the
+      // ID stands alone unless a name was cached at login.
+      this.log(
+        currentApp.name === currentApp.id
+          ? `${formatLabel("Current App")} ${chalk.green.bold(currentApp.id)}`
+          : `${formatLabel("Current App")} ${chalk.green.bold(currentApp.name)} ${chalk.gray(`(${currentApp.id})`)}`,
+      );
+
+      if (currentKey) {
+        this.log(
+          `${formatLabel("Current API Key")} ${chalk.yellow.bold(currentKey.id)}`,
+        );
+        this.log(
+          `${formatLabel("Key Label")} ${chalk.yellow.bold(currentKey.label)}`,
+        );
+      }
+    }
+
+    this.logToStderr(
+      "No control plane configured — app and key management commands are unavailable for this account.",
+    );
+  }
+
+  /**
+   * The current app and key as stored in config, shared by every output path.
+   */
+  private getCurrentAppAndKey(): {
+    currentApp: { id: string; name: string } | null;
+    currentKey: { id: string; label: string } | null;
+  } {
+    const currentAppId = this.configManager.getCurrentAppId();
+    if (!currentAppId) return { currentApp: null, currentKey: null };
+
+    const currentApp = {
+      id: currentAppId,
+      name: this.configManager.getAppName(currentAppId) || currentAppId,
+    };
+
+    const apiKey = this.configManager.getApiKey(currentAppId);
+    if (!apiKey) return { currentApp, currentKey: null };
+
+    const keyId =
+      this.configManager.getKeyId(currentAppId) ||
+      extractKeyNameFromApiKey(apiKey);
+    return {
+      currentApp,
+      currentKey: {
+        id: keyId.includes(".") ? keyId : `${currentAppId}.${keyId}`,
+        label: this.configManager.getKeyName(currentAppId) || "Unnamed key",
+      },
+    };
+  }
+
+  /**
+   * The servers this account is pointed at, as URLs — the same form used by
+   * `accounts list`, `accounts switch` and the "Using:" banner. Absent for a
+   * managed account on Ably's own endpoints, which need no stating.
+   */
+  private serverUrls(): {
+    controlUrl?: string;
+    endpoint?: string;
+    json: Record<string, unknown>;
+  } {
+    const dataPlane = this.configManager.getDataPlane();
+    const endpoint = formatEndpointUrl(dataPlane);
+    const controlUrl = this.configManager.getControlUrl();
+
+    return {
+      controlUrl,
+      endpoint,
+      // Same shape as `accounts login --local`, `accounts switch` and
+      // `accounts list` report.
+      json: {
+        ...(dataPlane ? { dataPlane: { ...dataPlane, url: endpoint } } : {}),
+        ...(controlUrl ? { controlUrl } : {}),
+      },
+    };
+  }
+
+  private logServerUrls(server: {
+    controlUrl?: string;
+    endpoint?: string;
+  }): void {
+    if (server.endpoint) {
+      this.log(
+        `${formatLabel("Endpoint")} ${chalk.blue.bold(server.endpoint)}`,
+      );
+    }
+
+    if (server.controlUrl) {
+      this.log(
+        `${formatLabel("Control plane")} ${chalk.blue.bold(server.controlUrl)}`,
+      );
+    }
+  }
+
+  /**
+   * The command that would re-establish this account's credentials. A local
+   * account has no OAuth flow, so pointing it at plain `accounts login` would
+   * open a browser to ably.com and abandon the local profile.
+   */
+  private reloginCommand(alias: string, account: AccountConfig): string {
+    if (account.authMethod !== "apiKey") {
+      return `ably accounts login --alias ${alias}`;
+    }
+
+    const parts = [`ably accounts login --local --alias ${alias}`];
+    const endpoint = formatEndpointUrl(account);
+    if (endpoint) parts.push(`--url ${endpoint}`);
+    const controlUrl = this.configManager.getControlUrl();
+    if (controlUrl) parts.push(`--control-url ${controlUrl}`);
+    return parts.join(" ");
   }
 
   /**

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import stripAnsi from "strip-ansi";
 import {
   nockControl,
   controlApiCleanup,
@@ -720,6 +721,81 @@ describe("accounts:login command", () => {
       );
 
       expect(error?.message).toContain("local");
+    });
+
+    it("names the app once when there is no control plane to resolve a name", async () => {
+      const { stderr } = await runCommand(
+        ["accounts:login", "--local", "--url", "http://localhost:8081"],
+        import.meta.url,
+      );
+
+      const output = stripAnsi(stderr);
+      expect(output).toContain("Using app localapp.");
+      expect(output).not.toContain("localapp (localapp)");
+    });
+
+    it("pairs app name and ID when a control plane resolved the name", async () => {
+      process.env.ABLY_ACCESS_TOKEN = "local-control-token";
+
+      nock("http://localhost:8082")
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: "local-account", name: "Local" },
+          user: { email: "dev@localhost" },
+        });
+      nock("http://localhost:8082")
+        .get("/v1/accounts/local-account/apps")
+        .reply(200, [
+          { accountId: "local-account", id: "localapp", name: "Local App" },
+        ]);
+
+      const { stderr } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--control-url",
+          "http://localhost:8082",
+        ],
+        import.meta.url,
+      );
+
+      expect(stripAnsi(stderr)).toContain("Using app Local App (localapp).");
+    });
+
+    it("names the alias without an empty account when replacing an unnamed managed account", async () => {
+      const mock = getMockConfigManager();
+      mock.storeAccount("managed-token", "local", {
+        accountId: "",
+        accountName: "",
+        userEmail: "",
+      });
+
+      const { stderr } = await runCommand(
+        ["accounts:login", "--local", "--url", "http://localhost:8081"],
+        import.meta.url,
+      );
+
+      const output = stripAnsi(stderr);
+      expect(output).toContain("is currently a managed account");
+      expect(output).not.toContain("account  and");
+    });
+
+    it("rejects a URL carrying credentials rather than dropping them", async () => {
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://user:pass@localhost:8081",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
+      expect(result.error.message).toContain("Credentials are not supported");
     });
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import stripAnsi from "strip-ansi";
 import {
   nockControl,
   controlApiCleanup,
@@ -269,6 +270,44 @@ describe("accounts:switch command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result.account.alias).toBe("oauth-json");
       expect(result.account.id).toBe("json-account-id");
+    });
+  });
+
+  describe("local server account switching", () => {
+    beforeEach(() => {
+      const mock = getMockConfigManager();
+      mock.storeLocalAccount("local", {
+        accountName: "local",
+        dataPlane: { endpoint: "localhost", port: 8081, tls: false },
+      });
+    });
+
+    it("reports the server by URL, not by bare hostname", async () => {
+      const { stderr } = await runCommand(
+        ["accounts:switch", "local"],
+        import.meta.url,
+      );
+
+      const output = stripAnsi(stderr);
+      expect(output).toContain(
+        "Switched to local server local (http://localhost:8081).",
+      );
+      expect(output).not.toContain("(localhost)");
+    });
+
+    it("carries the routing in JSON", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:switch", "local", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseJsonOutput(stdout);
+      expect(result.account.dataPlane).toEqual({
+        endpoint: "localhost",
+        port: 8081,
+        tls: false,
+        url: "http://localhost:8081",
+      });
     });
   });
 

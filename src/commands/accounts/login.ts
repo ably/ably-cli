@@ -10,6 +10,7 @@ import { OAuthClient, type OAuthTokens } from "../../services/oauth-client.js";
 import { BaseFlags } from "../../types/cli.js";
 import { extractAppIdFromApiKey, isValidApiKey } from "../../utils/api-key.js";
 import {
+  formatEndpointUrl,
   formatServerUrl,
   parseServerUrl,
   type ServerUrl,
@@ -511,8 +512,12 @@ export default class AccountsLogin extends ControlBaseCommand {
         flags,
       );
       this.log(`Account ${formatResource(alias)} is now the current account`);
+      // Without a control plane there is no name to look up, and pairing the
+      // ID with itself in the parenthetical states nothing.
       this.logSuccessMessage(
-        `Using app ${formatResource(appName ?? appId)} (${appId}).`,
+        appName
+          ? `Using app ${formatResource(appName)} (${appId}).`
+          : `Using app ${formatResource(appId)}.`,
         flags,
       );
 
@@ -669,23 +674,24 @@ export default class AccountsLogin extends ControlBaseCommand {
     if (!existing) return;
 
     if (existing.account.authMethod !== "apiKey") {
+      // A managed account may have neither name nor ID cached yet, so name it
+      // only when there is something to name.
+      const identity =
+        existing.account.accountName || existing.account.accountId;
       this.logWarning(
-        `Alias "${alias}" is currently the managed account ${existing.account.accountName || existing.account.accountId} and will be replaced by this local server. Use --alias to keep both.`,
+        `Alias "${alias}" is currently ${identity ? `the managed account ${identity}` : "a managed account"} and will be replaced by this local server. Use --alias to keep both.`,
         flags,
       );
       return;
     }
 
-    const current = formatServerUrl({
-      host: existing.account.endpoint ?? "",
-      path: "",
-      port: existing.account.port,
-      tls: existing.account.tls ?? true,
-    });
+    const current = formatEndpointUrl(existing.account);
     const next = formatServerUrl(dataPlane);
     if (current !== next) {
       this.logWarning(
-        `Alias "${alias}" currently points at ${current} and will be updated to ${next}. Use --alias to keep both.`,
+        current
+          ? `Alias "${alias}" currently points at ${current} and will be updated to ${next}. Use --alias to keep both.`
+          : `Alias "${alias}" will be updated to point at ${next}. Use --alias to keep both.`,
         flags,
       );
     }

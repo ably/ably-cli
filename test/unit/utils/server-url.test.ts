@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  formatEndpointUrl,
   formatServerUrl,
   parseServerUrl,
 } from "../../../src/utils/server-url.js";
@@ -91,6 +92,45 @@ describe("parseServerUrl", () => {
 
   it("throws on unparseable input", () => {
     expect(() => parseServerUrl("http://")).toThrow(/Invalid URL/);
+  });
+
+  it("throws on embedded credentials rather than dropping them", () => {
+    // Silently discarded credentials resurface later as an unrelated auth
+    // error, which is much harder to diagnose than a rejection here.
+    expect(() => parseServerUrl("http://user:pass@localhost:8081")).toThrow(
+      /Credentials are not supported/,
+    );
+  });
+
+  it("throws on a query string", () => {
+    expect(() => parseServerUrl("http://localhost:8081?x=1")).toThrow(
+      /Query strings and fragments are not supported/,
+    );
+  });
+
+  it("throws on a fragment", () => {
+    expect(() => parseServerUrl("http://localhost:8081#frag")).toThrow(
+      /Query strings and fragments are not supported/,
+    );
+  });
+});
+
+describe("formatEndpointUrl", () => {
+  it("renders stored routing as a URL", () => {
+    expect(
+      formatEndpointUrl({ endpoint: "localhost", port: 8081, tls: false }),
+    ).toBe("http://localhost:8081");
+  });
+
+  it("defaults to https when the profile does not say", () => {
+    expect(formatEndpointUrl({ endpoint: "example.com" })).toBe(
+      "https://example.com",
+    );
+  });
+
+  it("returns undefined when there is no endpoint to report", () => {
+    expect(formatEndpointUrl()).toBeUndefined();
+    expect(formatEndpointUrl({ port: 8081 })).toBeUndefined();
   });
 });
 

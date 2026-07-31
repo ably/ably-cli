@@ -6,6 +6,7 @@ import { ControlBaseCommand } from "../../control-base-command.js";
 import { endpointFlag } from "../../flags.js";
 import { type AccountSummary } from "../../services/control-api.js";
 import { formatResource } from "../../utils/output.js";
+import { formatEndpointUrl } from "../../utils/server-url.js";
 import { pickUniqueAlias, slugifyAccountName } from "../../utils/slugify.js";
 
 export default class AccountsSwitch extends ControlBaseCommand {
@@ -283,12 +284,22 @@ export default class AccountsSwitch extends ControlBaseCommand {
       this.configManager.getAuthMethod() === "apiKey" &&
       !this.configManager.getControlUrl()
     ) {
-      const endpoint = this.configManager.getEndpoint();
+      const dataPlane = this.configManager.getDataPlane();
+      const url = formatEndpointUrl(dataPlane);
       if (this.shouldOutputJson(flags)) {
-        this.logJsonResult({ account: { alias, authMethod: "apiKey" } }, flags);
+        this.logJsonResult(
+          {
+            account: {
+              alias,
+              authMethod: "apiKey",
+              ...(dataPlane ? { dataPlane: { ...dataPlane, url } } : {}),
+            },
+          },
+          flags,
+        );
       } else {
         this.logSuccessMessage(
-          `Switched to local server ${formatResource(alias)}${endpoint ? ` (${endpoint})` : ""}.`,
+          `Switched to local server ${formatResource(alias)}${url ? ` (${url})` : ""}.`,
           flags,
         );
       }

@@ -9,14 +9,14 @@ import {
   createConfigManager,
   type DataPlaneConfig,
 } from "./services/config-manager.js";
-import { ControlApi } from "./services/control-api.js";
+import { ControlApi, controlHostScheme } from "./services/control-api.js";
 import {
   extractAppIdFromApiKey,
   extractKeyNameFromApiKey,
 } from "./utils/api-key.js";
 import { CommandError } from "./errors/command-error.js";
 import {
-  formatServerUrl,
+  formatEndpointUrl,
   parseServerUrl,
   type ServerUrl,
 } from "./utils/server-url.js";
@@ -625,14 +625,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       );
     }
 
-    // Surface routing only when an environment variable overrides the profile.
-    // A profile's own endpoint is a deliberate, persistent choice that the
-    // account name already identifies — repeating it on every command is noise.
-    // An env var, by contrast, is ambient and easy to forget you exported.
-    const routingOverride = this.formatRoutingOverride(showAppInfo);
-    if (routingOverride) {
+    // Surface the server whenever it isn't Ably's default, so a command run
+    // against localhost never looks identical to one run against production.
+    const endpoint = this.formatBannerEndpoint(flags);
+    if (endpoint) {
       displayParts.push(
-        `${chalk.blue("Endpoint=")}${chalk.blue.bold(routingOverride)}`,
+        `${chalk.blue("Endpoint=")}${chalk.blue.bold(endpoint)}`,
       );
     }
 
@@ -806,39 +804,33 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   /**
-   * Render the effective endpoint when an environment variable redirects the
-   * command away from what the current profile is configured with, or
-   * undefined when the profile's own routing is in force. Flags are excluded
-   * deliberately: they are explicit on the command line and need no reminder.
+   * True for commands whose requests go to the Control API rather than to the
+   * data plane. Overridden in ControlBaseCommand, and used by the banner to
+   * name the server the command will actually talk to — `apps list` reaches a
+   * control plane even though it also reports app and key context.
    */
-  private formatRoutingOverride(showAppInfo: boolean): string | undefined {
-    if (!showAppInfo) {
-      // Control plane: ABLY_CONTROL_HOST is the only ambient override.
-      return process.env.ABLY_CONTROL_HOST;
+  protected get usesControlApi(): boolean {
+    return false;
+  }
+
+  /**
+   * Render the server this command will talk to, or undefined when it is
+   * Ably's default and so not worth stating. Whatever supplied the routing —
+   * flag, environment variable, or the selected profile — the value is a URL,
+   * so the banner reads the same for both planes and never hides a port.
+   */
+  private formatBannerEndpoint(flags: BaseFlags): string | undefined {
+    if (this.usesControlApi) {
+      // A locally-run control plane is stored as a full URL; a host override
+      // has to be given the scheme its requests will use.
+      const controlUrl = this.configManager.getControlUrl();
+      if (controlUrl) return controlUrl;
+
+      const host = flags["control-host"] ?? process.env.ABLY_CONTROL_HOST;
+      return host ? `${controlHostScheme(host)}://${host}` : undefined;
     }
 
-    if (!process.env.ABLY_URL && !process.env.ABLY_ENDPOINT) return undefined;
-
-    const effective = this.resolveDataPlaneRouting({});
-    if (!effective?.endpoint) return undefined;
-
-    // Setting the env var to what the profile already says is not a redirect.
-    const profile = this.configManager.getDataPlane();
-    if (
-      profile &&
-      effective.endpoint === profile.endpoint &&
-      effective.port === profile.port &&
-      effective.tls === profile.tls
-    ) {
-      return undefined;
-    }
-
-    return formatServerUrl({
-      host: effective.endpoint,
-      path: "",
-      port: effective.port,
-      tls: effective.tls ?? true,
-    });
+    return formatEndpointUrl(this.resolveDataPlaneRouting(flags));
   }
 
   /**

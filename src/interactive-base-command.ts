@@ -4,6 +4,24 @@ import isTestMode from "./utils/test-mode.js";
 type PrettyPrintableError = Interfaces.PrettyPrintableError;
 
 /**
+ * The error thrown in place of exiting the process, in test and interactive
+ * mode.
+ *
+ * It carries oclif's `exit` metadata for the same reason `error()` below does:
+ * an exit is a decision that has already been reported to the user, so any
+ * catch block it unwinds through — `runControlCommand`, a command's own
+ * try/catch — must re-throw it rather than reporting it a second time.
+ */
+function exitError(code: number): Error {
+  const error = new Error(`Command exited with code ${code}`);
+  return Object.assign(error, {
+    code: "EEXIT",
+    exitCode: code,
+    oclif: { exit: code },
+  });
+}
+
+/**
  * Base command class that provides interactive-mode-safe error handling.
  * When running in interactive mode, this class converts process.exit calls
  * to thrown errors that can be caught and handled gracefully.
@@ -72,19 +90,14 @@ export abstract class InteractiveBaseCommand extends Command {
   exit(code = 0): never {
     if (isTestMode()) {
       if (code !== 0) {
-        const error = new Error(`Command exited with code ${code}`);
-        Object.assign(error, { exitCode: code, code: "EEXIT" });
-        throw error;
+        throw exitError(code);
       }
       // @ts-expect-error TS2322: suppress type assignment error — success exit is a no-op in tests
       return;
     }
 
     if (process.env.ABLY_INTERACTIVE_MODE === "true") {
-      const error = new Error(`Command exited with code ${code}`);
-      (error as Error & { exitCode?: number; code?: string }).exitCode = code;
-      (error as Error & { exitCode?: number; code?: string }).code = "EEXIT";
-      throw error;
+      throw exitError(code);
     }
 
     super.exit(code);
