@@ -314,6 +314,12 @@ export default class IntegrationsCreateCommand extends ControlBaseCommand {
       );
     }
 
+    if (!chatRuleConfig && flags["chat-room-filter"]) {
+      fail(
+        `--chat-room-filter is only valid for chat rule types (e.g. --rule-type "http/before-publish")`,
+      );
+    }
+
     try {
       const controlApi = this.createControlApi(flags);
       // Prepare integration data

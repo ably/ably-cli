@@ -625,6 +625,28 @@ describe("integrations:create command", () => {
       );
     });
 
+    it("should reject --chat-room-filter combined with a channel rule type", async () => {
+      const { error } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "http",
+          "--source-type",
+          "channel.message",
+          "--chat-room-filter",
+          "room:.*",
+          "--target-url",
+          "https://example.com/webhook",
+        ],
+        import.meta.url,
+      );
+
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(
+        /--chat-room-filter is only valid for chat rule types/,
+      );
+    });
+
     it("should create a hive/text-model-only rule with thresholds and beforePublishConfig", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       nockControl()
