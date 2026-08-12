@@ -201,6 +201,55 @@ describe("integrations:update command", () => {
       expect(stderr).toContain("Integration rule updated.");
     });
 
+    it("should update target URL for http/before-publish integrations", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http/before-publish",
+        invocationMode: "BEFORE_PUBLISH",
+        chatRoomFilter: "room:.*",
+        source: {
+          type: "chat.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+      const newUrl = "https://new-example.com/webhook";
+      const updatedIntegration = {
+        ...mockIntegration,
+        target: {
+          ...mockIntegration.target,
+          url: newUrl,
+        },
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      nockControl()
+        .patch(
+          `/v1/apps/${appId}/rules/${mockRuleId}`,
+          (body: Record<string, unknown>) =>
+            (body.target as Record<string, unknown>).url === newUrl,
+        )
+        .reply(200, updatedIntegration);
+
+      const { stdout, stderr } = await runCommand(
+        ["integrations:update", mockRuleId, "--target-url", newUrl],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Integration rule updated.");
+      expect(stdout).toContain(`Target URL: ${newUrl}`);
+    });
+
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {

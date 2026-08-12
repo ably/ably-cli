@@ -1,5 +1,9 @@
 import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
+
+// Rule types whose target has a `url` field updatable via --target-url.
+const HTTP_TARGET_URL_RULE_TYPES = new Set(["http", "http/before-publish"]);
+
 // Interface for rule update data structure (most fields optional)
 interface PartialRuleData {
   chatRoomFilter?: string;
@@ -106,8 +110,11 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         updatePayload.chatRoomFilter = flags["chat-room-filter"];
       }
 
-      // Update target if it's an HTTP rule and target-url is provided
-      if (existingRule.ruleType === "http" && flags["target-url"]) {
+      // Update target if it's an HTTP-based rule and target-url is provided
+      if (
+        HTTP_TARGET_URL_RULE_TYPES.has(existingRule.ruleType) &&
+        flags["target-url"]
+      ) {
         // Ensure target exists before assigning to url
         if (!updatePayload.target) updatePayload.target = {};
         updatePayload.target.url = flags["target-url"];
