@@ -72,6 +72,12 @@ export default class IntegrationsDeleteCommand extends ControlBaseCommand {
           );
         }
 
+        if (integration.chatRoomFilter) {
+          this.log(
+            `${formatLabel("Chat Room Filter")} ${integration.chatRoomFilter}`,
+          );
+        }
+
         const confirmed = await promptForConfirmation(
           `\nAre you sure you want to delete integration "${integration.id}"?`,
         );
