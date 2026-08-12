@@ -662,6 +662,7 @@ describe("integrations:create command", () => {
                 tooManyRequestsAction: "RETRY",
               }) &&
             target.apiKey === "hive-key" &&
+            !("modelUrl" in target) &&
             JSON.stringify(target.thresholds) ===
               JSON.stringify({ bullying: 2 })
           );
@@ -835,6 +836,7 @@ describe("integrations:create command", () => {
           return (
             target.apiKey === "tisane-key" &&
             target.defaultLanguage === "*" &&
+            !("modelUrl" in target) &&
             JSON.stringify(target.thresholds) ===
               JSON.stringify({ allegation: 1, profanity: 1 })
           );
@@ -877,6 +879,57 @@ describe("integrations:create command", () => {
           "profanity=1",
           "--default-language",
           "*",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+    });
+
+    it("should include modelUrl in the target when --target-model-url is provided", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/rules`, (body: Record<string, unknown>) => {
+          const target = body.target as Record<string, unknown>;
+          return (
+            target.apiKey === "tisane-key" &&
+            target.modelUrl === "https://custom-model.example.com"
+          );
+        })
+        .reply(201, {
+          id: mockRuleId,
+          appId,
+          ruleType: "tisane/text-moderation",
+          invocationMode: "BEFORE_PUBLISH",
+          beforePublishConfig: {
+            retryTimeout: 3000,
+            maxRetries: 3,
+            failedAction: "REJECT",
+            tooManyRequestsAction: "RETRY",
+          },
+          source: { type: "chat.message" },
+          target: {
+            apiKey: "tisane-key",
+            modelUrl: "https://custom-model.example.com",
+          },
+          status: "enabled",
+          created: 1640995200000,
+          modified: 1640995200000,
+        });
+
+      const { stdout } = await runCommand(
+        [
+          "integrations:create",
+          "--rule-type",
+          "tisane/text-moderation",
+          "--source-type",
+          "chat.message",
+          "--target-api-key",
+          "tisane-key",
+          "--target-model-url",
+          "https://custom-model.example.com",
           "--json",
         ],
         import.meta.url,
