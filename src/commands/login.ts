@@ -19,6 +19,11 @@ export default class Login extends ControlBaseCommand {
     // cached-client cleanup. AccountsLogin is run manually so its finally
     // doesn't emit a duplicate completed signal.
     const accountsLogin = new AccountsLogin(this.argv, this.config);
+    // oclif only assigns an id to commands it dispatches itself, so the
+    // manually constructed delegate would label its JSON records "unknown".
+    // Inherit this command's id so they read "login", matching the completed
+    // signal that this command's own finally() emits.
+    accountsLogin.id = this.id;
     await accountsLogin.run();
   }
 }

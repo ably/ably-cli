@@ -406,4 +406,99 @@ accessToken = "testaccesstoken"
       expect(configManager.switchAccount("nonexistentaccount")).toBe(false);
     });
   });
+
+  // Tests for local server accounts
+  describe("#storeLocalAccount", () => {
+    it("should store data plane routing and mark the account as apiKey auth", () => {
+      configManager.storeLocalAccount("local", {
+        accountName: "local",
+        dataPlane: { endpoint: "localhost", port: 8081, tls: false },
+      });
+
+      expect(configManager.getAuthMethod("local")).toBe("apiKey");
+      expect(configManager.getDataPlane("local")).toEqual({
+        endpoint: "localhost",
+        port: 8081,
+        tls: false,
+      });
+      expect(configManager.getEndpoint("local")).toBe("localhost");
+      expect(configManager.getControlUrl("local")).toBeUndefined();
+    });
+
+    it("should store the control plane URL and access token when supplied", () => {
+      configManager.storeLocalAccount("local", {
+        accessToken: "local-control-token",
+        accountName: "local",
+        controlUrl: "http://localhost:8082",
+        dataPlane: { endpoint: "localhost", port: 8081, tls: false },
+      });
+
+      configManager.switchAccount("local");
+
+      expect(configManager.getControlUrl()).toBe("http://localhost:8082");
+      expect(configManager.getAccessToken()).toBe("local-control-token");
+    });
+
+    it("should drop OAuth state when replacing a managed account", () => {
+      configManager.storeOAuthTokens(
+        "local",
+        {
+          accessToken: "oauth-token",
+          expiresAt: Date.now() + 3_600_000,
+          refreshToken: "refresh-token",
+          userEmail: "test@example.com",
+        },
+        { accountId: "acc-1", accountName: "Managed" },
+      );
+
+      configManager.storeLocalAccount("local", {
+        accountName: "local",
+        dataPlane: { endpoint: "localhost", port: 8081, tls: false },
+      });
+
+      configManager.switchAccount("local");
+
+      expect(configManager.getAuthMethod("local")).toBe("apiKey");
+      expect(configManager.getOAuthTokens("local")).toBeUndefined();
+      expect(configManager.getAccessToken()).toBeUndefined();
+    });
+
+    it("should preserve stored apps when repointing an existing local account", () => {
+      configManager.storeLocalAccount("local", {
+        accountName: "local",
+        dataPlane: { endpoint: "localhost", port: 8081, tls: false },
+      });
+      configManager.switchAccount("local");
+      configManager.setCurrentApp("appid");
+      configManager.storeAppKey("appid", "appid.keyid:secret");
+
+      configManager.storeLocalAccount("local", {
+        accountName: "local",
+        dataPlane: { endpoint: "localhost", port: 9091, tls: false },
+      });
+
+      expect(configManager.getDataPlane("local")?.port).toBe(9091);
+      expect(configManager.getApiKey("appid")).toBe("appid.keyid:secret");
+    });
+  });
+
+  describe("#getDataPlane", () => {
+    it("should return undefined for an account with no routing overrides", () => {
+      expect(configManager.getDataPlane("default")).toBeUndefined();
+    });
+
+    it("should return undefined for an unknown alias", () => {
+      expect(configManager.getDataPlane("nonexistentaccount")).toBeUndefined();
+    });
+
+    it("should return the endpoint alone when only an endpoint is stored", () => {
+      configManager.storeEndpoint("custom.example.com", "default");
+
+      expect(configManager.getDataPlane("default")).toEqual({
+        endpoint: "custom.example.com",
+        port: undefined,
+        tls: undefined,
+      });
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { runCommand } from "@oclif/test";
 import nock from "nock";
+import stripAnsi from "strip-ansi";
 import {
   nockControl,
   controlApiCleanup,
@@ -520,6 +521,281 @@ describe("accounts:login command", () => {
       expect(authEvent).toBeDefined();
       expect(authEvent).toHaveProperty("userCode", "TEST-CODE");
       expect(authEvent).toHaveProperty("verificationUri");
+    });
+  });
+
+  describe("local server login", () => {
+    const localApiKey = "localapp.keyid:keysecret";
+
+    beforeEach(() => {
+      process.env.ABLY_API_KEY = localApiKey;
+    });
+
+    afterEach(() => {
+      delete process.env.ABLY_API_KEY;
+      delete process.env.ABLY_ACCESS_TOKEN;
+    });
+
+    it("stores a data-plane-only profile from a URL and ABLY_API_KEY", async () => {
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result).toHaveProperty("success", true);
+      const account = result.account as Record<string, unknown>;
+      expect(account).toHaveProperty("alias", "local");
+      expect(account).toHaveProperty("authMethod", "apiKey");
+      expect(account).not.toHaveProperty("controlUrl");
+      expect(account.dataPlane).toEqual({
+        endpoint: "localhost",
+        port: 8081,
+        tls: false,
+        url: "http://localhost:8081",
+      });
+      expect(account.app).toEqual({ id: "localapp" });
+
+      const config = getMockConfigManager().getConfig();
+      expect(config.current?.account).toBe("local");
+      const stored = config.accounts.local;
+      expect(stored.authMethod).toBe("apiKey");
+      expect(stored.endpoint).toBe("localhost");
+      expect(stored.port).toBe(8081);
+      expect(stored.tls).toBe(false);
+      expect(stored.currentAppId).toBe("localapp");
+      expect(stored.apps?.localapp?.apiKey).toBe(localApiKey);
+    });
+
+    it("stores the control plane URL and token when --control-url is given", async () => {
+      process.env.ABLY_ACCESS_TOKEN = "local-control-token";
+
+      // getApp resolves the name via /me then the account's apps list.
+      nock("http://localhost:8082")
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: "local-account", name: "Local" },
+          user: { email: "dev@localhost" },
+        });
+      nock("http://localhost:8082")
+        .get("/v1/accounts/local-account/apps")
+        .reply(200, [
+          { accountId: "local-account", id: "localapp", name: "Local App" },
+        ]);
+
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--control-url",
+          "http://localhost:8082",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      const account = result.account as Record<string, unknown>;
+      expect(account).toHaveProperty("controlUrl", "http://localhost:8082");
+      expect(account.app).toEqual({ id: "localapp", name: "Local App" });
+
+      const stored = getMockConfigManager().getConfig().accounts.local;
+      expect(stored.controlUrl).toBe("http://localhost:8082");
+      expect(stored.accessToken).toBe("local-control-token");
+      expect(stored.apps?.localapp?.appName).toBe("Local App");
+    });
+
+    it("uses --alias when provided", async () => {
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--alias",
+          "dev-server",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result.account).toHaveProperty("alias", "dev-server");
+      expect(
+        getMockConfigManager().getConfig().accounts["dev-server"],
+      ).toBeDefined();
+    });
+
+    it("errors when --url is omitted in JSON mode", async () => {
+      const { stdout } = await runCommand(
+        ["accounts:login", "--local", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
+      expect(result.error.message).toContain("--url");
+    });
+
+    it("errors when no API key is available in JSON mode", async () => {
+      delete process.env.ABLY_API_KEY;
+
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
+      expect(result.error.message).toContain("ABLY_API_KEY");
+    });
+
+    it("errors when the data plane URL includes a path", async () => {
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081/realtime",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
+      expect(result.error.message).toContain("must not include a path");
+    });
+
+    it("errors when the API key has no app ID", async () => {
+      process.env.ABLY_API_KEY = "not-a-valid-key";
+
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
+      expect(result.error.message).toContain("app ID");
+    });
+
+    it("errors when no control API token is available in JSON mode", async () => {
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--control-url",
+          "http://localhost:8082",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
+      expect(result.error.message).toContain("ABLY_ACCESS_TOKEN");
+    });
+
+    it("rejects --url without --local", async () => {
+      const { error } = await runCommand(
+        ["accounts:login", "--url", "http://localhost:8081", "--json"],
+        import.meta.url,
+      );
+
+      expect(error?.message).toContain("local");
+    });
+
+    it("names the app once when there is no control plane to resolve a name", async () => {
+      const { stderr } = await runCommand(
+        ["accounts:login", "--local", "--url", "http://localhost:8081"],
+        import.meta.url,
+      );
+
+      const output = stripAnsi(stderr);
+      expect(output).toContain("Using app localapp.");
+      expect(output).not.toContain("localapp (localapp)");
+    });
+
+    it("pairs app name and ID when a control plane resolved the name", async () => {
+      process.env.ABLY_ACCESS_TOKEN = "local-control-token";
+
+      nock("http://localhost:8082")
+        .get("/v1/me")
+        .reply(200, {
+          account: { id: "local-account", name: "Local" },
+          user: { email: "dev@localhost" },
+        });
+      nock("http://localhost:8082")
+        .get("/v1/accounts/local-account/apps")
+        .reply(200, [
+          { accountId: "local-account", id: "localapp", name: "Local App" },
+        ]);
+
+      const { stderr } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://localhost:8081",
+          "--control-url",
+          "http://localhost:8082",
+        ],
+        import.meta.url,
+      );
+
+      expect(stripAnsi(stderr)).toContain("Using app Local App (localapp).");
+    });
+
+    it("names the alias without an empty account when replacing an unnamed managed account", async () => {
+      const mock = getMockConfigManager();
+      mock.storeAccount("managed-token", "local", {
+        accountId: "",
+        accountName: "",
+        userEmail: "",
+      });
+
+      const { stderr } = await runCommand(
+        ["accounts:login", "--local", "--url", "http://localhost:8081"],
+        import.meta.url,
+      );
+
+      const output = stripAnsi(stderr);
+      expect(output).toContain("is currently a managed account");
+      expect(output).not.toContain("account  and");
+    });
+
+    it("rejects a URL carrying credentials rather than dropping them", async () => {
+      const { stdout } = await runCommand(
+        [
+          "accounts:login",
+          "--local",
+          "--url",
+          "http://user:pass@localhost:8081",
+          "--json",
+        ],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "error")!;
+      expect(result.error.message).toContain("Credentials are not supported");
     });
   });
 });

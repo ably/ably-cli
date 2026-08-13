@@ -73,6 +73,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   └── utils/
 │       ├── channel-rule-display.ts # Channel rule human-readable display
 │       ├── chat-constants.ts       # Shared Chat SDK constants (REACTION_TYPE_MAP)
+│       ├── server-url.ts           # Local server URL parsing (parseServerUrl, formatServerUrl)
 │       ├── errors.ts               # Error utilities (errorMessage)
 │       ├── interrupt-feedback.ts   # Ctrl+C feedback messages
 │       ├── json-formatter.ts       # JSON output formatting (formatJson, formatMessageData)
@@ -86,6 +87,7 @@ This document outlines the directory structure of the Ably CLI project.
 │       ├── output.ts               # Output helpers (progress, success, resource, etc.)
 │       ├── pagination.ts           # Generic pagination utilities (collectPaginatedResults, collectFilteredPaginatedResults)
 │       ├── prompt-confirmation.ts  # Y/N confirmation prompts
+│       ├── prompt-value.ts         # Free-text and masked value prompts
 │       ├── readline-helper.ts      # Readline utilities for interactive mode
 │       ├── sigint-exit.ts          # SIGINT/Ctrl+C handling (exit code 130)
 │       ├── string-distance.ts      # Levenshtein distance for fuzzy matching
@@ -175,3 +177,4 @@ This document outlines the directory structure of the Ably CLI project.
 - [Debugging Guide](Debugging.md) — Debugging tips for CLI development
 - [Interactive REPL](Interactive-REPL.md) — Architecture of `src/commands/interactive.ts`
 - [Exit Codes](Exit-Codes.md) — Exit codes handled in `src/commands/interactive.ts` and `src/utils/sigint-exit.ts`
+- [Local Servers](Local-Server.md) — Pointing the CLI at a locally-running Ably server via `ably accounts login --local`

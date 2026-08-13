@@ -81,14 +81,15 @@ describe("env command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "env");
       expect(result).toHaveProperty("success", true);
-      expect(result.envVars).toHaveLength(9);
+      expect(result.envVars).toHaveLength(10);
       expect(result.envVars[0]).toMatchObject({
         name: "ABLY_API_KEY",
         category: "Authentication",
         format: "APP_ID.KEY_ID:KEY_SECRET",
       });
-      expect(result.envVars[3].name).toBe("ABLY_ENDPOINT");
-      expect(result.envVars[8].name).toBe("ABLY_CLI_NON_INTERACTIVE");
+      expect(result.envVars[3].name).toBe("ABLY_URL");
+      expect(result.envVars[4].name).toBe("ABLY_ENDPOINT");
+      expect(result.envVars[9].name).toBe("ABLY_CLI_NON_INTERACTIVE");
       expect(result.crossCutting).toBeDefined();
       expect(result.crossCutting.authResolutionOrder.heading).toBe(
         "Authentication Resolution Order",

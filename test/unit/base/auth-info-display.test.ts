@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Config } from "@oclif/core";
 import nock from "nock";
+import stripAnsi from "strip-ansi";
 
 import { AblyBaseCommand } from "../../../src/base-command.js";
 import { BaseFlags } from "../../../src/types/cli.js";
@@ -8,6 +9,13 @@ import { ConfigManager } from "../../../src/services/config-manager.js";
 
 // Test implementation of AblyBaseCommand for testing protected methods
 class TestCommand extends AblyBaseCommand {
+  /** Stands in for extending ControlBaseCommand, which overrides this. */
+  public controlApiCommand = false;
+
+  protected override get usesControlApi(): boolean {
+    return this.controlApiCommand;
+  }
+
   // Implement the abstract run method required by oclif
   async run(): Promise<void> {
     // No-op for testing
@@ -63,6 +71,8 @@ describe("Auth Info Display", function () {
     getAppName: ReturnType<typeof vi.fn>;
     getApiKey: ReturnType<typeof vi.fn>;
     getEndpoint: ReturnType<typeof vi.fn>;
+    getDataPlane: ReturnType<typeof vi.fn>;
+    getControlUrl: ReturnType<typeof vi.fn>;
     getKeyName: ReturnType<typeof vi.fn>;
     getAccessToken: ReturnType<typeof vi.fn>;
     getAppConfig: ReturnType<typeof vi.fn>;
@@ -73,6 +83,23 @@ describe("Auth Info Display", function () {
   let logStub: ReturnType<typeof vi.fn>;
   let debugStub: ReturnType<typeof vi.fn>;
 
+  /**
+   * Run displayAuthInfo and return the rendered "Using:" line, with colour
+   * stripped — labels and values are coloured separately, so assertions on
+   * "Endpoint=<value>" only see contiguous text once the codes are gone.
+   */
+  const usingLine = async (
+    showAppInfo = true,
+    flags: BaseFlags = {},
+  ): Promise<string> => {
+    await command.testDisplayAuthInfo(flags, showAppInfo);
+    const outputCalls = logStub.mock.calls.map((call) => call[0]);
+    const line = outputCalls.find(
+      (output) => typeof output === "string" && output.includes("Using:"),
+    );
+    return typeof line === "string" ? stripAnsi(line) : "";
+  };
+
   beforeEach(function () {
     // Create mock config manager
     configManagerStub = {
@@ -81,6 +108,8 @@ describe("Auth Info Display", function () {
       getAppName: vi.fn(),
       getApiKey: vi.fn(),
       getEndpoint: vi.fn(),
+      getDataPlane: vi.fn(),
+      getControlUrl: vi.fn(),
       getKeyName: vi.fn(),
       getAccessToken: vi.fn(),
       getAppConfig: vi.fn(),
@@ -201,6 +230,116 @@ describe("Auth Info Display", function () {
       expect(outputWithUsingPrefix).toContain("Account=");
     });
 
+    describe("endpoint display", function () {
+      beforeEach(function () {
+        shouldHideAccountInfoStub.mockReturnValue(false);
+        delete process.env.ABLY_ENDPOINT;
+        delete process.env.ABLY_URL;
+        delete process.env.ABLY_CONTROL_HOST;
+      });
+
+      afterEach(function () {
+        delete process.env.ABLY_ENDPOINT;
+        delete process.env.ABLY_URL;
+        delete process.env.ABLY_CONTROL_HOST;
+      });
+
+      it("shows the profile's own endpoint as a URL", async function () {
+        // Running against a local server must never look identical to running
+        // against production, so the profile's routing is always stated.
+        configManagerStub.getDataPlane.mockReturnValue({
+          endpoint: "localhost",
+          port: 8081,
+          tls: false,
+        });
+
+        expect(await usingLine()).toContain("Endpoint=http://localhost:8081");
+      });
+
+      it("omits the endpoint for a managed account on Ably's own endpoints", async function () {
+        configManagerStub.getDataPlane.mockReturnValue();
+
+        expect(await usingLine()).not.toContain("Endpoint=");
+      });
+
+      it("shows the endpoint when ABLY_ENDPOINT redirects a managed account", async function () {
+        process.env.ABLY_ENDPOINT = "other.example.com";
+        configManagerStub.getDataPlane.mockReturnValue();
+
+        expect(await usingLine()).toContain(
+          "Endpoint=https://other.example.com",
+        );
+      });
+
+      it("shows the endpoint when ABLY_ENDPOINT redirects away from the profile", async function () {
+        process.env.ABLY_ENDPOINT = "other.example.com";
+        configManagerStub.getDataPlane.mockReturnValue({
+          endpoint: "localhost",
+          port: 8081,
+          tls: false,
+        });
+
+        // Port and TLS still come from the profile, so the displayed URL is
+        // the combination traffic will actually use.
+        expect(await usingLine()).toContain(
+          "Endpoint=http://other.example.com:8081",
+        );
+      });
+
+      it("shows the endpoint from --url", async function () {
+        configManagerStub.getDataPlane.mockReturnValue();
+
+        expect(
+          await usingLine(true, { url: "http://localhost:9000" }),
+        ).toContain("Endpoint=http://localhost:9000");
+      });
+
+      it("shows the stored control URL on control plane commands", async function () {
+        command.controlApiCommand = true;
+        configManagerStub.getControlUrl.mockReturnValue(
+          "http://localhost:8082",
+        );
+
+        expect(await usingLine(false)).toContain(
+          "Endpoint=http://localhost:8082",
+        );
+      });
+
+      it("shows ABLY_CONTROL_HOST as a URL on control plane commands", async function () {
+        command.controlApiCommand = true;
+        process.env.ABLY_CONTROL_HOST = "control.example.com";
+
+        expect(await usingLine(false)).toContain(
+          "Endpoint=https://control.example.com",
+        );
+      });
+
+      it("omits the endpoint on control plane commands with no override", async function () {
+        command.controlApiCommand = true;
+
+        expect(await usingLine(false)).not.toContain("Endpoint=");
+      });
+
+      it("names the control plane, not the data plane, for control commands that show app info", async function () {
+        // `apps list` reports app and key context but talks to a control plane.
+        command.controlApiCommand = true;
+        configManagerStub.getControlUrl.mockReturnValue(
+          "http://localhost:8082",
+        );
+        configManagerStub.getDataPlane.mockReturnValue({
+          endpoint: "localhost",
+          port: 8081,
+          tls: false,
+        });
+
+        const banner = await usingLine();
+
+        expect(banner).toContain("Endpoint=http://localhost:8082");
+        expect(banner).not.toContain("8081");
+        expect(banner).toContain("App=");
+      });
+    });
+
     it("should not display anything when there are no parts to show", async function () {
       // Setup - hide account and don't show app info
       shouldHideAccountInfoStub.mockReturnValue(true);
@@ -308,6 +447,38 @@ describe("Auth Info Display", function () {
       } finally {
         nock.cleanAll();
       }
+    });
+
+    describe("unresolved app name", function () {
+      beforeEach(function () {
+        shouldHideAccountInfoStub.mockReturnValue(false);
+        configManagerStub.getCurrentAppId.mockReturnValue("3p4xqQ");
+        configManagerStub.getAppName.mockReturnValue();
+        configManagerStub.getApiKey.mockReturnValue("3p4xqQ.keyid:secret");
+      });
+
+      it("shows the bare app ID rather than inventing a name", async function () {
+        // A local server account with no control plane has nowhere to look the
+        // name up. The ID is known, so pairing it with a placeholder would be
+        // stating something false.
+        configManagerStub.getAuthMethod.mockReturnValue("apiKey");
+        configManagerStub.getControlUrl.mockReturnValue();
+
+        const banner = await usingLine();
+
+        expect(banner).toContain("App=3p4xqQ");
+        expect(banner).not.toContain("Unknown App");
+        expect(banner).not.toContain("(3p4xqQ)");
+      });
+
+      it("pairs name and ID once the name is known", async function () {
+        configManagerStub.getAppName.mockReturnValue("My App");
+
+        const banner = await usingLine();
+
+        expect(banner).toContain("App=My App");
+        expect(banner).toContain("(3p4xqQ)");
+      });
     });
   });
 

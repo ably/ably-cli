@@ -24,6 +24,7 @@ import type {
   AccountConfig,
   AppConfig,
   ConfigManager,
+  DataPlaneConfig,
 } from "../../src/services/config-manager.js";
 
 // Kept in sync with DEFAULT_OAUTH_HOST in src/services/oauth-client.ts.
@@ -277,6 +278,34 @@ export class MockConfigManager implements ConfigManager {
     return currentAccount?.endpoint;
   }
 
+  public getDataPlane(alias?: string): DataPlaneConfig | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    if (!account) return undefined;
+
+    if (
+      account.endpoint === undefined &&
+      account.port === undefined &&
+      account.tls === undefined
+    ) {
+      return undefined;
+    }
+
+    return {
+      endpoint: account.endpoint,
+      port: account.port,
+      tls: account.tls,
+    };
+  }
+
+  public getControlUrl(alias?: string): string | undefined {
+    const account = alias
+      ? this.config.accounts[alias]
+      : this.getCurrentAccount();
+    return account?.controlUrl;
+  }
+
   public getCurrentAccount(): AccountConfig | undefined {
     const currentAlias = this.getCurrentAccountAlias();
     if (!currentAlias) return undefined;
@@ -446,6 +475,43 @@ export class MockConfigManager implements ConfigManager {
     }
 
     this.config.accounts[targetAlias].endpoint = endpoint;
+  }
+
+  public storeLocalAccount(
+    alias: string,
+    info: {
+      accessToken?: string;
+      accountName: string;
+      controlUrl?: string;
+      dataPlane: DataPlaneConfig;
+    },
+  ): void {
+    const existing = this.config.accounts[alias];
+
+    this.config.accounts[alias] = {
+      ...existing,
+      accessToken: info.accessToken,
+      accountId: existing?.accountId ?? "",
+      accountName: info.accountName,
+      apps: existing?.apps ?? {},
+      authMethod: "apiKey",
+      controlUrl: info.controlUrl,
+      currentAppId: existing?.currentAppId,
+      endpoint: info.dataPlane.endpoint,
+      port: info.dataPlane.port,
+      tls: info.dataPlane.tls,
+      userEmail: existing?.userEmail ?? "",
+    };
+
+    delete this.config.accounts[alias].accessTokenExpiresAt;
+    delete this.config.accounts[alias].controlHost;
+    delete this.config.accounts[alias].oauthHost;
+    delete this.config.accounts[alias].oauthSessionKey;
+    delete this.config.accounts[alias].tokenId;
+
+    if (!this.config.current || !this.config.current.account) {
+      this.config.current = { account: alias };
+    }
   }
 
   public storeAppInfo(
@@ -644,7 +710,7 @@ export class MockConfigManager implements ConfigManager {
     return Date.now() >= expiresAt - 60_000;
   }
 
-  public getAuthMethod(alias?: string): "oauth" | undefined {
+  public getAuthMethod(alias?: string): "apiKey" | "oauth" | undefined {
     const account = alias
       ? this.config.accounts[alias]
       : this.getCurrentAccount();

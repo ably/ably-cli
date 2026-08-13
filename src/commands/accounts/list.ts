@@ -2,6 +2,7 @@ import chalk from "chalk";
 
 import { ControlBaseCommand } from "../../control-base-command.js";
 import { formatLabel } from "../../utils/output.js";
+import { formatEndpointUrl } from "../../utils/server-url.js";
 
 export default class AccountsList extends ControlBaseCommand {
   static override description = "List locally configured Ably accounts";
@@ -35,23 +36,43 @@ export default class AccountsList extends ControlBaseCommand {
     if (this.shouldOutputJson(flags)) {
       this.logJsonResult(
         {
-          accounts: accounts.map(({ account, alias }) => ({
-            alias,
-            appsConfigured: account.apps ? Object.keys(account.apps).length : 0,
-            currentApp:
-              alias === currentAlias && account.currentAppId
+          accounts: accounts.map(({ account, alias }) => {
+            const dataPlane = this.configManager.getDataPlane(alias);
+
+            return {
+              alias,
+              appsConfigured: account.apps
+                ? Object.keys(account.apps).length
+                : 0,
+              ...(account.authMethod ? { authMethod: account.authMethod } : {}),
+              ...(account.controlUrl ? { controlUrl: account.controlUrl } : {}),
+              currentApp:
+                alias === currentAlias && account.currentAppId
+                  ? {
+                      id: account.currentAppId,
+                      name:
+                        this.configManager.getAppName(account.currentAppId) ||
+                        account.currentAppId,
+                    }
+                  : undefined,
+              // Same shape as `accounts login --local` and `accounts switch`
+              // report, so the server can be read the same way everywhere.
+              ...(dataPlane
                 ? {
-                    id: account.currentAppId,
-                    name:
-                      this.configManager.getAppName(account.currentAppId) ||
-                      account.currentAppId,
+                    dataPlane: {
+                      ...dataPlane,
+                      url: formatEndpointUrl(dataPlane),
+                    },
                   }
-                : undefined,
-            id: account.accountId,
-            isCurrent: alias === currentAlias,
-            name: account.accountName,
-            user: account.userEmail,
-          })),
+                : {}),
+              // A local server assigns no account ID and knows no user, so
+              // those keys are omitted rather than emitted empty.
+              ...(account.accountId ? { id: account.accountId } : {}),
+              isCurrent: alias === currentAlias,
+              name: account.accountName,
+              ...(account.userEmail ? { user: account.userEmail } : {}),
+            };
+          }),
           currentAccount: currentAlias,
         },
         flags,
@@ -71,10 +92,31 @@ export default class AccountsList extends ControlBaseCommand {
           titleStyle(`Account: ${alias}`) +
           (isCurrent ? chalk.green(" (current)") : ""),
       );
-      this.log(
-        `  ${formatLabel("Name")} ${account.accountName} (${account.accountId})`,
+      // A local server account is named after its alias and has no
+      // server-assigned ID, so the Name line would just repeat the heading.
+      if (account.accountName !== alias || account.accountId) {
+        this.log(
+          `  ${formatLabel("Name")} ${account.accountName}${account.accountId ? ` (${account.accountId})` : ""}`,
+        );
+      }
+      if (account.userEmail) {
+        this.log(`  ${formatLabel("User")} ${account.userEmail}`);
+      }
+
+      // The server is what distinguishes two local profiles from each other,
+      // so it is reported here as a URL — the same form used by the "Using:"
+      // banner, `accounts current` and `accounts switch`.
+      const endpoint = formatEndpointUrl(
+        this.configManager.getDataPlane(alias),
       );
-      this.log(`  ${formatLabel("User")} ${account.userEmail}`);
+      if (endpoint) {
+        this.log(`  ${formatLabel("Endpoint")} ${chalk.blue(endpoint)}`);
+      }
+      if (account.controlUrl) {
+        this.log(
+          `  ${formatLabel("Control plane")} ${chalk.blue(account.controlUrl)}`,
+        );
+      }
 
       // Count number of apps configured for this account
       const appCount = account.apps ? Object.keys(account.apps).length : 0;

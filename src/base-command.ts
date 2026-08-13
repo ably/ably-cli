@@ -7,14 +7,20 @@ import { randomUUID } from "node:crypto";
 import {
   ConfigManager,
   createConfigManager,
+  type DataPlaneConfig,
 } from "./services/config-manager.js";
-import { ControlApi } from "./services/control-api.js";
+import { ControlApi, controlHostScheme } from "./services/control-api.js";
 import {
   extractAppIdFromApiKey,
   extractKeyNameFromApiKey,
 } from "./utils/api-key.js";
 import { CommandError } from "./errors/command-error.js";
-import { getFriendlyAblyErrorHint } from "./utils/errors.js";
+import {
+  formatEndpointUrl,
+  parseServerUrl,
+  type ServerUrl,
+} from "./utils/server-url.js";
+import { errorMessage, getFriendlyAblyErrorHint } from "./utils/errors.js";
 import { coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { promptForConfirmation } from "./utils/prompt-confirmation.js";
@@ -619,6 +625,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       );
     }
 
+    // Surface the server whenever it isn't Ably's default, so a command run
+    // against localhost never looks identical to one run against production.
+    const endpoint = this.formatBannerEndpoint(flags);
+    if (endpoint) {
+      displayParts.push(
+        `${chalk.blue("Endpoint=")}${chalk.blue.bold(endpoint)}`,
+      );
+    }
+
     // For data plane commands, show app and auth info
     if (showAppInfo) {
       // Get app info
@@ -626,8 +641,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       if (appId) {
         let appName = this.configManager.getAppName(appId);
 
-        // If app name is missing, try to fetch it from the API and update config
-        if (!appName) {
+        // If the app name is missing, try to fetch it from the API and update
+        // config. Local server accounts with no control plane configured have
+        // nowhere to look it up, so skip the attempt entirely.
+        const hasControlPlane =
+          this.configManager.getAuthMethod() !== "apiKey" ||
+          Boolean(this.configManager.getControlUrl());
+        if (!appName && hasControlPlane) {
           try {
             // Get access token for control API
             const accessToken =
@@ -640,7 +660,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
               // the user picked at login. Without the account fallback this
               // call silently targets control.ably.net even when the user
               // logged in against a review/staging deployment, the lookup
-              // 404s, and the banner downgrades to "Unknown App".
+              // 404s, and the banner degrades to showing the bare app ID.
               const account = this.configManager.getCurrentAccount();
               const controlApi = new ControlApi({
                 accessToken,
@@ -648,6 +668,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
                   flags["control-host"] ??
                   process.env.ABLY_CONTROL_HOST ??
                   account?.controlHost,
+                controlUrl: this.configManager.getControlUrl(),
               });
               const app = await controlApi.getApp(appId);
               appName = app.name;
@@ -665,17 +686,18 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
                 // Even without an API key, persist the app name to avoid future lookups
                 this.configManager.storeAppInfo(appId, { appName: app.name });
               }
-            } else {
-              appName = "Unknown App";
             }
           } catch {
-            // If fetching fails, use fallback
-            appName = "Unknown App";
+            // Leave the name unresolved — the ID below still identifies the app.
           }
         }
 
+        // Only the name can be unknown; the ID always is known here. Showing
+        // it alone beats pairing a real ID with an invented "Unknown App".
         displayParts.push(
-          `${chalk.green("App=")}${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`,
+          appName
+            ? `${chalk.green("App=")}${chalk.green.bold(appName)} ${chalk.gray(`(${appId})`)}`
+            : `${chalk.green("App=")}${chalk.green.bold(appId)}`,
         );
 
         // Check auth method - token or API key
@@ -717,6 +739,98 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       );
       this.log(""); // Add blank line for readability
     }
+  }
+
+  /**
+   * Resolve host, port and TLS for the data plane from the first source that
+   * supplies them: `--url`, `ABLY_URL`, `ABLY_ENDPOINT`, then the account
+   * profile. The individual `--port`/`--tls-port`/`--tls` flags are applied by
+   * the caller on top, so they can override a single field.
+   *
+   * `ABLY_ENDPOINT` names a host only and predates the URL forms, so it keeps
+   * the profile's port and TLS rather than resetting them.
+   */
+  private resolveDataPlaneRouting(
+    flags: BaseFlags,
+  ): DataPlaneConfig | undefined {
+    if (flags.url) {
+      return this.routingFromUrl(flags.url, "--url", flags);
+    }
+
+    if (process.env.ABLY_URL) {
+      return this.routingFromUrl(process.env.ABLY_URL, "ABLY_URL", flags);
+    }
+
+    const profile = this.configManager.getDataPlane();
+
+    if (process.env.ABLY_ENDPOINT) {
+      return {
+        endpoint: process.env.ABLY_ENDPOINT,
+        port: profile?.port,
+        tls: profile?.tls,
+      };
+    }
+
+    return profile;
+  }
+
+  /** Parse a routing URL, failing the command with the source named. */
+  private routingFromUrl(
+    raw: string,
+    source: string,
+    flags: BaseFlags,
+  ): DataPlaneConfig {
+    let parsed: ServerUrl;
+    try {
+      parsed = parseServerUrl(raw);
+    } catch (error) {
+      this.fail(
+        `Invalid ${source} value: ${errorMessage(error)}`,
+        flags,
+        "routing",
+      );
+    }
+
+    // The SDK routes by hostname, so a path would be silently discarded.
+    if (parsed.path) {
+      this.fail(
+        `${source} must not include a path (got "${parsed.path}"). Ably routes by host, so use a value like http://localhost:8081.`,
+        flags,
+        "routing",
+      );
+    }
+
+    return { endpoint: parsed.host, port: parsed.port, tls: parsed.tls };
+  }
+
+  /**
+   * True for commands whose requests go to the Control API rather than to the
+   * data plane. Overridden in ControlBaseCommand, and used by the banner to
+   * name the server the command will actually talk to — `apps list` reaches a
+   * control plane even though it also reports app and key context.
+   */
+  protected get usesControlApi(): boolean {
+    return false;
+  }
+
+  /**
+   * Render the server this command will talk to, or undefined when it is
+   * Ably's default and so not worth stating. Whatever supplied the routing —
+   * flag, environment variable, or the selected profile — the value is a URL,
+   * so the banner reads the same for both planes and never hides a port.
+   */
+  private formatBannerEndpoint(flags: BaseFlags): string | undefined {
+    if (this.usesControlApi) {
+      // A locally-run control plane is stored as a full URL; a host override
+      // has to be given the scheme its requests will use.
+      const controlUrl = this.configManager.getControlUrl();
+      if (controlUrl) return controlUrl;
+
+      const host = flags["control-host"] ?? process.env.ABLY_CONTROL_HOST;
+      return host ? `${controlHostScheme(host)}://${host}` : undefined;
+    }
+
+    return formatEndpointUrl(this.resolveDataPlaneRouting(flags));
   }
 
   /**
@@ -1067,23 +1181,36 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       }
     }
 
-    // Endpoint resolution: ABLY_ENDPOINT env → account config
-    const endpoint =
-      process.env.ABLY_ENDPOINT || this.configManager.getEndpoint();
-    if (endpoint) {
-      options.endpoint = endpoint;
+    // Data plane routing: --url → ABLY_URL → ABLY_ENDPOINT → account config,
+    // with the individual --port/--tls-port/--tls flags overriding single
+    // fields on top. The URL forms set host, port and TLS together, which is
+    // what a local server needs; ABLY_ENDPOINT is host-only and predates them.
+    const dataPlane = this.resolveDataPlaneRouting(flags);
+
+    if (dataPlane?.endpoint) {
+      options.endpoint = dataPlane.endpoint;
     }
 
-    if (flags.port) {
-      options.port = flags.port;
-    }
-
-    if (flags["tls-port"]) {
-      options.tlsPort = flags["tls-port"];
-    }
-
-    if (flags.tls) {
+    if (flags.tls !== undefined) {
       options.tls = flags.tls === "true";
+    } else if (dataPlane?.tls !== undefined) {
+      options.tls = dataPlane.tls;
+    }
+
+    // The SDK reads `port` when TLS is off and `tlsPort` when it is on, so the
+    // single resolved port has to be routed to whichever one is live.
+    const tlsEnabled = options.tls !== false;
+
+    if (flags.port !== undefined) {
+      options.port = flags.port;
+    } else if (dataPlane?.port !== undefined && !tlsEnabled) {
+      options.port = dataPlane.port;
+    }
+
+    if (flags["tls-port"] !== undefined) {
+      options.tlsPort = flags["tls-port"];
+    } else if (dataPlane?.port !== undefined && tlsEnabled) {
+      options.tlsPort = dataPlane.port;
     }
 
     // Always add a log handler to control SDK output formatting and destination

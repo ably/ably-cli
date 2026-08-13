@@ -57,6 +57,51 @@ describe("ControlApi", function () {
         expect(scope.isDone()).toBe(true);
       });
     });
+
+    it("should serve a controlUrl origin at /v1", function () {
+      const localApi = new ControlApi({
+        accessToken,
+        controlUrl: "http://localhost:8082",
+        logErrors: false,
+      });
+
+      const scope = nock("http://localhost:8082")
+        .get("/v1/me")
+        .reply(200, { account: { id: "test-account-id" } });
+
+      return localApi.getMe().then(() => {
+        expect(scope.isDone()).toBe(true);
+      });
+    });
+
+    it("should treat a controlUrl path as the full prefix", function () {
+      const localApi = new ControlApi({
+        accessToken,
+        controlUrl: "http://localhost:8082/api/v1/",
+        logErrors: false,
+      });
+
+      const scope = nock("http://localhost:8082")
+        .get("/api/v1/me")
+        .reply(200, { account: { id: "test-account-id" } });
+
+      return localApi.getMe().then(() => {
+        expect(scope.isDone()).toBe(true);
+      });
+    });
+
+    it("should reject a malformed controlUrl with a diagnosable error", function () {
+      // Validating at construction beats a raw TypeError from inside every
+      // request, which carries no URL and no context.
+      expect(
+        () =>
+          new ControlApi({
+            accessToken,
+            controlUrl: "localhost:8082",
+            logErrors: false,
+          }),
+      ).toThrow(/Invalid control plane URL "localhost:8082"/);
+    });
   });
 
   describe("#listApps", function () {

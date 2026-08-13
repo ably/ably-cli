@@ -13,15 +13,41 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
   // token even when --control-host points elsewhere).
   static globalFlags = { ...controlApiFlags, ...oauthHostFlag };
 
+  protected override get usesControlApi(): boolean {
+    return true;
+  }
+
   /**
    * Create a Control API instance for making requests
    */
   protected createControlApi(flags: BaseFlags): ControlApi {
     let accessToken = process.env.ABLY_ACCESS_TOKEN;
     let tokenRefreshMiddleware: TokenRefreshMiddleware | undefined;
-    const account = accessToken
+
+    // Routing is resolved from the selected profile even when the token comes
+    // from the environment — the local control plane URL is a property of the
+    // profile, not of the credentials. `account` is the narrower thing: the
+    // profile we also take the token from, which ABLY_ACCESS_TOKEN replaces.
+    const profile = this.configManager.getCurrentAccount();
+    const account = accessToken ? undefined : profile;
+
+    const hasHostOverride = Boolean(
+      flags["control-host"] || process.env.ABLY_CONTROL_HOST,
+    );
+    const controlUrl = hasHostOverride
       ? undefined
-      : this.configManager.getCurrentAccount();
+      : this.configManager.getControlUrl();
+
+    // A local server account only reaches a control plane if one was given at
+    // login. Fail with a pointer rather than silently querying the managed
+    // Control API while a local profile is selected.
+    if (profile?.authMethod === "apiKey" && !controlUrl && !hasHostOverride) {
+      this.fail(
+        `Control API commands aren't available for local server "${this.configManager.getCurrentAccountAlias()}" because it was configured without a control plane URL.\nRe-run "ably accounts login --local" with --control-url if you are running the control plane locally, set ABLY_CONTROL_HOST to send just this command to a hosted control plane, or switch to a managed account with "ably accounts switch".`,
+        flags,
+        "auth",
+      );
+    }
 
     if (!accessToken) {
       if (!account) {
@@ -77,6 +103,7 @@ export abstract class ControlBaseCommand extends AblyBaseCommand {
     return new ControlApi({
       accessToken,
       controlHost,
+      controlUrl,
       tokenRefreshMiddleware,
     });
   }

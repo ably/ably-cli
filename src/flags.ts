@@ -25,9 +25,17 @@ export const coreGlobalFlags = {
 };
 
 /**
- * Hidden flags for product API (Ably SDK) commands — port, tls, tls-port.
+ * Hidden flags for product API (Ably SDK) commands — url, port, tls, tls-port.
+ *
+ * `--url` sets host, port and TLS together, which is what pointing at a local
+ * server needs. The individual flags below override single fields on top of it.
  */
 export const hiddenProductApiFlags = {
+  url: Flags.string({
+    description:
+      "Route product API calls to this URL, e.g. http://localhost:8081",
+    hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
+  }),
   port: Flags.integer({
     description: "Override the port for product API calls",
     hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
@@ -83,6 +91,32 @@ export const oauthHostFlag = {
       "Override the host for the OAuth authorization server, which defaults to ably.com",
     hidden: process.env.ABLY_SHOW_DEV_FLAGS !== "true",
     env: "ABLY_OAUTH_HOST",
+  }),
+};
+
+/**
+ * Local server flags for `accounts login` only.
+ *
+ * `--url` and `--control-url` are full URLs rather than the SDK's separate
+ * host/port/tls options: one value is easier to supply and is decomposed by
+ * `parseServerUrl()` at login time.
+ */
+export const localServerFlags = {
+  // No default: oclif's dependsOn treats a defaulted flag as always present,
+  // which would stop it rejecting --url without --local.
+  local: Flags.boolean({
+    description:
+      "Log in to a locally-running Ably server instead of the managed service",
+  }),
+  url: Flags.string({
+    dependsOn: ["local"],
+    description:
+      "Data plane URL of the local server (e.g. http://localhost:8081)",
+  }),
+  "control-url": Flags.string({
+    dependsOn: ["local"],
+    description:
+      "Control plane URL of the local server, if you are running it locally (e.g. http://localhost:8082)",
   }),
 };
 

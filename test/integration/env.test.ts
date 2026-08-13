@@ -5,6 +5,8 @@ import { promisify } from "node:util";
 
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { ENV_VARS_DATA } from "../../src/data/env-vars.js";
+
 const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,7 +69,10 @@ describe("env command (integration)", () => {
       expect(result.type).toBe("result");
       expect(result.command).toBe("env");
       expect(result.success).toBe(true);
-      expect(result.envVars).toHaveLength(9);
+      // Compare against the registry rather than a literal: the count is
+      // already pinned by the unit tests, and duplicating it here only adds
+      // another place to forget when a variable is added.
+      expect(result.envVars).toHaveLength(ENV_VARS_DATA.variables.length);
     },
     timeout,
   );

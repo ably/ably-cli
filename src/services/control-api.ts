@@ -7,6 +7,10 @@ import type { TokenRefreshMiddleware } from "./token-refresh-middleware.js";
 export interface ControlApiOptions {
   accessToken: string;
   controlHost?: string;
+  // Full base URL for a locally-run control plane, e.g.
+  // "http://localhost:8082". Takes precedence over controlHost, which is only
+  // a hostname and so cannot express a port or a plaintext scheme.
+  controlUrl?: string;
   logErrors?: boolean;
   tokenRefreshMiddleware?: TokenRefreshMiddleware;
 }
@@ -185,15 +189,62 @@ export interface AccountSummary {
   name: string;
 }
 
+/**
+ * Scheme used to reach a control plane host. A locally-run control plane is
+ * served over plaintext; everything else is HTTPS. Exported so the "Using:"
+ * banner renders the same URL the requests will actually go to.
+ */
+export function controlHostScheme(host: string): "http" | "https" {
+  return host.includes("local") ? "http" : "https";
+}
+
+/**
+ * Normalise a control plane base URL, once, so a malformed stored value fails
+ * with a diagnosable message at construction rather than as a raw TypeError
+ * from inside every request.
+ *
+ * The dedicated Control API service (control.ably.net, and a locally-run
+ * control plane) serves at `/v1/`, so a bare origin gets that suffix; a
+ * caller-supplied path is taken as the full prefix and left alone.
+ */
+function normalizeControlBaseUrl(raw: string): string {
+  const base = raw.replace(/\/+$/, "");
+
+  let parsed: URL | undefined;
+  try {
+    parsed = new URL(base);
+  } catch {
+    // Fall through to the shared error below.
+  }
+
+  // "localhost:8082" parses, as a URL whose scheme is "localhost" — so the
+  // scheme has to be checked, not just the parse.
+  if (
+    !parsed ||
+    (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+  ) {
+    throw new Error(
+      `Invalid control plane URL "${raw}". Expected a value like http://localhost:8082.`,
+    );
+  }
+
+  return parsed.pathname === "/" ? `${base}/v1` : base;
+}
+
 export class ControlApi {
   private accessToken: string;
   private controlHost: string;
+  private controlUrl?: string;
   private logErrors: boolean;
   private tokenRefreshMiddleware?: TokenRefreshMiddleware;
 
   constructor(options: ControlApiOptions) {
     this.accessToken = options.accessToken;
     this.controlHost = options.controlHost || "control.ably.net";
+    this.controlUrl =
+      options.controlUrl === undefined
+        ? undefined
+        : normalizeControlBaseUrl(options.controlUrl);
     this.tokenRefreshMiddleware = options.tokenRefreshMiddleware;
     // Explicit options.logErrors overrides env var; otherwise suppress in CI/test
     if (options.logErrors === undefined) {
@@ -205,6 +256,26 @@ export class ControlApi {
     } else {
       this.logErrors = options.logErrors;
     }
+  }
+
+  /**
+   * Resolve the base URL that request paths are appended to.
+   *
+   * An explicit controlUrl states the base directly (normalised at
+   * construction). For host-only configuration the prefix is inferred: the
+   * dedicated Control API service (control.ably.net) serves at `/v1/`, while
+   * the website itself (ably.com and Heroku review apps) proxies the Control
+   * API at `/api/v1/`.
+   */
+  private baseUrl(): string {
+    if (this.controlUrl) return this.controlUrl;
+
+    // Match hosts whose first label starts with "control" so both `control.`
+    // and `control-*.` variants route correctly, case insensitively so
+    // ABLY_CONTROL_HOST values aren't locale-sensitive.
+    const isControlService = /^control[-.]/i.test(this.controlHost);
+    const prefix = isControlService ? "/v1" : "/api/v1";
+    return `${controlHostScheme(this.controlHost)}://${this.controlHost}${prefix}`;
   }
 
   // Ask a question to the Ably AI agent
@@ -566,15 +637,7 @@ export class ControlApi {
         await this.tokenRefreshMiddleware.getValidAccessToken();
     }
 
-    // The dedicated Control API service (control.ably.net) serves at `/v1/`.
-    // The website itself (ably.com and Heroku review apps) proxies the
-    // Control API at `/api/v1/`. Match hosts whose first label starts with
-    // "control" so both `control.` and `control-*.` variants route correctly,
-    // case insensitively so ABLY_CONTROL_HOST values aren't locale-sensitive.
-    const isControlService = /^control[-.]/i.test(this.controlHost);
-    const scheme = this.controlHost.includes("local") ? "http" : "https";
-    const prefix = isControlService ? "/v1" : "/api/v1";
-    const url = `${scheme}://${this.controlHost}${prefix}${path}`;
+    const url = `${this.baseUrl()}${path}`;
 
     const isFormData = body instanceof FormData;
     const options: RequestInit = {
