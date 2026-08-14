@@ -28,7 +28,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -66,7 +66,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -112,7 +112,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -150,7 +150,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -173,7 +173,76 @@ describe("integrations:get command", () => {
         import.meta.url,
       );
 
-      expect(stdout).toContain("chat:*");
+      expect(stdout).toContain("chat:.*");
+    });
+
+    it("should display chat room filter", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        chatRoomFilter: "room:.*",
+        source: {
+          type: "room.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      const { stdout } = await runCommand(
+        ["integrations:get", mockRuleId],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Chat Room Filter");
+      expect(stdout).toContain("room:.*");
+    });
+
+    it("should not display chat room filter when absent", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        source: {
+          channelFilter: "chat:.*",
+          type: "channel.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      const { stdout } = await runCommand(
+        ["integrations:get", mockRuleId],
+        import.meta.url,
+      );
+
+      expect(stdout).not.toContain("Chat Room Filter");
     });
 
     it("should display target information", async () => {
@@ -184,7 +253,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -270,7 +339,7 @@ describe("integrations:get command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {

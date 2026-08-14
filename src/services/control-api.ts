@@ -85,30 +85,45 @@ export interface Namespace {
   tlsOnly?: boolean;
 }
 
+// Retry/failure policy for rule types invoked with invocationMode
+// "BEFORE_PUBLISH" (chat moderation and before-publish webhook rule types).
+export interface BeforePublishConfig {
+  failedAction: string;
+  maxRetries: number;
+  retryTimeout: number;
+  tooManyRequestsAction: string;
+}
+
 export interface Rule {
   _links?: {
     self: string;
   };
   appId: string;
+  beforePublishConfig?: BeforePublishConfig;
   created: number;
   id: string;
+  invocationMode?: string;
   modified: number;
-  requestMode: string;
+  requestMode?: string;
   ruleType: string;
   source: {
-    channelFilter: string;
+    channelFilter?: string;
     type: string;
   };
+  chatRoomFilter?: string;
   target: unknown;
   version: string;
 }
 
 // Define RuleData interface for rule creation and updates
 export interface RuleData {
-  requestMode: string;
+  beforePublishConfig?: BeforePublishConfig;
+  chatRoomFilter?: string;
+  invocationMode?: string;
+  requestMode?: string;
   ruleType: string;
   source: {
-    channelFilter: string;
+    channelFilter?: string;
     type: string;
   };
   status?: "disabled" | "enabled";

@@ -27,7 +27,7 @@ describe("integrations:delete command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -66,7 +66,7 @@ describe("integrations:delete command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -145,7 +145,7 @@ describe("integrations:delete command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -196,7 +196,7 @@ describe("integrations:delete command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -234,7 +234,7 @@ describe("integrations:delete command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {

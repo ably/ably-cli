@@ -1,7 +1,12 @@
 import { Args, Flags } from "@oclif/core";
 import { ControlBaseCommand } from "../../control-base-command.js";
+
+// Rule types whose target has a `url` field updatable via --target-url.
+const HTTP_TARGET_URL_RULE_TYPES = new Set(["http", "http/before-publish"]);
+
 // Interface for rule update data structure (most fields optional)
 interface PartialRuleData {
+  chatRoomFilter?: string;
   requestMode?: string;
   ruleType?: string; // Usually shouldn't be updated, but kept for structure
   source?: {
@@ -24,7 +29,8 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
 
   static examples = [
     "$ ably integrations update rule123 --status disabled",
-    '$ ably integrations update rule123 --channel-filter "chat:*"',
+    '$ ably integrations update rule123 --channel-filter "chat:.*"',
+    '$ ably integrations update rule123 --chat-room-filter "room:.*"',
     '$ ably integrations update rule123 --target-url "https://new-example.com/webhook"',
     "$ ably integrations update rule123 --status disabled --json",
   ];
@@ -37,6 +43,10 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
     }),
     "channel-filter": Flags.string({
       description: "Channel filter pattern",
+      required: false,
+    }),
+    "chat-room-filter": Flags.string({
+      description: "Chat room filter pattern",
       required: false,
     }),
     status: Flags.string({
@@ -96,8 +106,15 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         updatePayload.source.channelFilter = flags["channel-filter"];
       }
 
-      // Update target if it's an HTTP rule and target-url is provided
-      if (existingRule.ruleType === "http" && flags["target-url"]) {
+      if (flags["chat-room-filter"]) {
+        updatePayload.chatRoomFilter = flags["chat-room-filter"];
+      }
+
+      // Update target if it's an HTTP-based rule and target-url is provided
+      if (
+        HTTP_TARGET_URL_RULE_TYPES.has(existingRule.ruleType) &&
+        flags["target-url"]
+      ) {
         // Ensure target exists before assigning to url
         if (!updatePayload.target) updatePayload.target = {};
         updatePayload.target.url = flags["target-url"];
@@ -124,11 +141,21 @@ export default class IntegrationsUpdateCommand extends ControlBaseCommand {
         this.log(`ID: ${updatedRule.id}`);
         this.log(`App ID: ${updatedRule.appId}`);
         this.log(`Rule Type: ${updatedRule.ruleType}`);
-        this.log(`Request Mode: ${updatedRule.requestMode}`);
+        if (updatedRule.requestMode) {
+          this.log(`Request Mode: ${updatedRule.requestMode}`);
+        }
+
+        if (updatedRule.invocationMode) {
+          this.log(`Invocation Mode: ${updatedRule.invocationMode}`);
+        }
+
         if (updatedRule.source.channelFilter) {
           this.log(
             `Source Channel Filter: ${updatedRule.source.channelFilter}`,
           );
+        }
+        if (updatedRule.chatRoomFilter) {
+          this.log(`Chat Room Filter: ${updatedRule.chatRoomFilter}`);
         }
         this.log(`Source Type: ${updatedRule.source.type}`);
         if (

@@ -27,7 +27,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -44,7 +44,7 @@ describe("integrations:update command", () => {
         ...mockIntegration,
         source: {
           ...mockIntegration.source,
-          channelFilter: "messages:*",
+          channelFilter: "messages:.*",
         },
       };
 
@@ -59,12 +59,100 @@ describe("integrations:update command", () => {
         .reply(200, updatedIntegration);
 
       const { stdout, stderr } = await runCommand(
-        ["integrations:update", mockRuleId, "--channel-filter", "messages:*"],
+        ["integrations:update", mockRuleId, "--channel-filter", "messages:.*"],
         import.meta.url,
       );
 
       expect(stderr).toContain("Integration rule updated.");
       expect(stdout).toContain(mockRuleId);
+    });
+
+    it("should update chat room filter", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http",
+        requestMode: "single",
+        chatRoomFilter: "room:.*",
+        source: {
+          channelFilter: "",
+          type: "chat.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+          format: "json",
+          enveloped: true,
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+      const updatedIntegration = {
+        ...mockIntegration,
+        chatRoomFilter: "rooms:.*",
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      nockControl()
+        .patch(
+          `/v1/apps/${appId}/rules/${mockRuleId}`,
+          (body: Record<string, unknown>) => body.chatRoomFilter === "rooms:.*",
+        )
+        .reply(200, updatedIntegration);
+
+      const { stdout, stderr } = await runCommand(
+        ["integrations:update", mockRuleId, "--chat-room-filter", "rooms:.*"],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Integration rule updated.");
+      expect(stdout).toContain("Chat Room Filter: rooms:.*");
+    });
+
+    it("should not print an undefined request mode and should print invocation mode for chat rule types", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http/before-publish",
+        invocationMode: "BEFORE_PUBLISH",
+        chatRoomFilter: "room:.*",
+        source: {
+          type: "chat.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+      const updatedIntegration = {
+        ...mockIntegration,
+        chatRoomFilter: "rooms:.*",
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, updatedIntegration);
+
+      const { stdout } = await runCommand(
+        ["integrations:update", mockRuleId, "--chat-room-filter", "rooms:.*"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Invocation Mode: BEFORE_PUBLISH");
+      expect(stdout).not.toContain("Request Mode:");
     });
 
     it("should update target URL for HTTP integrations", async () => {
@@ -75,7 +163,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -113,6 +201,55 @@ describe("integrations:update command", () => {
       expect(stderr).toContain("Integration rule updated.");
     });
 
+    it("should update target URL for http/before-publish integrations", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      const mockIntegration = {
+        id: mockRuleId,
+        appId,
+        ruleType: "http/before-publish",
+        invocationMode: "BEFORE_PUBLISH",
+        chatRoomFilter: "room:.*",
+        source: {
+          type: "chat.message",
+        },
+        target: {
+          url: "https://example.com/webhook",
+        },
+        status: "enabled",
+        version: "1.0",
+        created: Date.now(),
+        modified: Date.now(),
+      };
+      const newUrl = "https://new-example.com/webhook";
+      const updatedIntegration = {
+        ...mockIntegration,
+        target: {
+          ...mockIntegration.target,
+          url: newUrl,
+        },
+      };
+
+      nockControl()
+        .get(`/v1/apps/${appId}/rules/${mockRuleId}`)
+        .reply(200, mockIntegration);
+
+      nockControl()
+        .patch(
+          `/v1/apps/${appId}/rules/${mockRuleId}`,
+          (body: Record<string, unknown>) =>
+            (body.target as Record<string, unknown>).url === newUrl,
+        )
+        .reply(200, updatedIntegration);
+
+      const { stdout, stderr } = await runCommand(
+        ["integrations:update", mockRuleId, "--target-url", newUrl],
+        import.meta.url,
+      );
+
+      expect(stderr).toContain("Integration rule updated.");
+      expect(stdout).toContain(`Target URL: ${newUrl}`);
+    });
+
     it("should output JSON format when --json flag is used", async () => {
       const appId = getMockConfigManager().getCurrentAppId()!;
       const mockIntegration = {
@@ -121,7 +258,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -189,7 +326,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -297,7 +434,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -350,7 +487,7 @@ describe("integrations:update command", () => {
         ruleType: "http",
         requestMode: "single",
         source: {
-          channelFilter: "chat:*",
+          channelFilter: "chat:.*",
           type: "channel.message",
         },
         target: {
@@ -367,7 +504,7 @@ describe("integrations:update command", () => {
         ...mockIntegration,
         source: {
           ...mockIntegration.source,
-          channelFilter: "new:*",
+          channelFilter: "new:.*",
         },
       };
 
@@ -399,7 +536,7 @@ describe("integrations:update command", () => {
           "--app",
           appId,
           "--channel-filter",
-          "new:*",
+          "new:.*",
         ],
         import.meta.url,
       );
