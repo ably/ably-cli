@@ -382,8 +382,8 @@ describe("Command Not Found Hook", () => {
     for (let i = 0; i < ctx.stubs.log.mock.calls.length; i++) {
       const callArg = ctx.stubs.log.mock.calls[i][0];
       if (typeof callArg === "string") {
-        usageCall = usageCall || callArg === "\nUSAGE";
-        helpCall = helpCall || callArg.includes("See more help with:");
+        usageCall ||= callArg === "\nUSAGE";
+        helpCall ||= callArg.includes("See more help with:");
       }
     }
 
