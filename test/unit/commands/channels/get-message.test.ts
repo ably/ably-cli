@@ -75,8 +75,7 @@ describe("channels:get-message command", () => {
 
       const records = parseNdjsonLines(stdout);
       const result = records.find((r) => r.type === "result") as
-        | { message: Record<string, unknown> }
-        | undefined;
+        { message: Record<string, unknown> } | undefined;
 
       expect(result).toBeDefined();
       expect(result!.message).toMatchObject({
@@ -100,8 +99,7 @@ describe("channels:get-message command", () => {
 
       const records = parseNdjsonLines(stdout);
       const result = records.find((r) => r.type === "result") as
-        | { message: { timestamp: string } }
-        | undefined;
+        { message: { timestamp: string } } | undefined;
 
       expect(result!.message.timestamp).toBe("2023-11-14T22:13:20.000Z");
     });
@@ -124,8 +122,7 @@ describe("channels:get-message command", () => {
 
       const records = parseNdjsonLines(stdout);
       const result = records.find((r) => r.type === "result") as
-        | { message: { timestamp: string } }
-        | undefined;
+        { message: { timestamp: string } } | undefined;
 
       expect(result!.message.timestamp).toBe("1970-01-01T00:00:00.000Z");
     });
@@ -138,8 +135,7 @@ describe("channels:get-message command", () => {
 
       const records = parseNdjsonLines(stdout);
       const result = records.find((r) => r.type === "result") as
-        | { message: { action: string } }
-        | undefined;
+        { message: { action: string } } | undefined;
 
       expect(typeof result!.message.action).toBe("string");
       expect(result!.message.action).toBe("message.update");
@@ -153,8 +149,7 @@ describe("channels:get-message command", () => {
 
       const records = parseNdjsonLines(stdout);
       const result = records.find((r) => r.type === "result") as
-        | { message: { version: Record<string, unknown> } }
-        | undefined;
+        { message: { version: Record<string, unknown> } } | undefined;
 
       expect(result!.message.version).toEqual({
         serial: "mock-serial-001@v2",
@@ -340,8 +335,7 @@ describe("channels:get-message command", () => {
 
       const records = parseNdjsonLines(stdout);
       const errorRecord = records.find((r) => r.type === "error") as
-        | { error: { message: string; code: number; hint?: string } }
-        | undefined;
+        { error: { message: string; code: number; hint?: string } } | undefined;
       expect(errorRecord).toBeDefined();
       expect(errorRecord!.error.code).toBe(40400);
       // hint as its own structured field, not baked into message
