@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-08
+
+### Added
+
+- **Local server support.** `ably accounts login --local` points the CLI at a locally-running Ably server. The local server is stored as an ordinary account profile, so `ably accounts list`, `current` and `switch` work as usual and every data plane command runs unchanged. The guided flow prompts for the data plane URL, an API key and (optionally) a local control plane URL and Control API token; `--url` and `--control-url` supply them explicitly for scripts. The app ID is read out of the API key, so no OAuth flow or account lookup is involved. See [docs/Local-Server.md](docs/Local-Server.md).
+- **`ABLY_URL` and `--url` for one-off targeting.** Both take host, port and TLS from a single value, e.g. `ABLY_URL=http://localhost:8081 ably channels publish my-channel "hello"`. Previously this meant combining three hidden dev flags (`ABLY_ENDPOINT=localhost ... --tls=false --port 8081`). The scheme is optional for loopback hosts, and a path is rejected rather than silently discarded. Data plane routing resolves `--url` > `ABLY_URL` > `ABLY_ENDPOINT` > account profile, with `--port`/`--tls-port`/`--tls` still overriding individual fields. `ABLY_ENDPOINT` keeps its host-only semantics, so existing usage is unaffected.
+- **Ably Chat integration rules.** `ably integrations create` now supports the chat rule types — `http/before-publish`, `hive/text-model-only`, `hive/dashboard`, `bodyguard/text-moderation`, `tisane/text-moderation`, `azure/text-moderation` and `aws/lambda/before-publish` — which use a different schema from the classic Reactor rule types (`invocationMode` and `beforePublishConfig` rather than `requestMode`). Mismatched combinations (e.g. a chat rule type without `--source-type chat.message`) now fail with a clear CLI error instead of an opaque Control API 4xx.
+- **`--chat-room-filter`** on `ably integrations create` and `update`, for rules sourced from Ably Chat rooms (`--source-type chat.message`), which filter on `chatRoomFilter` rather than the channel-based `source.channelFilter`. `integrations get` and `list` now display it too.
+
+### Changed
+
+- The "Using:" banner names the endpoint whenever it is not Ably's default, not just on an environment variable override — running against localhost no longer looks identical to running against production. It also names the plane the command actually reaches, so e.g. `ably apps list` shows the control plane URL.
+- `ably accounts list` reports each account's endpoint and control plane (`dataPlane` and `controlUrl` in JSON), and no longer emits the empty `id` and `user` fields that local accounts produced. `ably accounts switch` reports the full URL rather than a bare hostname that hid the port.
+
+### Fixed
+
+- `ably integrations update` can now update `--target-url` on `http/before-publish` rules; the rule-type guard previously matched only the classic `http` type.
+- `ably integrations update` and `delete` no longer print `Request Mode: undefined` for chat rule types, and now show `invocationMode` instead.
+- `ably integrations delete` shows the chat room filter in its confirmation prompt, so a chat-sourced rule's filter is visible before confirming a destructive action.
+- `--chat-room-filter` is rejected on channel-sourced rule types instead of sending a payload the Control API refuses with a confusing 422.
+- `channelFilter` examples use valid regex syntax (`chat:.*`, not the invalid glob-style `chat:*`).
+- Integration rule thresholds no longer accept `key=` as a threshold of `0`, and no longer discard everything after a second `=`.
+- The "Using:" banner shows the bare app ID when the app name cannot be resolved, instead of the misleading `Unknown App (abc123)`.
+- `ably accounts current` on a local profile with no control plane reports what is stored rather than warning about an expired access token and pointing at an OAuth login. With `--json` it no longer emits a failure record followed by a success record.
+- `ably login --json` labels every record with `login` rather than `unknown`, so the result and the completed signal agree on which command produced them.
+- Control API failures are no longer reported twice.
+- An invalid control plane URL is rejected once at construction with a message naming the value, instead of throwing a raw `TypeError` per request.
+- Bumped `tar` to 7.5.21 to cover a vulnerability in the 7.5.11–7.5.21 range.
+
 ## [1.2.1] - 2026-06-30
 
 ### Fixed
