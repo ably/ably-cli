@@ -80,8 +80,7 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
         const rawData =
           (message.data as Record<string, unknown> | undefined) ?? {};
         const rawMetrics = rawData.metrics as
-          | Record<string, number>
-          | undefined;
+          Record<string, number> | undefined;
         const filteredData: Record<string, unknown> = { ...rawData };
         if (rawMetrics) {
           filteredData.metrics = {
@@ -115,8 +114,7 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
           );
 
           const metrics = filteredData.metrics as
-            | Record<string, number>
-            | undefined;
+            Record<string, number> | undefined;
           if (metrics) {
             this.log(`${formatLabel("Connections")} ${metrics.connections}`);
             this.log(
