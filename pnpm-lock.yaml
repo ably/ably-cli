@@ -26,7 +26,7 @@ overrides:
   ajv@<6.14.0: 6.14.0
   ajv@>=7.0.0-alpha.0 <8.18.0: 8.18.0
   esbuild@<=0.24.2: 0.25.0
-  smol-toml@<1.6.1: 1.6.1
+  smol-toml@<1.7.1: 1.7.1
   follow-redirects@<=1.15.11: 1.16.0
 
 importers:
@@ -103,8 +103,8 @@ importers:
         specifier: ^1.6.9
         version: 1.6.9
       smol-toml:
-        specifier: ^1.6.1
-        version: 1.6.1
+        specifier: ^1.7.1
+        version: 1.7.1
       tar:
         specifier: ^7.5.21
         version: 7.5.21
@@ -5244,8 +5244,8 @@ packages:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
 
-  smol-toml@1.6.1:
-    resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
+  smol-toml@1.7.1:
+    resolution: {integrity: sha512-PPlsspAZ4jbMBu5DMFhfUGDQLu/vrL4SyBROVS37x8ynnVmFIs1VPBz1Co8Xks3TvpIaZXmU85y4DrQ+UyVFoQ==}
     engines: {node: '>= 18'}
 
   snake-case@3.0.4:
@@ -8432,7 +8432,7 @@ snapshots:
       fs-extra: 11.1.1
       js-yaml: 4.1.1
       minimatch: 10.2.3
-      smol-toml: 1.6.1
+      smol-toml: 1.7.1
       zod: 3.22.4
 
   '@vercel/static-config@3.3.0':
@@ -11511,7 +11511,7 @@ snapshots:
 
   smart-buffer@4.2.0: {}
 
-  smol-toml@1.6.1: {}
+  smol-toml@1.7.1: {}
 
   snake-case@3.0.4:
     dependencies:
