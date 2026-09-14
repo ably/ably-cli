@@ -82,9 +82,19 @@ function parseSkillFrontmatter(content: string): SkillFrontmatter {
   return result;
 }
 
+function githubHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+  };
+  if (process.env.GITHUB_TOKEN) {
+    headers["Authorization"] = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+  return headers;
+}
+
 async function fetchJson<T>(url: string, errorPrefix: string): Promise<T> {
   const response = await fetch(url, {
-    headers: { Accept: "application/vnd.github+json" },
+    headers: githubHeaders(),
     signal: AbortSignal.timeout(30_000),
   });
   if (!response.ok) {
