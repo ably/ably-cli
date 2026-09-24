@@ -209,6 +209,29 @@ describe("apps:rules:update command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result!.rule).toHaveProperty("persisted", true);
     });
+
+    it("should not send a mode, so an older namespace-mode rule stays one", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/namespaces`)
+        .reply(200, [mockNamespace({ id: mockRuleId, mode: "namespace" })]);
+
+      nockControl()
+        .patch(`/v1/apps/${appId}/namespaces/${mockRuleId}`, (body) => {
+          return body.persisted === true && !("mode" in body);
+        })
+        .reply(
+          200,
+          mockNamespace({ id: mockRuleId, mode: "namespace", persisted: true }),
+        );
+
+      const { stdout } = await runCommand(
+        ["apps:rules:update", mockRuleId, "--persisted"],
+        import.meta.url,
+      );
+
+      expect(stdout).toContain("Mode: namespace");
+    });
   });
 
   describe("error handling", () => {
