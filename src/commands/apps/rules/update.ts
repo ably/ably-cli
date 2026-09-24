@@ -238,6 +238,7 @@ export default class RulesUpdateCommand extends ControlBaseCommand {
               conflationKey: updatedNamespace.conflationKey ?? null,
               created: new Date(updatedNamespace.created).toISOString(),
               id: updatedNamespace.id,
+              mode: updatedNamespace.mode ?? null,
               modified: new Date(updatedNamespace.modified).toISOString(),
               mutableMessages: updatedNamespace.mutableMessages || false,
               persistLast: updatedNamespace.persistLast || false,
