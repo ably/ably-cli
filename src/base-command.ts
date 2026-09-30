@@ -2,8 +2,8 @@ import { InteractiveBaseCommand } from "./interactive-base-command.js";
 import type * as Ably from "@ably/pubsub-server";
 import { createHttpClient, createRealtimeClient } from "@ably/pubsub-server";
 import chalk from "chalk";
-import colorJson from "color-json";
 import { randomUUID } from "node:crypto";
+import colorJson from "color-json";
 
 import {
   ConfigManager,
@@ -11,6 +11,13 @@ import {
   type DataPlaneConfig,
 } from "./services/config-manager.js";
 import { ControlApi, controlHostScheme } from "./services/control-api.js";
+import {
+  CLIENT_ID_CLAIM,
+  CLIENT_ID_ENV_VAR,
+  InvalidClientIdError,
+  readTokenIdentity,
+  resolveClientIdentity,
+} from "./services/client-identity.js";
 import {
   extractAppIdFromApiKey,
   extractKeyNameFromApiKey,
@@ -145,6 +152,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected _suppressSdkErrorLogs = false;
   private _cachedRestClient: Ably.PubSubHttpClient | null = null;
   private _cachedRealtimeClient: Ably.PubSubRealtimeClient | null = null;
+
+  /**
+   * Suffix the default client ID per process, for commands that run as many
+   * concurrent processes (bench), so they stay under the per-client-ID
+   * connection cap. An explicit --client-id is always used as given.
+   */
+  protected suffixClientIdPerProcess = false;
 
   // Core global flags available to all commands (verbose, json, pretty-json, web-cli-help)
   static globalFlags = { ...coreGlobalFlags };
@@ -727,6 +741,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
             );
           }
         }
+
+        const clientId = this.bannerClientId(flags);
+        if (clientId) {
+          displayParts.push(
+            `${chalk.blue("Client=")}${chalk.blue.bold(clientId)}`,
+          );
+        }
       }
     }
 
@@ -737,6 +758,24 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
         `${chalk.dim("Using:")} ${displayParts.join(` ${chalk.dim("•")} `)}`,
       );
       this.log(""); // Add blank line for readability
+    }
+  }
+
+  /**
+   * The client ID shown in the banner. Invalid values are reported when the
+   * client is built, so the banner just omits them.
+   */
+  private bannerClientId(flags: BaseFlags): string | undefined {
+    if (process.env.ABLY_TOKEN) {
+      const identity = readTokenIdentity(process.env.ABLY_TOKEN);
+      return identity.kind === "jwt" ? identity.clientId : undefined;
+    }
+
+    try {
+      return resolveClientIdentity(flags["client-id"], this.configManager)
+        .clientId;
+    } catch {
+      return undefined;
     }
   }
 
@@ -1157,15 +1196,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Handle authentication: ABLY_TOKEN env → flags["api-key"] (set by ensureAppAndKey) → ABLY_API_KEY env → config
     if (process.env.ABLY_TOKEN) {
       options.token = process.env.ABLY_TOKEN;
-
-      // When using token auth, we don't set the clientId as it may conflict
-      // with any clientId embedded in the token
-      if (flags["client-id"] && !this.shouldSuppressOutput(flags)) {
-        this.logWarning(
-          "clientId is ignored when using token authentication as the clientId is embedded in the token.",
-          flags,
-        );
-      }
+      this.applyTokenIdentity(process.env.ABLY_TOKEN, flags);
     } else if (flags["api-key"]) {
       this.applyApiKeyAuth(options, flags["api-key"], flags);
     } else if (process.env.ABLY_API_KEY) {
@@ -1174,8 +1205,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       const apiKey = this.configManager.getApiKey();
       if (apiKey) {
         options.key = apiKey;
-
-        // Handle client ID for API key auth
         this.setClientId(options, flags);
       }
     }
@@ -1549,18 +1578,90 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     this.setClientId(options, flags);
   }
 
-  private setClientId(options: Ably.ClientOptions, flags: BaseFlags): void {
-    if (flags["client-id"]) {
-      // Special case: "none" means explicitly no client ID
-      if (flags["client-id"].toLowerCase() === "none") {
-        // Don't set clientId at all
-      } else {
-        options.clientId = flags["client-id"];
+  /**
+   * The client ID this command acts as under API-key auth. Fails the command
+   * on a value the CLI cannot act as, such as "" or "*".
+   */
+  protected resolveClientId(flags: BaseFlags): string | undefined {
+    let identity;
+    try {
+      identity = resolveClientIdentity(flags["client-id"], this.configManager);
+    } catch (error) {
+      if (error instanceof InvalidClientIdError) {
+        this.fail(error.message, flags, "clientId");
       }
-    } else {
-      // Generate a default client ID for the CLI
-      options.clientId = `ably-cli-${randomUUID().slice(0, 8)}`;
+
+      throw error;
     }
+
+    if (identity.optedOut) {
+      this.logWarning(
+        `Acting with no client ID ("none") is deprecated: apps that require identified clients reject it. Omit the value to use your default client ID, or set ${CLIENT_ID_ENV_VAR}.`,
+        flags,
+      );
+    }
+
+    const clientId =
+      identity.clientId &&
+      this.suffixClientIdPerProcess &&
+      identity.source !== "flag"
+        ? `${identity.clientId}-${randomUUID().slice(0, 8)}`
+        : identity.clientId;
+
+    this.logCliEvent(
+      flags,
+      "clientId",
+      "resolved",
+      clientId
+        ? `Acting as client ID ${clientId} (from ${identity.source}).`
+        : "Acting with no client ID.",
+      { clientId, source: identity.source },
+    );
+
+    return clientId;
+  }
+
+  private setClientId(options: Ably.ClientOptions, flags: BaseFlags): void {
+    const clientId = this.resolveClientId(flags);
+    if (clientId !== undefined) {
+      options.clientId = clientId;
+    }
+  }
+
+  /**
+   * Under token auth the identity is the token's, never overridden. A JWT
+   * must carry a clientId; a native Ably token is opaque, so its identity is
+   * only known once Ably accepts it.
+   */
+  private applyTokenIdentity(token: string, flags: BaseFlags): void {
+    if (flags["client-id"] && !this.shouldSuppressOutput(flags)) {
+      this.logWarning(
+        "--client-id is ignored when using token authentication; the client ID comes from the token.",
+        flags,
+      );
+    }
+
+    const identity = readTokenIdentity(token);
+    if (identity.kind === "jwt" && identity.clientId === undefined) {
+      this.fail(
+        `The JWT in ABLY_TOKEN has no ${CLIENT_ID_CLAIM} claim. Tokens used with the CLI must carry a client ID; re-issue it with "ably auth issue-jwt-token --client-id <id>".`,
+        flags,
+        "auth",
+      );
+    }
+
+    this.logCliEvent(
+      flags,
+      "clientId",
+      "resolved",
+      identity.kind === "jwt"
+        ? `Acting as client ID ${identity.clientId} (from token).`
+        : "Acting as the client ID bound to the token.",
+      {
+        clientId: identity.kind === "jwt" ? identity.clientId : undefined,
+        source: "token",
+      },
+    );
   }
 
   /**

@@ -142,6 +142,8 @@ describe("AblyBaseCommand", function () {
       setCurrentApp: vi.fn(),
       storeAppInfo: vi.fn(),
       storeAppKey: vi.fn(),
+      getClientId: vi.fn(),
+      getDefaultClientId: vi.fn().mockReturnValue("ably-cli-default"),
     } as MockConfigManager;
 
     // Instead of stubbing loadConfig which is private, we'll stub methods that might access the file system
