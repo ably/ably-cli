@@ -1,5 +1,4 @@
 import { Flags } from "@oclif/core";
-import * as https from "node:https";
 import stripAnsi from "strip-ansi";
 
 import { AblyBaseCommand } from "../../base-command.js";
@@ -97,128 +96,58 @@ export default class RevokeTokenCommand extends AblyBaseCommand {
       }
     }
 
+    let reauthNote = "";
+    if (flags["allow-reauth-margin"]) {
+      reauthNote =
+        " Connected clients have a 30s grace period to obtain new tokens before disconnection.";
+    }
+
     try {
-      // Extract the keyName (appId.keyId) from the API key
-      const keyParts = apiKey.split(":");
-      if (keyParts.length !== 2) {
+      const rest = await this.createAblyRestClient({
+        ...flags,
+        "api-key": apiKey,
+      });
+      if (!rest) return;
+
+      const response = await rest.auth.revokeTokens(
+        [{ type: clientId ? "clientId" : "revocationKey", value: targetValue }],
+        flags["allow-reauth-margin"] ? { allowReauthMargin: true } : undefined,
+      );
+
+      const failure = response.results.find((result) => "error" in result);
+      if (failure && "error" in failure) {
+        this.fail(failure.error, flags, "revokeToken", {
+          target: targetSpecifier,
+        });
+      }
+
+      const successMessage = `Tokens matching ${targetLabel.toLowerCase()} ${formatResource(targetValue)} have been revoked.${reauthNote}`;
+
+      if (this.shouldOutputJson(flags)) {
+        this.logJsonResult(
+          {
+            revocation: {
+              allowReauthMargin: flags["allow-reauth-margin"],
+              message: stripAnsi(successMessage),
+              target: targetSpecifier,
+              response,
+            },
+          },
+          flags,
+        );
+      } else {
+        this.logSuccessMessage(successMessage, flags);
+      }
+    } catch (error) {
+      if ((error as { statusCode?: number }).statusCode === 404) {
         this.fail(
-          "Invalid API key format. Expected format: appId.keyId:secret",
+          "No matching tokens found or already revoked",
           flags,
           "revokeToken",
         );
       }
 
-      const keyName = keyParts[0]!;
-      const secret = keyParts[1]!;
-
-      const requestBody: Record<string, unknown> = {
-        targets: [targetSpecifier],
-      };
-
-      let reauthNote = "";
-      if (flags["allow-reauth-margin"]) {
-        requestBody.allowReauthMargin = true;
-        reauthNote =
-          " Connected clients have a 30s grace period to obtain new tokens before disconnection.";
-      }
-
-      try {
-        // Make direct HTTPS request to Ably REST API
-        const response = await this.makeHttpRequest(
-          keyName,
-          secret,
-          requestBody,
-        );
-        const successMessage = `Tokens matching ${targetLabel.toLowerCase()} ${formatResource(targetValue)} have been revoked.${reauthNote}`;
-
-        if (this.shouldOutputJson(flags)) {
-          this.logJsonResult(
-            {
-              revocation: {
-                allowReauthMargin: flags["allow-reauth-margin"],
-                message: stripAnsi(successMessage),
-                target: targetSpecifier,
-                response,
-              },
-            },
-            flags,
-          );
-        } else {
-          this.logSuccessMessage(successMessage, flags);
-        }
-      } catch (requestError: unknown) {
-        const error = requestError as Error & { statusCode?: number };
-        if (error.statusCode === 404) {
-          this.fail(
-            "No matching tokens found or already revoked",
-            flags,
-            "revokeToken",
-          );
-        }
-        throw requestError;
-      }
-    } catch (error) {
       this.fail(error, flags, "revokeToken");
     }
-  }
-
-  // Helper method to make a direct HTTP request to the Ably REST API
-  private makeHttpRequest(
-    keyName: string,
-    secret: string,
-    requestBody: Record<string, unknown>,
-  ): Promise<Record<string, unknown> | string | null> {
-    return new Promise((resolve, reject) => {
-      const encodedAuth = Buffer.from(`${keyName}:${secret}`).toString(
-        "base64",
-      );
-
-      const options = {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Basic ${encodedAuth}`,
-          "Content-Type": "application/json",
-        },
-        hostname: "rest.ably.io",
-        method: "POST",
-        path: `/keys/${keyName}/revokeTokens`,
-        port: 443,
-      };
-
-      const req = https.request(options, (res) => {
-        let data = "";
-
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-
-        res.on("end", () => {
-          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-            try {
-              const jsonResponse: Record<string, unknown> | null =
-                data.length > 0
-                  ? (JSON.parse(data) as Record<string, unknown>)
-                  : null;
-              resolve(jsonResponse);
-            } catch {
-              resolve(data);
-            }
-          } else {
-            const err = new Error(
-              `Request failed with status code ${res.statusCode}: ${data}`,
-            ) as Error & { statusCode?: number };
-            err.statusCode = res.statusCode;
-            reject(err);
-          }
-        });
-      });
-
-      req.on("error", (error) => {
-        reject(error);
-      });
-
-      req.write(JSON.stringify(requestBody));
-      req.end();
-    });
   }
 }
