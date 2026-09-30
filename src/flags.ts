@@ -71,6 +71,11 @@ export const hiddenControlApiFlags = {
 /**
  * client-id flag for commands where client identity matters (e.g., subscribe, publish, enter, update, delete).
  * Not needed for read-only queries (get, get-all, occupancy get) — Ably capabilities are operation-based, not clientId-based.
+ *
+ * This exact definition is the identity flag: the base command honours
+ * `client-id` as the CLI's own identity only when a command declares it via
+ * this object. A command-local `client-id` flag (a push target or filter, a
+ * token's subject) never changes who the CLI acts as.
  */
 export const clientIdFlag = {
   "client-id": Flags.string({

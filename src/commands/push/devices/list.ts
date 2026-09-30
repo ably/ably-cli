@@ -31,7 +31,7 @@ export default class PushDevicesList extends AblyBaseCommand {
       description: "Filter by device ID",
     }),
     "client-id": Flags.string({
-      description: "Filter by client ID",
+      description: "Only list devices registered to this client ID",
     }),
     state: Flags.string({
       description: "Filter by device state",

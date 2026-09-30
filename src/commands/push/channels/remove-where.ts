@@ -28,7 +28,7 @@ export default class PushChannelsRemoveWhere extends AblyBaseCommand {
       description: "Filter by device ID",
     }),
     "client-id": Flags.string({
-      description: "Filter by client ID",
+      description: "Only remove subscriptions for this client ID",
     }),
     ...forceFlag,
   };

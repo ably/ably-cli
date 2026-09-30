@@ -38,7 +38,7 @@ export default class PushChannelsList extends AblyBaseCommand {
       description: "Filter by device ID",
     }),
     "client-id": Flags.string({
-      description: "Filter by client ID",
+      description: "Only list subscriptions for this client ID",
     }),
     limit: Flags.integer({
       description: "Maximum number of results to return",
