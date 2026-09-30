@@ -29,7 +29,7 @@ import {
   type ServerUrl,
 } from "./utils/server-url.js";
 import { errorMessage, getFriendlyAblyErrorHint } from "./utils/errors.js";
-import { coreGlobalFlags } from "./flags.js";
+import { clientIdFlag, coreGlobalFlags } from "./flags.js";
 import { InteractiveHelper } from "./services/interactive-helper.js";
 import { promptForConfirmation } from "./utils/prompt-confirmation.js";
 import { BaseFlags, CommandConfig } from "./types/cli.js";
@@ -772,7 +772,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     }
 
     try {
-      return resolveClientIdentity(flags["client-id"], this.configManager)
+      return resolveClientIdentity(this.identityFlag(flags), this.configManager)
         .clientId;
     } catch {
       return undefined;
@@ -1579,13 +1579,29 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   }
 
   /**
+   * The --client-id value, but only when the command declares the shared
+   * identity flag. Push and token commands declare their own --client-id to
+   * name a target or filter, which must never become the CLI's own identity.
+   */
+  private identityFlag(flags: BaseFlags): string | undefined {
+    const declared = (this.constructor as { flags?: Record<string, unknown> })
+      .flags?.["client-id"];
+    return declared === clientIdFlag["client-id"]
+      ? flags["client-id"]
+      : undefined;
+  }
+
+  /**
    * The client ID this command acts as under API-key auth. Fails the command
    * on a value the CLI cannot act as, such as "" or "*".
    */
   protected resolveClientId(flags: BaseFlags): string | undefined {
     let identity;
     try {
-      identity = resolveClientIdentity(flags["client-id"], this.configManager);
+      identity = resolveClientIdentity(
+        this.identityFlag(flags),
+        this.configManager,
+      );
     } catch (error) {
       if (error instanceof InvalidClientIdError) {
         this.fail(error.message, flags, "clientId");
@@ -1634,7 +1650,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * only known once Ably accepts it.
    */
   private applyTokenIdentity(token: string, flags: BaseFlags): void {
-    if (flags["client-id"] && !this.shouldSuppressOutput(flags)) {
+    if (this.identityFlag(flags) && !this.shouldSuppressOutput(flags)) {
       this.logWarning(
         "--client-id is ignored when using token authentication; the client ID comes from the token.",
         flags,
