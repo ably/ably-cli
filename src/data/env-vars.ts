@@ -212,6 +212,29 @@ const ABLY_APP_ID = new EnvVarEntry(
   [],
 );
 
+const ABLY_CLIENT_ID = new EnvVarEntry(
+  "ABLY_CLIENT_ID",
+  "Configuration",
+  "Client ID the CLI acts as",
+  "Any client ID except an empty string or `*`",
+  "A stable ID generated once per install",
+  "`--client-id` CLI flag > **`ABLY_CLIENT_ID`** > `client.id` in config > generated default",
+  ["channels", "rooms", "spaces", "connections", "bench", "logs", "auth"],
+  "Set the client ID every data plane command acts as under API key auth, so a machine or CI job keeps one identity across runs.",
+  new Example([
+    `export ABLY_CLIENT_ID="deploy-bot"`,
+    `ably channels publish my-channel hello`,
+  ]),
+  [
+    new DetailSection("Token authentication", [
+      {
+        kind: "paragraph",
+        text: "Ignored when `ABLY_TOKEN` is set — the client ID comes from the token.",
+      },
+    ]),
+  ],
+);
+
 const ABLY_CLI_CONFIG_DIR = new EnvVarEntry(
   "ABLY_CLI_CONFIG_DIR",
   "Configuration",
@@ -544,6 +567,7 @@ export const ENV_VARS_DATA: EnvVarsData = new EnvVarsData(
     ABLY_URL,
     ABLY_ENDPOINT,
     ABLY_APP_ID,
+    ABLY_CLIENT_ID,
     ABLY_CLI_CONFIG_DIR,
     ABLY_HISTORY_FILE,
     ABLY_CLI_DEFAULT_DURATION,
