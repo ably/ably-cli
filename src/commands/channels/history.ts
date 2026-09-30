@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags, timeRangeFlags } from "../../flags.js";
@@ -63,7 +63,7 @@ export default class ChannelsHistory extends AblyBaseCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChannelsHistory);
     const channelName = args.channelName;
-    let client: Ably.Rest | null;
+    let client: Ably.PubSubHttpClient | null;
 
     try {
       // Create a REST client

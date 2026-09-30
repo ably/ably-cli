@@ -203,8 +203,8 @@ Call generators at describe-block level. Write `"functionality"` and `"error han
 
 | File | Provides |
 |------|----------|
-| `mock-ably-realtime.ts` | Mock `Ably.Realtime` — channels, presence, connection events |
-| `mock-ably-rest.ts` | Mock `Ably.Rest` — REST channel operations, request() |
+| `mock-ably-realtime.ts` | Mock `PubSubRealtimeClient` — channels, presence, connection events |
+| `mock-ably-rest.ts` | Mock `PubSubHttpClient` — REST channel operations, request() |
 | `mock-ably-chat.ts` | Mock Chat SDK — rooms, messages, typing, reactions |
 | `mock-ably-spaces.ts` | Mock Spaces SDK — members, cursors, locations, locks |
 

@@ -615,7 +615,7 @@ Attributes: {"priority": "high"}
 
 | SDK | Type file | Key types |
 |-----|-----------|-----------|
-| `ably` | `node_modules/ably/ably.d.ts` | `Message`, `PresenceMessage`, `ChannelStateChange`, `ConnectionStateChange` |
+| `@ably/pubsub-server` | `node_modules/@ably/pubsub-core/types.d.ts` (re-exported) | `PubSubRealtimeClient`, `PubSubHttpClient`, `Message`, `PresenceMessage`, `ChannelStateChange`, `ConnectionStateChange` |
 | `@ably/spaces` | `node_modules/@ably/spaces/dist/mjs/types.d.ts` | `SpaceMember`, `CursorUpdate`, `CursorPosition`, `CursorData`, `Lock`, `ProfileData` |
 | `@ably/chat` | `node_modules/@ably/chat/dist/chat/core/*.d.ts` | `Message` (chat), `PresenceMember`, `OccupancyEvent`, `Reaction` |
 
@@ -623,9 +623,11 @@ Attributes: {"priority": "high"}
 
 | SDK | Source directory | Key files |
 |-----|-----------------|-----------|
-| `ably` | `node_modules/ably/` | Realtime, REST, channels, presence |
+| `@ably/pubsub-server` | `node_modules/@ably/pubsub-core/build/` (its runtime) | Realtime, HTTP, channels, presence |
 | `@ably/spaces` | `node_modules/@ably/spaces/dist/mjs/` | `Space.js`, `Members.js`, `Locations.js`, `Cursors.js`, `Locks.js` |
 | `@ably/chat` | `node_modules/@ably/chat/dist/chat/core/` | Rooms, messages, presence, reactions |
+
+**Never construct Pub/Sub clients directly or import `ably`.** CLI code imports Pub/Sub types with `import type * as Ably from "@ably/pubsub-server"` and gets clients from `createAblyRestClient()` / `createAblyRealtimeClient()`, which build them with `@ably/pubsub-server`'s `createHttpClient` / `createRealtimeClient`, so the CLI always connects as a server. `@ably/chat` (`createChatClient`) and `@ably/spaces` (`createSpacesClient`) wrap that same realtime client; `ably` v2 is not installed at all.
 
 **Import SDK types directly** — never redefine SDK interfaces locally. If `@ably/spaces` exports `CursorPosition`, import it:
 ```typescript
