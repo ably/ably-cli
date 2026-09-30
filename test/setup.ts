@@ -3,8 +3,8 @@ import { config } from "dotenv";
 import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { exec } from "node:child_process";
-import * as Ably from "ably";
-import type Spaces from "@ably/spaces";
+import type * as Ably from "@ably/pubsub-server";
+import type { SpacesClient } from "@ably/spaces";
 import type { ChatClient } from "@ably/chat";
 
 // Import types for test mocks
@@ -14,10 +14,10 @@ import type { MockConfigManager } from "./helpers/mock-config-manager.js";
 declare global {
   var __TEST_MOCKS__:
     | {
-        ablyRestMock: Ably.Rest;
+        ablyRestMock: Ably.PubSubHttpClient;
         ablyChatMock?: ChatClient;
-        ablySpacesMock?: Spaces;
-        ablyRealtimeMock?: Ably.Realtime;
+        ablySpacesMock?: SpacesClient;
+        ablyRealtimeMock?: Ably.PubSubRealtimeClient;
         configManager?: MockConfigManager;
         [key: string]: unknown;
       }
@@ -28,7 +28,7 @@ declare global {
 process.env.ABLY_CLI_TEST_MODE = "true";
 
 // Track active resources for cleanup
-const activeClients: (Ably.Rest | Ably.Realtime)[] = [];
+const activeClients: (Ably.PubSubHttpClient | Ably.PubSubRealtimeClient)[] = [];
 const globalProcessRegistry = new Set<number>();
 
 // Global process tracking function
@@ -108,7 +108,9 @@ export async function cleanupGlobalProcesses(): Promise<void> {
 /**
  * Utility to track an Ably client for cleanup
  */
-export function trackAblyClient(client: Ably.Rest | Ably.Realtime): void {
+export function trackAblyClient(
+  client: Ably.PubSubHttpClient | Ably.PubSubRealtimeClient,
+): void {
   if (!activeClients.includes(client)) {
     activeClients.push(client);
   }
@@ -135,7 +137,7 @@ export async function globalCleanup(): Promise<void> {
       }, 2000); // 2 second timeout per client
 
       try {
-        if (client instanceof Ably.Realtime) {
+        if ("connection" in client) {
           if (
             client.connection.state === "closed" ||
             client.connection.state === "failed"

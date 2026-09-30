@@ -1,4 +1,4 @@
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 
 import { parseTimestamp } from "./time.js";
 
