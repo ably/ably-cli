@@ -62,10 +62,23 @@ export function getUniqueChannelName(prefix: string): string {
 }
 
 /**
- * Create a unique client ID for testing
+ * Number of client IDs each prefix cycles through. Ably counts every distinct
+ * client ID it sees towards the account's MAU, so E2E runs draw from a fixed
+ * pool rather than minting a new ID per test on every PR.
  */
-export function getUniqueClientId(prefix = "cli-e2e-test"): string {
-  return `${prefix}-${randomUUID()}`;
+const CLIENT_ID_POOL_SIZE = 8;
+
+const clientIdPoolCursors = new Map<string, number>();
+
+/**
+ * A client ID from a bounded pool. Successive calls with the same prefix
+ * return different IDs (up to the pool size), so a test that needs two
+ * distinct clients gets them; across runs the same IDs are reused.
+ */
+export function getTestClientId(prefix = "cli-e2e-test"): string {
+  const cursor = clientIdPoolCursors.get(prefix) ?? 0;
+  clientIdPoolCursors.set(prefix, cursor + 1);
+  return `${prefix}-${cursor % CLIENT_ID_POOL_SIZE}`;
 }
 
 /**
@@ -87,7 +100,7 @@ export function createAblyClient(): Ably.PubSubHttpClient {
     // throw new Error('Structurally invalid E2E_ABLY_API_KEY detected');
   }
 
-  const clientId = getUniqueClientId();
+  const clientId = getTestClientId();
   const _keyPrefix = E2E_API_KEY.split(":")[0]?.split(".")[0] || "unknown-app";
   const _keyId =
     E2E_API_KEY.split(":")[0]?.split(".")[1]?.slice(0, 4) || "unknown-key";
@@ -121,7 +134,7 @@ export function createAblyRealtimeClient(): Ably.PubSubRealtimeClient {
     // throw new Error('Structurally invalid E2E_ABLY_API_KEY detected');
   }
 
-  const clientId = getUniqueClientId();
+  const clientId = getTestClientId();
   const _keyPrefix = E2E_API_KEY.split(":")[0]?.split(".")[0] || "unknown-app";
   const _keyId =
     E2E_API_KEY.split(":")[0]?.split(".")[1]?.slice(0, 4) || "unknown-key";
