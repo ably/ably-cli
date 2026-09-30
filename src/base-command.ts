@@ -1666,6 +1666,37 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     return clientId;
   }
 
+  /**
+   * The client ID a minted token is issued to: the command's --client-id, or
+   * the client ID the CLI acts as. "none" issues an anonymous token, with a
+   * warning, and "*" is refused rather than minting a token that can act as
+   * any client.
+   */
+  protected resolveTokenClientId(flags: BaseFlags): string | undefined {
+    const requested = flags["client-id"];
+    if (requested === undefined) return this.resolveClientId(flags);
+
+    let identity;
+    try {
+      identity = resolveClientIdentity(requested, this.configManager);
+    } catch (error) {
+      if (error instanceof InvalidClientIdError) {
+        this.fail(error.message, flags, "clientId");
+      }
+
+      throw error;
+    }
+
+    if (identity.optedOut) {
+      this.logWarning(
+        "Issuing a token with no client ID. Apps that require identified clients reject it.",
+        flags,
+      );
+    }
+
+    return identity.clientId;
+  }
+
   private setClientId(options: Ably.ClientOptions, flags: BaseFlags): void {
     const clientId = this.resolveClientId(flags);
     if (clientId !== undefined) {
