@@ -377,4 +377,37 @@ describe("waitUntilInterruptedOrTimeout", function () {
       await promise;
     });
   });
+
+  describe("abort behavior", function () {
+    it("should resolve with 'aborted' when the signal aborts", async function () {
+      const controller = new AbortController();
+      const promise = waitUntilInterruptedOrTimeout(10, controller.signal);
+
+      controller.abort(new Error("connection died"));
+
+      expect(await promise).toBe("aborted");
+    });
+
+    it("should resolve immediately for an already-aborted signal", async function () {
+      const controller = new AbortController();
+      controller.abort();
+
+      expect(await waitUntilInterruptedOrTimeout(10, controller.signal)).toBe(
+        "aborted",
+      );
+    });
+
+    it("should remove signal handlers when aborted", async function () {
+      const controller = new AbortController();
+      const promise = waitUntilInterruptedOrTimeout(10, controller.signal);
+
+      controller.abort();
+      await promise;
+
+      expect(processRemoveListenerStub).toHaveBeenCalledWith(
+        "SIGINT",
+        expect.any(Function),
+      );
+    });
+  });
 });
