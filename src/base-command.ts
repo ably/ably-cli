@@ -1,5 +1,5 @@
 import { InteractiveBaseCommand } from "./interactive-base-command.js";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 import chalk from "chalk";
 import colorJson from "color-json";
 import { randomUUID } from "node:crypto";
@@ -10,6 +10,11 @@ import {
   type DataPlaneConfig,
 } from "./services/config-manager.js";
 import { ControlApi, controlHostScheme } from "./services/control-api.js";
+import {
+  createPubSubHttpClient,
+  createPubSubRealtimeClient,
+  resolveClientSide,
+} from "./services/ably-client-factory.js";
 import {
   extractAppIdFromApiKey,
   extractKeyNameFromApiKey,
@@ -36,7 +41,7 @@ import {
 } from "./utils/output.js";
 import stripAnsi from "strip-ansi";
 import { getAgentName, getCliVersion } from "./utils/version.js";
-import Spaces from "@ably/spaces";
+import type { SpacesClient } from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
 import {
   waitUntilInterruptedOrTimeout,
@@ -142,8 +147,8 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   protected _authInfoShown = false;
   protected cleanupInProgress = false;
   protected _suppressSdkErrorLogs = false;
-  private _cachedRestClient: Ably.Rest | null = null;
-  private _cachedRealtimeClient: Ably.Realtime | null = null;
+  private _cachedRestClient: Ably.PubSubHttpClient | null = null;
+  private _cachedRealtimeClient: Ably.PubSubRealtimeClient | null = null;
 
   // Core global flags available to all commands (verbose, json, pretty-json, web-cli-help)
   static globalFlags = { ...coreGlobalFlags };
@@ -236,24 +241,27 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Get test mocks if in test mode
    * @returns Test mocks object or undefined if not in test mode
    */
-  protected getMockAblyRest(): Ably.Rest | undefined {
+  protected getMockAblyRest(): Ably.PubSubHttpClient | undefined {
     if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
-    return (globalThis as { __TEST_MOCKS__?: { ablyRestMock: Ably.Rest } })
-      .__TEST_MOCKS__?.ablyRestMock;
+    return (
+      globalThis as { __TEST_MOCKS__?: { ablyRestMock: Ably.PubSubHttpClient } }
+    ).__TEST_MOCKS__?.ablyRestMock;
   }
 
   /**
    * Get test mocks if in test mode
    * @returns Test mocks object or undefined if not in test mode
    */
-  protected getMockAblyRealtime(): Ably.Realtime | undefined {
+  protected getMockAblyRealtime(): Ably.PubSubRealtimeClient | undefined {
     if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
     return (
-      globalThis as { __TEST_MOCKS__?: { ablyRealtimeMock: Ably.Realtime } }
+      globalThis as {
+        __TEST_MOCKS__?: { ablyRealtimeMock: Ably.PubSubRealtimeClient };
+      }
     ).__TEST_MOCKS__?.ablyRealtimeMock;
   }
 
@@ -261,11 +269,11 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * Get test mocks if in test mode
    * @returns Test mocks object or undefined if not in test mode
    */
-  protected getMockAblySpaces(): Spaces | undefined {
+  protected getMockAblySpaces(): SpacesClient | undefined {
     if (!isTestMode()) return undefined;
 
     // Access global mock if running in test mode
-    return (globalThis as { __TEST_MOCKS__?: { ablySpacesMock: Spaces } })
+    return (globalThis as { __TEST_MOCKS__?: { ablySpacesMock: SpacesClient } })
       .__TEST_MOCKS__?.ablySpacesMock;
   }
 
@@ -378,7 +386,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     options?: {
       skipAuthInfo?: boolean;
     },
-  ): Promise<Ably.Rest | null> {
+  ): Promise<Ably.PubSubHttpClient | null> {
     // Return cached client if it exists
     if (this._cachedRestClient) {
       return this._cachedRestClient;
@@ -391,10 +399,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     // Cache the client for reuse
     if (client) {
-      this._cachedRestClient = client as Ably.Rest;
+      this._cachedRestClient = client as Ably.PubSubHttpClient;
     }
 
-    return client as Ably.Rest | null;
+    return client as Ably.PubSubHttpClient | null;
   }
 
   /**
@@ -406,7 +414,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       skipAuthInfo?: boolean;
       autoConnect?: boolean;
     },
-  ): Promise<Ably.Realtime | null> {
+  ): Promise<Ably.PubSubRealtimeClient | null> {
     // Return cached client if it exists
     if (this._cachedRealtimeClient) {
       return this._cachedRealtimeClient;
@@ -420,10 +428,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     // Cache the client for reuse
     if (client) {
-      this._cachedRealtimeClient = client as Ably.Realtime;
+      this._cachedRealtimeClient = client as Ably.PubSubRealtimeClient;
     }
 
-    return client as Ably.Realtime | null;
+    return client as Ably.PubSubRealtimeClient | null;
   }
 
   /**
@@ -437,8 +445,21 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       skipAuthInfo?: boolean;
       autoConnect?: boolean;
     },
-  ): Promise<Ably.Rest | Ably.Realtime | null> {
+  ): Promise<Ably.PubSubHttpClient | Ably.PubSubRealtimeClient | null> {
     const clientType = options?.type || "realtime";
+
+    // ABLY_TOKEN wins over every other auth source, so it alone decides the
+    // side. Checked before the test-mode mock so the rule holds in tests too.
+    if (
+      clientType === "rest" &&
+      resolveClientSide({ token: process.env.ABLY_TOKEN }) === "device"
+    ) {
+      this.fail(
+        `This command uses Ably's HTTP API, which only server-side clients can use, and the token in ABLY_TOKEN classifies the CLI as a device. Use an API key, or a server-scoped token: "ably auth issue-jwt-token --client-type server --client-id <id>".`,
+        flags,
+        "client",
+      );
+    }
 
     // If in test mode, skip connection and use mock
     if (isTestMode()) {
@@ -500,18 +521,25 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       );
     }
 
+    const side = resolveClientSide(clientOptions);
+    this.logCliEvent(
+      flags,
+      "client",
+      "clientSide",
+      `Creating ${clientType} client as ${side}.`,
+      { side },
+    );
+
     try {
-      // Create REST client
       if (clientType === "rest") {
-        return new Ably.Rest(clientOptions);
+        return createPubSubHttpClient(clientOptions, side);
       }
 
-      // Create Realtime client
       const autoConnect = options?.autoConnect !== false;
-      const client = new Ably.Realtime({
-        ...clientOptions,
-        autoConnect,
-      });
+      const client = createPubSubRealtimeClient(
+        { ...clientOptions, autoConnect },
+        side,
+      );
 
       // If autoConnect is disabled, return the client immediately without waiting for connection
       if (!autoConnect) {
@@ -1633,7 +1661,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * This should be called after creating a Realtime client for long-running commands
    */
   protected setupConnectionStateLogging(
-    client: Ably.Realtime,
+    client: Ably.PubSubRealtimeClient,
     flags: BaseFlags,
     options?: {
       component?: string;

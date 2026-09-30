@@ -6,7 +6,7 @@
  * the real SDK behavior.
  */
 
-import * as Ably from "ably";
+import { DefaultPubSubRealtimeClient } from "@ably/pubsub-core";
 
 /**
  * Type for Ably's EventEmitter instance.
@@ -20,8 +20,10 @@ export interface AblyEventEmitter {
 
 /**
  * Ably's internal EventEmitter constructor.
- * Access it from the Ably.Realtime class where it's exposed internally.
+ * Access it from the realtime client class where it's exposed internally.
  */
 export const EventEmitter = (
-  Ably.Realtime as unknown as { EventEmitter: new () => AblyEventEmitter }
+  DefaultPubSubRealtimeClient as unknown as {
+    EventEmitter: new () => AblyEventEmitter;
+  }
 ).EventEmitter;

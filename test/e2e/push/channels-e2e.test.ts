@@ -7,7 +7,7 @@ import {
   afterAll,
   expect,
 } from "vitest";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
@@ -21,7 +21,7 @@ import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
 describe.skipIf(SHOULD_SKIP_E2E)("Push Channel Subscriptions E2E Tests", () => {
   let testDeviceIdBase: string;
-  let client: Ably.Rest;
+  let client: Ably.PubSubHttpClient;
   let testDeviceId: string;
 
   beforeAll(async () => {

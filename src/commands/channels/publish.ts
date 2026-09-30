@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
@@ -65,7 +65,7 @@ export default class ChannelsPublish extends AblyBaseCommand {
   };
 
   private progressIntervalId: NodeJS.Timeout | null = null;
-  private realtime: Ably.Realtime | null = null;
+  private realtime: Ably.PubSubRealtimeClient | null = null;
 
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {

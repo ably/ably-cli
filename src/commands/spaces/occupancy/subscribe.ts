@@ -1,5 +1,5 @@
 import { Args } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
@@ -35,7 +35,7 @@ export default class SpacesOccupancySubscribe extends SpacesBaseCommand {
     ...durationFlag,
   };
 
-  private client: Ably.Realtime | null = null;
+  private client: Ably.PubSubRealtimeClient | null = null;
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(SpacesOccupancySubscribe);

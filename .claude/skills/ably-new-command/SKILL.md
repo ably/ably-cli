@@ -64,7 +64,7 @@ If the topic/subtopic doesn't exist yet, you also need an index file at `src/com
 **Product API commands** (channels, rooms, spaces, presence, pub/sub):
 ```typescript
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
@@ -466,7 +466,7 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] Non-JSON data output uses multi-line labeled blocks (see `patterns.md` "Human-Readable Output Format"), not tables or custom grids
 - [ ] Non-JSON output exposes all available SDK fields (same data as JSON mode, omitting only null/empty values)
 - [ ] SDK types imported directly (`import type { CursorUpdate } from "@ably/spaces"`) — no local interface redefinitions of SDK types (display interfaces in `src/utils/` are fine)
-- [ ] Field coverage checked against SDK type definitions (`node_modules/ably/ably.d.ts`, `node_modules/@ably/spaces/dist/mjs/types.d.ts`)
+- [ ] Field coverage checked against SDK type definitions (`node_modules/@ably/pubsub-core/types.d.ts`, `node_modules/@ably/spaces/dist/mjs/types.d.ts`)
 - [ ] Subscribe commands do NOT fetch initial state — they only listen for new events (use `get-all` for current state)
 - [ ] Resource names use `formatResource(name)`, never quoted
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`

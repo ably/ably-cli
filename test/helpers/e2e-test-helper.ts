@@ -1,4 +1,8 @@
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
+import {
+  createHttpClient,
+  createRealtimeClient as createServerRealtimeClient,
+} from "@ably/pubsub-server";
 import { randomUUID } from "node:crypto";
 import { spawn, ChildProcess, exec } from "node:child_process";
 import { promises as fs } from "node:fs";
@@ -67,7 +71,7 @@ export function getUniqueClientId(prefix = "cli-e2e-test"): string {
 /**
  * Create an Ably REST client for testing AND TRACK IT
  */
-export function createAblyClient(): Ably.Rest {
+export function createAblyClient(): Ably.PubSubHttpClient {
   if (!E2E_API_KEY) {
     throw new Error(
       "E2E_ABLY_API_KEY environment variable is required for E2E tests",
@@ -88,7 +92,7 @@ export function createAblyClient(): Ably.Rest {
   const _keyId =
     E2E_API_KEY.split(":")[0]?.split(".")[1]?.slice(0, 4) || "unknown-key";
 
-  const client = new Ably.Rest({
+  const client = createHttpClient({
     key: E2E_API_KEY,
     clientId: clientId,
   });
@@ -101,7 +105,7 @@ export function createAblyClient(): Ably.Rest {
 /**
  * Create an Ably Realtime client for testing AND TRACK IT
  */
-export function createAblyRealtimeClient(): Ably.Realtime {
+export function createAblyRealtimeClient(): Ably.PubSubRealtimeClient {
   if (!E2E_API_KEY) {
     throw new Error(
       "E2E_ABLY_API_KEY environment variable is required for E2E tests",
@@ -122,7 +126,7 @@ export function createAblyRealtimeClient(): Ably.Realtime {
   const _keyId =
     E2E_API_KEY.split(":")[0]?.split(".")[1]?.slice(0, 4) || "unknown-key";
 
-  const client = new Ably.Realtime({
+  const client = createServerRealtimeClient({
     key: E2E_API_KEY,
     clientId: clientId,
   });

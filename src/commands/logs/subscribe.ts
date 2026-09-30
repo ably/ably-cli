@@ -1,5 +1,5 @@
 import { Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import {
@@ -45,7 +45,7 @@ export default class LogsSubscribe extends AblyBaseCommand {
     }),
   };
 
-  private client: Ably.Realtime | null = null;
+  private client: Ably.PubSubRealtimeClient | null = null;
 
   async run(): Promise<void> {
     const { flags } = await this.parse(LogsSubscribe);
