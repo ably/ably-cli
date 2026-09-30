@@ -3,7 +3,7 @@ import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  getUniqueClientId,
+  getTestClientId,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -35,8 +35,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Spaces Subscribe E2E Tests", () => {
     );
 
     const spaceName = getUniqueChannelName("space-sub");
-    const subClientId = getUniqueClientId("space-sub-client");
-    const enterClientId = getUniqueClientId("space-enter-client");
+    const subClientId = getTestClientId("space-sub-client");
+    const enterClientId = getTestClientId("space-enter-client");
 
     // Start the space subscriber
     const subscriber = await startSubscribeCommand(

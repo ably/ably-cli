@@ -147,6 +147,9 @@ describe("Connections E2E Tests", () => {
 
           const cliPath = join(process.cwd(), "bin", "run.js");
           const testChannelName = `test-live-connections-${Date.now()}`;
+          // Deliberately unique rather than pooled: the test finds its own
+          // connection in the lifecycle log by client ID, and a pooled ID could
+          // match a concurrent run's connection and hide a failure.
           const testClientId = `test-client-${Date.now()}`;
 
           // Step 1: Start live connection log monitoring
