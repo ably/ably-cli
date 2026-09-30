@@ -31,7 +31,7 @@ This is the Ably CLI npm package (`@ably/cli`), built with the [oclif framework]
 │   ├── integration/   # Multi-component, mocked external services
 │   ├── e2e/           # Full scenarios against real Ably
 │   └── helpers/       # runCommand(), MockConfigManager, etc.
-├── docs/              # Project docs (Testing.md, Project-Structure.md, etc.)
+├── docs/              # Project docs (Testing.md, Project-Structure.md, Client-Identity.md, etc.)
 └── package.json       # Scripts defined here
 ```
 
@@ -100,7 +100,7 @@ Flags are NOT global. Each command explicitly declares only the flags it needs v
 - **`coreGlobalFlags`** — `--verbose`, `--json`, `--pretty-json`, `--web-cli-help` (hidden) (on every command via `AblyBaseCommand.globalFlags`)
 - **`productApiFlags`** — core + hidden product API flags (`port`, `tlsPort`, `tls`). Use for commands that talk to the Ably product API.
 - **`controlApiFlags`** — core + hidden control API flags (`control-host`, `dashboard-host`). Use for commands that talk to the Control API.
-- **`clientIdFlag`** — `--client-id`. Add to commands where client identity affects the operation: subscribe, publish, enter, set, acquire, update, delete, append. Do NOT add to read-only queries (get, get-all, occupancy get) — Ably capabilities are operation-based, not clientId-based, so client identity is irrelevant for pure reads. Do NOT add globally.
+- **`clientIdFlag`** — `--client-id`. Add to commands where acting as a particular client is part of the operation: subscribe, publish, enter, set, acquire, update, delete, append. Do NOT add to read-only queries (get, get-all, occupancy get): every command, reads included, already acts as the session's client ID (`ABLY_CLIENT_ID` > config > generated default, see `docs/Client-Identity.md`) and Ably counts it under MAU billing, but a read has no reason to act as someone else. Do NOT add globally. A `--client-id` that names a *target* (push recipient, token subject) must be a command-local flag, never `clientIdFlag` — the base command treats only `clientIdFlag` as identity.
 - **`durationFlag`** — `--duration` / `-D`. Use for long-running subscribe/stream commands that auto-exit after N seconds.
 - **`rewindFlag`** — `--rewind`. Use for subscribe commands that support message replay (default: 0).
 - **`timeRangeFlags`** — `--start`, `--end`. Use for history and stats commands. Parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
