@@ -3,7 +3,7 @@ import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  getUniqueClientId,
+  getTestClientId,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -25,8 +25,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms Message Reactions E2E Tests", () => {
   beforeEach(() => {
     resetTestTracking();
     testRoom = getUniqueChannelName("room-msgreact");
-    client1Id = getUniqueClientId("msgreact-sub");
-    client2Id = getUniqueClientId("msgreact-send");
+    client1Id = getTestClientId("msgreact-sub");
+    client2Id = getTestClientId("msgreact-send");
   });
 
   afterEach(async () => {
