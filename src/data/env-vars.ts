@@ -129,7 +129,7 @@ const ABLY_API_KEY = new EnvVarEntry(
     new DetailSection("Client ID", [
       {
         kind: "paragraph",
-        text: "Auto-generates a default client ID in the format `ably-cli-{uuid}`. Override with `--client-id <value>`, or pass `--client-id none` to send no client ID.",
+        text: "Acts as one client ID per install, generated once and saved in the config. Set a fixed one with `ABLY_CLIENT_ID`, or override it per command with `--client-id <value>`.",
       },
     ]),
   ],
@@ -158,7 +158,7 @@ const ABLY_TOKEN = new EnvVarEntry(
     new DetailSection("Client ID", [
       {
         kind: "paragraph",
-        text: "`--client-id` is ignored when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed.",
+        text: "Comes from the token, which must carry one (`--client-id` and `ABLY_CLIENT_ID` are ignored). The CLI always connects as a server, which Ably accepts under token auth only from a JWT with the `x-ably-clientType: server` claim (`ably auth issue-jwt-token --client-type server`).",
       },
     ]),
     new DetailSection("Token expiry", [
