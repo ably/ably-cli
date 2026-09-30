@@ -8,7 +8,7 @@ import {
 import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
-import { errorMessage } from "./utils/errors.js";
+import { errorMessage, errorWithReason } from "./utils/errors.js";
 import isTestMode from "./utils/test-mode.js";
 
 export abstract class SpacesBaseCommand extends AblyBaseCommand {
@@ -226,7 +226,10 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         state: connection.state,
       });
       this.fail(
-        `${errorMsg}. Use --verbose to see detailed connection logs.`,
+        errorWithReason(
+          `${errorMsg}. Use --verbose to see detailed connection logs.`,
+          connection.errorReason,
+        ),
         flags,
         "connection",
       );
@@ -263,7 +266,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         this.logCliEvent(flags, "connection", "failed", errorMsg, {
           state: "failed",
         });
-        reject(new Error(errorMsg));
+        reject(errorWithReason(errorMsg, stateChange.reason));
       };
 
       const onClosed = () => {
@@ -271,9 +274,9 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         reject(new Error("Connection closed unexpectedly"));
       };
 
-      const onSuspended = () => {
+      const onSuspended = (stateChange: Ably.ConnectionStateChange) => {
         cleanup();
-        reject(new Error("Connection suspended"));
+        reject(errorWithReason("Connection suspended", stateChange.reason));
       };
 
       connection.on("connected", onConnected);
@@ -381,8 +384,9 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
           channel.off("attached", onAttached);
           channel.off("failed", onFailed);
           reject(
-            new Error(
+            errorWithReason(
               `Cursors channel failed to attach: ${stateChange.reason?.message || "Unknown error"}`,
+              stateChange.reason,
             ),
           );
         };
