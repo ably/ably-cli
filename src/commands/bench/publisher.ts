@@ -54,6 +54,8 @@ interface BenchmarkPayload {
 }
 
 export default class BenchPublisher extends AblyBaseCommand {
+  protected override suffixClientIdPerProcess = true;
+
   static override args = {
     channelName: Args.string({
       description: "The channel name to publish to",

@@ -17,6 +17,7 @@ const CANONICAL_NAMES = [
   "ABLY_URL",
   "ABLY_ENDPOINT",
   "ABLY_APP_ID",
+  "ABLY_CLIENT_ID",
   "ABLY_CLI_CONFIG_DIR",
   "ABLY_HISTORY_FILE",
   "ABLY_CLI_DEFAULT_DURATION",
@@ -28,8 +29,8 @@ describe("ENV_VARS_DATA", () => {
     expect(ENV_VARS_DATA).toBeInstanceOf(EnvVarsData);
   });
 
-  it("lists exactly 10 variables in canonical order", () => {
-    expect(ENV_VARS_DATA.variables).toHaveLength(10);
+  it("lists exactly 11 variables in canonical order", () => {
+    expect(ENV_VARS_DATA.variables).toHaveLength(11);
     expect(ENV_VARS_DATA.variables.map((v) => v.name)).toEqual(CANONICAL_NAMES);
   });
 
@@ -73,6 +74,7 @@ describe("ENV_VARS_DATA", () => {
     expect(byName.ABLY_TOKEN.details).toHaveLength(4);
     expect(byName.ABLY_ACCESS_TOKEN.details).toHaveLength(1);
     expect(byName.ABLY_APP_ID.details).toHaveLength(0);
+    expect(byName.ABLY_CLIENT_ID.details).toHaveLength(1);
     expect(byName.ABLY_CLI_CONFIG_DIR.details).toHaveLength(0);
     expect(byName.ABLY_HISTORY_FILE.details).toHaveLength(1);
     expect(byName.ABLY_CLI_DEFAULT_DURATION.details).toHaveLength(0);

@@ -9,6 +9,7 @@
  */
 
 import { beforeAll, beforeEach, vi } from "vitest";
+import { resetClientIdentityCache } from "../../src/services/client-identity.js";
 import {
   initializeMockConfigManager,
   resetMockConfig,
@@ -46,6 +47,7 @@ beforeEach(() => {
 
   // Reset each mock's internal state
   resetMockConfig();
+  resetClientIdentityCache();
   resetMockAblyRealtime();
   resetMockAblyRest();
   resetMockAblySpaces();
