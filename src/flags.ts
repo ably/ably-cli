@@ -69,8 +69,10 @@ export const hiddenControlApiFlags = {
 };
 
 /**
- * client-id flag for commands where client identity matters (e.g., subscribe, publish, enter, update, delete).
- * Not needed for read-only queries (get, get-all, occupancy get) — Ably capabilities are operation-based, not clientId-based.
+ * client-id flag for commands where acting as a particular client is part of the operation
+ * (e.g., subscribe, publish, enter, update, delete). Read-only queries (get, get-all, occupancy get)
+ * don't take it: they still carry the session's client ID (ABLY_CLIENT_ID, config, or the generated
+ * default), and Ably counts that ID, but there's no per-command reason to act as someone else.
  *
  * This exact definition is the identity flag: the base command honours
  * `client-id` as the CLI's own identity only when a command declares it via
