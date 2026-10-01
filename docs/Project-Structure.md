@@ -75,8 +75,9 @@ This document outlines the directory structure of the Ably CLI project.
 │   └── utils/
 │       ├── channel-rule-display.ts # Channel rule human-readable display
 │       ├── chat-constants.ts       # Shared Chat SDK constants (REACTION_TYPE_MAP)
+│       ├── connection-health.ts    # Detects dead connections (failed, reconnect loops)
 │       ├── server-url.ts           # Local server URL parsing (parseServerUrl, formatServerUrl)
-│       ├── errors.ts               # Error utilities (errorMessage)
+│       ├── errors.ts               # Error utilities (errorMessage, errorWithReason, hints)
 │       ├── interrupt-feedback.ts   # Ctrl+C feedback messages
 │       ├── json-formatter.ts       # JSON output formatting (formatJson, formatMessageData)
 │       ├── key-display.ts          # Key capability formatting
