@@ -3,7 +3,7 @@ import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  getUniqueClientId,
+  getTestClientId,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -38,8 +38,8 @@ describe.skipIf(SHOULD_SKIP_E2E)("Channel Presence Subscribe E2E Tests", () => {
       );
 
       const channel = getUniqueChannelName("pres-sub");
-      const subClientId = getUniqueClientId("sub-client");
-      const enterClientId = getUniqueClientId("enter-client");
+      const subClientId = getTestClientId("sub-client");
+      const enterClientId = getTestClientId("enter-client");
 
       // Start presence subscriber
       const subscriber = await startSubscribeCommand(
