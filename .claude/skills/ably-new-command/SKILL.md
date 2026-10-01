@@ -139,6 +139,8 @@ static flags = {
 
 **When to include `clientIdFlag`:** Add `...clientIdFlag` to commands where client identity affects the operation: subscribe, publish, enter, set, acquire, update, delete, append, annotate. The reason is that users may want to test auth scenarios — e.g., "can client B update client A's message?" — so they need the ability to set their client ID. Do NOT add to read-only queries (get, get-all, history, occupancy get) — Ably capabilities are operation-based, not clientId-based, so client identity is irrelevant for pure reads.
 
+**Target client IDs are not identity:** the base command treats `--client-id` as the client ID the CLI acts as only when the command declares it via the shared `clientIdFlag` object. When a command's `--client-id` names a *target* or *filter* (a push recipient, a token's subject), declare a command-local `Flags.string()` instead — never spread `clientIdFlag` for that — so the value can't become the CLI's own identity. `test/unit/base/client-id-target-guard.test.ts` enforces this for every command.
+
 For history commands, also use `timeRangeFlags`:
 ```typescript
 import { productApiFlags, timeRangeFlags } from "../../flags.js";

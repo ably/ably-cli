@@ -35,7 +35,7 @@ export default class PushPublish extends AblyBaseCommand {
       exclusive: ["client-id", "recipient"],
     }),
     "client-id": Flags.string({
-      description: "Target client ID",
+      description: "Client ID whose devices receive the notification",
       exclusive: ["device-id", "recipient"],
     }),
     recipient: Flags.string({
