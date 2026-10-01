@@ -1,6 +1,5 @@
 import { Flags } from "@oclif/core";
 import type * as Ably from "@ably/pubsub-core";
-import { randomUUID } from "node:crypto";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { productApiFlags } from "../../flags.js";
@@ -91,8 +90,8 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
           tokenParams.clientId = flags["client-id"];
         }
       } else {
-        // Generate a default client ID
-        tokenParams.clientId = `ably-cli-${randomUUID().slice(0, 8)}`;
+        // Default to the identity the CLI itself acts as
+        tokenParams.clientId = this.resolveClientId(flags);
       }
 
       // Create Ably REST client and request token

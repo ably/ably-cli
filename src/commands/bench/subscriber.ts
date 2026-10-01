@@ -20,6 +20,8 @@ interface TestMetrics {
 }
 
 export default class BenchSubscriber extends AblyBaseCommand {
+  protected override suffixClientIdPerProcess = true;
+
   static override args = {
     channelName: Args.string({
       description: "The channel name to subscribe to",
