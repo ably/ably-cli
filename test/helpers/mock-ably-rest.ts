@@ -68,6 +68,7 @@ export interface MockRestAuth {
   clientId: string;
   createTokenRequest: Mock;
   requestToken: Mock;
+  revokeTokens: Mock;
 }
 
 /**
@@ -231,6 +232,11 @@ function createMockRestAuth(): MockRestAuth {
     requestToken: vi.fn().mockResolvedValue({
       token: "mock-token",
       expires: Date.now() + 3600000,
+    }),
+    revokeTokens: vi.fn().mockResolvedValue({
+      successCount: 1,
+      failureCount: 0,
+      results: [],
     }),
   };
 }

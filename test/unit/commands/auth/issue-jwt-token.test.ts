@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { runCommand } from "@oclif/test";
 import jwt from "jsonwebtoken";
-import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  MOCK_DEFAULT_CLIENT_ID,
+  getMockConfigManager,
+} from "../../../helpers/mock-config-manager.js";
 import {
   standardHelpTests,
   standardArgValidationTests,
@@ -128,6 +131,54 @@ describe("auth:issue-jwt-token command", () => {
       expect(decoded["x-ably-clientId"]).toBeUndefined();
     });
 
+    it("should default to the client ID the CLI acts as", async () => {
+      const { stdout } = await runCommand(
+        ["auth:issue-jwt-token", "--token-only"],
+        import.meta.url,
+      );
+
+      expect(jwt.decode(stdout.trim(), { json: true })).toHaveProperty(
+        "x-ably-clientId",
+        MOCK_DEFAULT_CLIENT_ID,
+      );
+    });
+
+    it("should refuse a wildcard client ID", async () => {
+      const { error } = await runCommand(
+        ["auth:issue-jwt-token", "--client-id", "*"],
+        import.meta.url,
+      );
+
+      expect(error?.message).toContain('cannot be "*"');
+    });
+
+    it("should add the server claim with --client-type server", async () => {
+      const { stdout } = await runCommand(
+        ["auth:issue-jwt-token", "--client-type", "server", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseJsonOutput(stdout);
+      const token = (result.token as { value: string; clientType: string })
+        .value;
+      expect(result.token).toHaveProperty("clientType", "server");
+      expect(jwt.decode(token, { json: true })).toHaveProperty(
+        "x-ably-clientType",
+        "server",
+      );
+    });
+
+    it("should omit the server claim by default", async () => {
+      const { stdout } = await runCommand(
+        ["auth:issue-jwt-token", "--token-only"],
+        import.meta.url,
+      );
+
+      expect(jwt.decode(stdout.trim(), { json: true })).not.toHaveProperty(
+        "x-ably-clientType",
+      );
+    });
+
     it("should output only token string with --token-only flag", async () => {
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],
@@ -247,13 +298,13 @@ describe("auth:issue-jwt-token command", () => {
       expect(stdout).toContain("Client ID: my-client");
     });
 
-    it("should omit client ID line when not specified with none", async () => {
+    it("should show the token as anonymous with none", async () => {
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--client-id", "none"],
         import.meta.url,
       );
 
-      expect(stdout).not.toContain("Client ID:");
+      expect(stdout).toContain("Client ID: anonymous");
     });
   });
 });
