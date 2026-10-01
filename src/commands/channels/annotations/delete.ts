@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../../flags.js";
@@ -51,7 +51,7 @@ export default class ChannelsAnnotationsDelete extends AblyBaseCommand {
     const serial = args.messageSerial;
     const type = args.annotationType;
 
-    let client: Ably.Realtime | null = null;
+    let client: Ably.PubSubRealtimeClient | null = null;
 
     try {
       const summarization = extractSummarizationType(type);

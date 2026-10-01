@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import { isJsonData } from "../../../utils/json-formatter.js";
@@ -52,7 +52,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
     }),
   };
 
-  private client: Ably.Realtime | null = null;
+  private client: Ably.PubSubRealtimeClient | null = null;
   private sequenceCounter = 0;
   private channel: Ably.RealtimeChannel | null = null;
 

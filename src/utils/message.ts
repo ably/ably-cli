@@ -1,4 +1,4 @@
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 
 export function interpolateMessage(template: string, count: number): string {
   let result = template.replaceAll("{{.Count}}", count.toString());

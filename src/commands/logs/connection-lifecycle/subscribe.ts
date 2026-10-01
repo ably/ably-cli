@@ -1,4 +1,4 @@
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-core";
 
 import { AblyBaseCommand } from "../../../base-command.js";
 import {
@@ -31,7 +31,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
     ...rewindFlag,
   };
 
-  private client: Ably.Realtime | null = null;
+  private client: Ably.PubSubRealtimeClient | null = null;
   private cleanupChannelStateLogging: (() => void) | null = null;
 
   async run(): Promise<void> {

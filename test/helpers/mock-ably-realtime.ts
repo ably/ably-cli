@@ -21,7 +21,11 @@
  */
 
 import { vi, type Mock } from "vitest";
-import type { Message, PresenceMessage, ConnectionStateChange } from "ably";
+import type {
+  Message,
+  PresenceMessage,
+  ConnectionStateChange,
+} from "@ably/pubsub-core";
 import { EventEmitter, type AblyEventEmitter } from "./ably-event-emitter.js";
 
 // We use Ably's EventEmitter to match the SDK's API (on/off/once/emit)

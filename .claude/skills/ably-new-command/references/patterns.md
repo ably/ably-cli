@@ -615,7 +615,7 @@ Attributes: {"priority": "high"}
 
 | SDK | Type file | Key types |
 |-----|-----------|-----------|
-| `ably` | `node_modules/ably/ably.d.ts` | `Message`, `PresenceMessage`, `ChannelStateChange`, `ConnectionStateChange` |
+| `@ably/pubsub-core` | `node_modules/@ably/pubsub-core/types.d.ts` | `PubSubRealtimeClient`, `PubSubHttpClient`, `Message`, `PresenceMessage`, `ChannelStateChange`, `ConnectionStateChange` |
 | `@ably/spaces` | `node_modules/@ably/spaces/dist/mjs/types.d.ts` | `SpaceMember`, `CursorUpdate`, `CursorPosition`, `CursorData`, `Lock`, `ProfileData` |
 | `@ably/chat` | `node_modules/@ably/chat/dist/chat/core/*.d.ts` | `Message` (chat), `PresenceMember`, `OccupancyEvent`, `Reaction` |
 
@@ -623,9 +623,11 @@ Attributes: {"priority": "high"}
 
 | SDK | Source directory | Key files |
 |-----|-----------------|-----------|
-| `ably` | `node_modules/ably/` | Realtime, REST, channels, presence |
+| `@ably/pubsub-core` | `node_modules/@ably/pubsub-core/build/` | Realtime, HTTP, channels, presence |
 | `@ably/spaces` | `node_modules/@ably/spaces/dist/mjs/` | `Space.js`, `Members.js`, `Locations.js`, `Cursors.js`, `Locks.js` |
 | `@ably/chat` | `node_modules/@ably/chat/dist/chat/core/` | Rooms, messages, presence, reactions |
+
+**Never construct Pub/Sub clients directly or import `ably`.** CLI code imports Pub/Sub types with `import type * as Ably from "@ably/pubsub-core"` and gets clients from `createAblyRestClient()` / `createAblyRealtimeClient()`, which construct through `src/services/ably-client-factory.ts`. The factory declares the server side via `@ably/pubsub-server` by default, and the device side via `@ably/pubsub-device` only under token auth without an `x-ably-clientType=server` claim. The device package has no HTTP client, so `createAblyRestClient()` fails the command on the device side. `@ably/chat` (`createChatClient`) and `@ably/spaces` (`createSpacesClient`) wrap that same realtime client; `ably` v2 is not installed at all.
 
 **Import SDK types directly** — never redefine SDK interfaces locally. If `@ably/spaces` exports `CursorPosition`, import it:
 ```typescript

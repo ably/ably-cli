@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as _fs from "node:fs";
-import * as _Ably from "ably";
 import { AblyBaseCommand } from "../../../src/base-command.js";
 import { ConfigManager as _ConfigManager } from "../../../src/services/config-manager.js";
 import { InteractiveHelper as _InteractiveHelper } from "../../../src/services/interactive-helper.js";
