@@ -23,3 +23,5 @@ These environment variables are most commonly used during development as well as
 | `ABLY_ENDPOINT` | Host Override | Override Realtime/REST API endpoint (host only) | SDK default |
 
 > For development, testing, debugging, and internal variables, see [Development Stage Usage](Development-Usage.md).
+>
+> For how `ABLY_CLIENT_ID`, `--client-id` and tokens decide which client ID the CLI acts as, and whether its traffic counts as server or device for MAU billing, see [Client Identity](../Client-Identity.md).
