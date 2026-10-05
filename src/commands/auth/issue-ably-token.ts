@@ -37,7 +37,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
     }),
     "client-id": Flags.string({
       description:
-        'Client ID to associate with the token. Use "none" to explicitly issue a token with no client ID, otherwise a default will be generated.',
+        'Client ID to issue the token to (defaults to the client ID the CLI acts as). Use "none" to issue a token with no client ID.',
     }),
     "token-only": Flags.boolean({
       default: false,
