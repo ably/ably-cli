@@ -34,6 +34,9 @@ import type {
 // and breaks interception for commands that make HTTPS requests.
 const DEFAULT_OAUTH_HOST = "ably.com";
 
+/** The generated default client ID the mock reports when none is configured. */
+export const MOCK_DEFAULT_CLIENT_ID = "ably-cli-mockdflt";
+
 /**
  * Type for test configuration values.
  */
@@ -267,6 +270,18 @@ export class MockConfigManager implements ConfigManager {
 
   public getConfigPath(): string {
     return "/mock/config/path";
+  }
+
+  public getClientId(): string | undefined {
+    return this.config.client?.id;
+  }
+
+  public getDefaultClientId(): string {
+    this.config.client = {
+      ...this.config.client,
+      defaultId: this.config.client?.defaultId ?? MOCK_DEFAULT_CLIENT_ID,
+    };
+    return this.config.client.defaultId!;
   }
 
   public getEndpoint(alias?: string): string | undefined {

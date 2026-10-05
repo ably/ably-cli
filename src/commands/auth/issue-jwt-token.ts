@@ -114,10 +114,9 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
           clientId = flags["client-id"];
         }
       } else {
-        // Generate a default client ID
-        const defaultClientId = `ably-cli-${randomUUID().slice(0, 8)}`;
-        jwtPayload["x-ably-clientId"] = defaultClientId;
-        clientId = defaultClientId;
+        // Default to the identity the CLI itself acts as
+        clientId = this.resolveClientId(flags) ?? null;
+        if (clientId) jwtPayload["x-ably-clientId"] = clientId;
       }
 
       // Sign the JWT
