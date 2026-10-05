@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { runCommand } from "@oclif/test";
-import { getMockConfigManager } from "../../../helpers/mock-config-manager.js";
+import {
+  MOCK_DEFAULT_CLIENT_ID,
+  getMockConfigManager,
+} from "../../../helpers/mock-config-manager.js";
 import { getMockAblyRest } from "../../../helpers/mock-ably-rest.js";
 import {
   standardHelpTests,
@@ -136,16 +139,39 @@ describe("auth:issue-ably-token command", () => {
       restMock.auth.createTokenRequest.mockResolvedValue({});
       restMock.auth.requestToken.mockResolvedValue(mockTokenDetails);
 
-      const { stdout } = await runCommand(
+      const { stdout, stderr } = await runCommand(
         ["auth:issue-ably-token", "--client-id", "none"],
         import.meta.url,
       );
 
       expect(stdout).toContain("Ably token generated.");
-      expect(stdout).not.toContain("Client ID:");
+      expect(stdout).toContain("Client ID: anonymous");
+      expect(stderr).toContain("Issuing a token with no client ID");
       expect(restMock.auth.createTokenRequest).toHaveBeenCalled();
       const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
       expect(tokenParams.clientId).toBeUndefined();
+    });
+
+    it("should default to the client ID the CLI acts as", async () => {
+      const restMock = getMockAblyRest();
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+
+      await runCommand(["auth:issue-ably-token"], import.meta.url);
+
+      const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
+      expect(tokenParams.clientId).toBe(MOCK_DEFAULT_CLIENT_ID);
+    });
+
+    it("should refuse a wildcard client ID", async () => {
+      const restMock = getMockAblyRest();
+
+      const { error } = await runCommand(
+        ["auth:issue-ably-token", "--client-id", "*"],
+        import.meta.url,
+      );
+
+      expect(error?.message).toContain('cannot be "*"');
+      expect(restMock.auth.createTokenRequest).not.toHaveBeenCalled();
     });
 
     it("should output only token string with --token-only flag", async () => {

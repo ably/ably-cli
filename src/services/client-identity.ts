@@ -46,7 +46,7 @@ function validateClientId(value: string, source: ClientIdSource): void {
 
   if (value === "*") {
     throw new InvalidClientIdError(
-      `${origin} cannot be "*". The wildcard is only valid inside a token's capability; the CLI must act as one concrete client ID.`,
+      `${origin} cannot be "*". The CLI acts as, and issues tokens to, one concrete client ID.`,
     );
   }
 }
