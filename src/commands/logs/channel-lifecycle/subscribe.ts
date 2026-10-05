@@ -1,4 +1,4 @@
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../../base-command.js";
@@ -33,7 +33,7 @@ export default class LogsChannelLifecycleSubscribe extends AblyBaseCommand {
     ...rewindFlag,
   };
 
-  private client: Ably.Realtime | null = null;
+  private client: Ably.PubSubRealtimeClient | null = null;
 
   // Override finally to ensure resources are cleaned up
 
