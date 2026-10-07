@@ -4,6 +4,8 @@
  * These provide realistic default values that can be overridden per-test.
  */
 
+import type { ChannelRuleMode } from "../../src/services/control-api.js";
+
 export interface MockApp {
   id: string;
   accountId: string;
@@ -134,6 +136,7 @@ export interface MockNamespace {
   id: string;
   persisted: boolean;
   pushEnabled: boolean;
+  mode?: ChannelRuleMode;
   mutableMessages?: boolean;
   created: number;
   modified: number;

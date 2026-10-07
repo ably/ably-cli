@@ -122,6 +122,31 @@ describe("apps:rules:list command", () => {
       expect(result).toHaveProperty("success", true);
       expect(result.rules).toHaveLength(2);
     });
+
+    it("should show each rule's mode", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .get(`/v1/apps/${appId}/namespaces`)
+        .times(2)
+        .reply(200, [
+          mockNamespace({ id: "chat:*", mode: "matcher" }),
+          mockNamespace({ id: "legacy", mode: "namespace" }),
+        ]);
+
+      const { stdout } = await runCommand(["apps:rules:list"], import.meta.url);
+      expect(stdout).toContain("Mode: matcher");
+      expect(stdout).toContain("Mode: namespace");
+
+      const { stdout: jsonStdout } = await runCommand(
+        ["apps:rules:list", "--json"],
+        import.meta.url,
+      );
+      const result = parseJsonOutput(jsonStdout);
+      expect(result.rules.map((r: { mode: string }) => r.mode)).toEqual([
+        "matcher",
+        "namespace",
+      ]);
+    });
   });
 
   describe("error handling", () => {

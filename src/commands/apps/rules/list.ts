@@ -1,5 +1,8 @@
 import { Flags } from "@oclif/core";
-import type { Namespace } from "../../../services/control-api.js";
+import type {
+  ChannelRuleMode,
+  Namespace,
+} from "../../../services/control-api.js";
 
 import { ControlBaseCommand } from "../../../control-base-command.js";
 import { formatChannelRuleDetails } from "../../../utils/channel-rule-display.js";
@@ -18,6 +21,7 @@ interface ChannelRuleOutput {
   conflationKey: null | string;
   created: string;
   id: string;
+  mode: ChannelRuleMode | null;
   modified: string;
   mutableMessages: boolean;
   persistLast: boolean;
@@ -76,6 +80,7 @@ export default class RulesListCommand extends ControlBaseCommand {
                 conflationKey: rule.conflationKey ?? null,
                 created: new Date(rule.created).toISOString(),
                 id: rule.id,
+                mode: rule.mode ?? null,
                 modified: new Date(rule.modified).toISOString(),
                 mutableMessages: rule.mutableMessages || false,
                 persistLast: rule.persistLast || false,
