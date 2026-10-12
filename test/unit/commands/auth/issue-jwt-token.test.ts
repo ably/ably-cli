@@ -128,6 +128,21 @@ describe("auth:issue-jwt-token command", () => {
       expect(decoded["x-ably-clientId"]).toBeUndefined();
     });
 
+    it("should issue a wildcard token for --client-id '*'", async () => {
+      const apiKey = getMockConfigManager().getApiKey()!;
+      const mockKeySecret = apiKey.split(":")[1];
+      const { stdout } = await runCommand(
+        ["auth:issue-jwt-token", "--client-id", "*", "--token-only"],
+        import.meta.url,
+      );
+
+      const decoded = jwt.verify(stdout.trim(), mockKeySecret, {
+        algorithms: ["HS256"],
+      }) as jwt.JwtPayload;
+
+      expect(decoded["x-ably-clientId"]).toBe("*");
+    });
+
     it("should output only token string with --token-only flag", async () => {
       const { stdout } = await runCommand(
         ["auth:issue-jwt-token", "--token-only"],

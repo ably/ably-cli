@@ -501,4 +501,29 @@ accessToken = "testaccesstoken"
       });
     });
   });
+
+  describe("#getDefaultClientId", () => {
+    it("generates and persists a default on first use", () => {
+      const id = configManager.getDefaultClientId();
+
+      expect(id).toMatch(/^ably-cli-[0-9a-f]{8}$/);
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining(`defaultId = "${id}"`),
+        expect.anything(),
+      );
+      expect(configManager.getDefaultClientId()).toBe(id);
+    });
+
+    it("keeps the default in memory when the config cannot be written", () => {
+      vi.mocked(fs.writeFileSync).mockImplementation(() => {
+        throw new Error("EROFS: read-only file system");
+      });
+
+      const id = configManager.getDefaultClientId();
+
+      expect(id).toMatch(/^ably-cli-[0-9a-f]{8}$/);
+      expect(configManager.getDefaultClientId()).toBe(id);
+    });
+  });
 });

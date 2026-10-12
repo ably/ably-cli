@@ -15,6 +15,8 @@ import {
   CLIENT_ID_CLAIM,
   CLIENT_ID_ENV_VAR,
   InvalidClientIdError,
+  type ClientIdentity,
+  describeClientIdSource,
   readTokenIdentity,
   resolveClientIdentity,
 } from "./services/client-identity.js";
@@ -159,6 +161,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * connection cap. An explicit --client-id is always used as given.
    */
   protected suffixClientIdPerProcess = false;
+
+  // The identity this command acts as, suffix included, so the banner and
+  // every client this command builds agree on it.
+  private actingIdentity: ClientIdentity | undefined;
 
   // Core global flags available to all commands (verbose, json, pretty-json, web-cli-help)
   static globalFlags = { ...coreGlobalFlags };
@@ -768,15 +774,40 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   private bannerClientId(flags: BaseFlags): string | undefined {
     if (process.env.ABLY_TOKEN) {
       const identity = readTokenIdentity(process.env.ABLY_TOKEN);
-      return identity.kind === "jwt" ? identity.clientId : undefined;
+      if (identity.kind !== "jwt") return undefined;
+      if (identity.clientId !== "*") return identity.clientId;
     }
 
     try {
-      return resolveClientIdentity(flags["client-id"], this.configManager)
-        .clientId;
+      return this.resolveActingIdentity(flags).clientId;
     } catch {
       return undefined;
     }
+  }
+
+  /**
+   * The identity this command acts as under API-key auth or a wildcard
+   * token, resolved once.
+   *
+   * @throws InvalidClientIdError when the winning value is empty or "*".
+   */
+  private resolveActingIdentity(flags: BaseFlags): ClientIdentity {
+    if (this.actingIdentity) return this.actingIdentity;
+
+    const identity = resolveClientIdentity(
+      flags["client-id"],
+      this.configManager,
+    );
+    this.actingIdentity =
+      identity.clientId &&
+      this.suffixClientIdPerProcess &&
+      identity.source !== "flag"
+        ? {
+            ...identity,
+            clientId: `${identity.clientId}-${randomUUID().slice(0, 8)}`,
+          }
+        : identity;
+    return this.actingIdentity;
   }
 
   /**
@@ -1196,7 +1227,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     // Handle authentication: ABLY_TOKEN env → flags["api-key"] (set by ensureAppAndKey) → ABLY_API_KEY env → config
     if (process.env.ABLY_TOKEN) {
       options.token = process.env.ABLY_TOKEN;
-      this.applyTokenIdentity(process.env.ABLY_TOKEN, flags);
+      this.applyTokenIdentity(options, process.env.ABLY_TOKEN, flags);
     } else if (flags["api-key"]) {
       this.applyApiKeyAuth(options, flags["api-key"], flags);
     } else if (process.env.ABLY_API_KEY) {
@@ -1583,9 +1614,61 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * on a value the CLI cannot act as, such as "" or "*".
    */
   protected resolveClientId(flags: BaseFlags): string | undefined {
+    const identity = this.validatedIdentity(flags, () =>
+      this.resolveActingIdentity(flags),
+    );
+
+    this.logCliEvent(
+      flags,
+      "clientId",
+      "resolved",
+      identity.clientId
+        ? `Acting as client ID ${identity.clientId} (from ${identity.source}).`
+        : "Acting with no client ID.",
+      { clientId: identity.clientId, source: identity.source },
+    );
+
+    return identity.clientId;
+  }
+
+  /**
+   * The client ID to bind a minted token to: --client-id when given, which
+   * may be "*" to let the holder assume any identity, otherwise the identity
+   * the CLI itself acts as.
+   */
+  protected resolveTokenClientId(flags: BaseFlags): string | undefined {
+    if (flags["client-id"] === undefined) return this.resolveClientId(flags);
+
+    const identity = this.validatedIdentity(flags, () =>
+      resolveClientIdentity(flags["client-id"], this.configManager, {
+        allowWildcard: true,
+      }),
+    );
+
+    // The client that issues the token acts as the token's identity, so the
+    // default identity is never resolved. It cannot act as "*", and only
+    // signs with the key, so it then acts with no client ID. The "none"
+    // warning has already been shown.
+    this.actingIdentity = {
+      ...identity,
+      clientId: identity.clientId === "*" ? undefined : identity.clientId,
+      optedOut: false,
+    };
+
+    return identity.clientId;
+  }
+
+  /**
+   * Resolve an identity, failing the command on an invalid value and warning
+   * when the deprecated "none" opt-out was used.
+   */
+  private validatedIdentity(
+    flags: BaseFlags,
+    resolve: () => ClientIdentity,
+  ): ClientIdentity {
     let identity;
     try {
-      identity = resolveClientIdentity(flags["client-id"], this.configManager);
+      identity = resolve();
     } catch (error) {
       if (error instanceof InvalidClientIdError) {
         this.fail(error.message, flags, "clientId");
@@ -1596,29 +1679,12 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
 
     if (identity.optedOut) {
       this.logWarning(
-        `Acting with no client ID ("none") is deprecated: apps that require identified clients reject it. Omit the value to use your default client ID, or set ${CLIENT_ID_ENV_VAR}.`,
+        `Acting with no client ID ("none" from ${describeClientIdSource(identity.source)}) is deprecated: apps that require identified clients reject it. Remove it to use your default client ID, or set ${CLIENT_ID_ENV_VAR}.`,
         flags,
       );
     }
 
-    const clientId =
-      identity.clientId &&
-      this.suffixClientIdPerProcess &&
-      identity.source !== "flag"
-        ? `${identity.clientId}-${randomUUID().slice(0, 8)}`
-        : identity.clientId;
-
-    this.logCliEvent(
-      flags,
-      "clientId",
-      "resolved",
-      clientId
-        ? `Acting as client ID ${clientId} (from ${identity.source}).`
-        : "Acting with no client ID.",
-      { clientId, source: identity.source },
-    );
-
-    return clientId;
+    return identity;
   }
 
   private setClientId(options: Ably.ClientOptions, flags: BaseFlags): void {
@@ -1631,9 +1697,20 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   /**
    * Under token auth the identity is the token's, never overridden. A JWT
    * must carry a clientId; a native Ably token is opaque, so its identity is
-   * only known once Ably accepts it.
+   * only known once Ably accepts it. A wildcard ("*") JWT lets its holder
+   * pick an identity, so the CLI acts as the one it would under API-key auth.
    */
-  private applyTokenIdentity(token: string, flags: BaseFlags): void {
+  private applyTokenIdentity(
+    options: Ably.ClientOptions,
+    token: string,
+    flags: BaseFlags,
+  ): void {
+    const identity = readTokenIdentity(token);
+    if (identity.kind === "jwt" && identity.clientId === "*") {
+      this.setClientId(options, flags);
+      return;
+    }
+
     if (flags["client-id"] && !this.shouldSuppressOutput(flags)) {
       this.logWarning(
         "--client-id is ignored when using token authentication; the client ID comes from the token.",
@@ -1641,7 +1718,6 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       );
     }
 
-    const identity = readTokenIdentity(token);
     if (identity.kind === "jwt" && identity.clientId === undefined) {
       this.fail(
         `The JWT in ABLY_TOKEN has no ${CLIENT_ID_CLAIM} claim. Tokens used with the CLI must carry a client ID; re-issue it with "ably auth issue-jwt-token --client-id <id>".`,

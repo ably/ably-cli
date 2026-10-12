@@ -20,6 +20,10 @@ class TestCommand extends AblyBaseCommand {
   public testGetClientOptions(flags: BaseFlags) {
     return this.getClientOptions(flags);
   }
+
+  public testDisplayAuthInfo(flags: BaseFlags) {
+    return this.displayAuthInfo(flags);
+  }
 }
 
 class SuffixedCommand extends TestCommand {
@@ -103,6 +107,22 @@ describe("client identity", () => {
       ).toThrow(/--client-id/);
     });
 
+    it("accepts '*' from the flag only when the wildcard is allowed", () => {
+      expect(
+        resolveClientIdentity("*", getMockConfigManager(), {
+          allowWildcard: true,
+        }),
+      ).toMatchObject({ clientId: "*", source: "flag" });
+    });
+
+    it("names the client.id config setting when it is invalid", () => {
+      const config = getMockConfigManager();
+      config.getConfig().client = { id: "*" };
+      expect(() => resolveClientIdentity(undefined, config)).toThrow(
+        /client\.id config setting/,
+      );
+    });
+
     it("names ABLY_CLIENT_ID when the env var is invalid", () => {
       process.env[CLIENT_ID_ENV_VAR] = "*";
       expect(() =>
@@ -127,6 +147,12 @@ describe("client identity", () => {
 
     it("treats a native Ably token as opaque", () => {
       expect(readTokenIdentity("xVLyHw.opaque")).toEqual({ kind: "opaque" });
+    });
+
+    it("treats a JWT wrapping a native Ably token as opaque", () => {
+      expect(
+        readTokenIdentity(signJwt({ "x-ably-token": "xVLyHw.opaque" })),
+      ).toEqual({ kind: "opaque" });
     });
   });
 
@@ -163,6 +189,20 @@ describe("client identity", () => {
       );
     });
 
+    it("names where a deprecated 'none' came from", () => {
+      process.env[CLIENT_ID_ENV_VAR] = "none";
+      const command = newCommand();
+      const stderr = vi
+        .spyOn(command as unknown as { logToStderr: () => void }, "logToStderr")
+        .mockImplementation(() => {});
+
+      command.testGetClientOptions({});
+
+      expect(stderr).toHaveBeenCalledWith(
+        expect.stringContaining(`"none" from ${CLIENT_ID_ENV_VAR}`),
+      );
+    });
+
     it.each(["", "*"])("fails for --client-id %j", (value) => {
       expect(() =>
         newCommand().testGetClientOptions({ "client-id": value }),
@@ -176,6 +216,19 @@ describe("client identity", () => {
       );
     });
 
+    it("shows the suffixed client ID it acts as in the banner", async () => {
+      const command = newCommand(SuffixedCommand);
+      const log = vi
+        .spyOn(command as unknown as { log: (msg: string) => void }, "log")
+        .mockImplementation(() => {});
+
+      const { clientId } = command.testGetClientOptions({});
+      await command.testDisplayAuthInfo({});
+
+      expect(clientId).toMatch(/-[0-9a-f]{8}$/);
+      expect(log).toHaveBeenCalledWith(expect.stringContaining(clientId!));
+    });
+
     it("never suffixes an explicit --client-id", () => {
       expect(
         newCommand(SuffixedCommand).testGetClientOptions({
@@ -187,6 +240,20 @@ describe("client identity", () => {
     it("never sets a client ID over a token's", () => {
       process.env.ABLY_TOKEN = signJwt({ "x-ably-clientId": "alice" });
       expect(newCommand().testGetClientOptions({}).clientId).toBeUndefined();
+    });
+
+    it("acts as --client-id under a wildcard JWT", () => {
+      process.env.ABLY_TOKEN = signJwt({ "x-ably-clientId": "*" });
+      expect(
+        newCommand().testGetClientOptions({ "client-id": "alice" }).clientId,
+      ).toBe("alice");
+    });
+
+    it("acts as the default client ID under a wildcard JWT", () => {
+      process.env.ABLY_TOKEN = signJwt({ "x-ably-clientId": "*" });
+      expect(newCommand().testGetClientOptions({}).clientId).toBe(
+        MOCK_DEFAULT_CLIENT_ID,
+      );
     });
 
     it("fails for a JWT without a client ID", () => {

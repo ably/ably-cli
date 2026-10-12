@@ -360,7 +360,13 @@ export class TomlConfigManager implements ConfigManager {
 
     const defaultId = generateDefaultClientId();
     this.config.client = { ...this.config.client, defaultId };
-    this.saveConfig();
+    try {
+      this.saveConfig();
+    } catch {
+      // A read-only config (e.g. a locked-down CI container) must not break
+      // every command: keep the ID in memory for this process instead.
+    }
+
     return defaultId;
   }
 

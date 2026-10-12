@@ -75,7 +75,7 @@ export const hiddenControlApiFlags = {
 export const clientIdFlag = {
   "client-id": Flags.string({
     description:
-      'Overrides any default client ID when using API authentication. Use "none" to explicitly set no client ID. Not applicable when using token authentication.',
+      'Client ID to act as. Defaults to ABLY_CLIENT_ID, or a stable ID generated for this install. Ignored under token authentication unless the token\'s client ID is "*".',
   }),
 };
 
