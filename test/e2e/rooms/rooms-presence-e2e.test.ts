@@ -3,7 +3,7 @@ import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  getUniqueClientId,
+  getTestClientId,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -23,7 +23,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms Presence E2E Tests", () => {
   beforeEach(() => {
     resetTestTracking();
     testRoom = getUniqueChannelName("room-pres");
-    clientId = getUniqueClientId("pres-client");
+    clientId = getTestClientId("pres-client");
   });
 
   afterEach(async () => {

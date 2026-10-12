@@ -3,7 +3,7 @@ import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  getUniqueClientId,
+  getTestClientId,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -25,7 +25,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms Occupancy E2E Tests", () => {
   beforeEach(() => {
     resetTestTracking();
     testRoom = getUniqueChannelName("room-occ");
-    clientId = getUniqueClientId("occ-client");
+    clientId = getTestClientId("occ-client");
   });
 
   afterEach(async () => {
@@ -91,7 +91,7 @@ describe.skipIf(SHOULD_SKIP_E2E)("Rooms Occupancy E2E Tests", () => {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Enter presence to trigger an occupancy change
-        const enterClientId = getUniqueClientId("occ-enter");
+        const enterClientId = getTestClientId("occ-enter");
         enterer = await startPresenceCommand(
           [
             "rooms",

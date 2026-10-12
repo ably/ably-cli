@@ -19,6 +19,8 @@ The workhorse. Every command gets unit tests. They should cover every code branc
 
 Run against real Ably services with real credentials (via env vars). These cover the entire journey — the CLI's interaction with the actual Ably service, end to end. Every command must have an E2E test. E2E tests should cover the happy path and major sad paths (e.g., invalid capabilities, nonexistent resources). They are slow and can incur costs, so use them deliberately.
 
+Ably counts every distinct client ID it sees towards the account's MAU, so E2E tests never mint random client IDs: use `getTestClientId(prefix)` from `test/helpers/e2e-test-helper.ts`, which draws from a small fixed pool per prefix (successive calls return distinct IDs), and CLI subprocesses that don't pass `--client-id` act as the fixed `ABLY_CLIENT_ID` set for the `e2e` project in `vitest.config.ts`.
+
 ### TTY tests
 
 Use `node-pty` to create a real pseudo-terminal. This is the only way to test readline SIGINT handling, which doesn't work with piped stdio. Local only — cannot run in CI (no TTY in GitHub Actions runners). Rebuild `node-pty` with `pnpm rebuild node-pty` if it fails to load.

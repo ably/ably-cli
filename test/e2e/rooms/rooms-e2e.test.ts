@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach, expect } from "vitest";
 import {
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  getUniqueClientId,
+  getTestClientId,
   cleanupTrackedResources,
   testOutputFiles,
   testCommands,
@@ -30,8 +30,8 @@ describe("Rooms E2E Tests", () => {
     testCommands.length = 0;
 
     testRoom = getUniqueChannelName("room");
-    client1Id = getUniqueClientId("client1");
-    client2Id = getUniqueClientId("client2");
+    client1Id = getTestClientId("client1");
+    client2Id = getTestClientId("client2");
   });
 
   afterEach(async () => {

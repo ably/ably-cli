@@ -71,6 +71,9 @@ export default defineConfig({
           setupFiles: ["./test/setup.ts", "./test/e2e/setup.ts"],
           env: {
             ABLY_API_KEY: undefined,
+            // One fixed identity for CLI subprocesses that don't pass
+            // --client-id, so runs don't mint a new MAU per fresh config dir.
+            ABLY_CLIENT_ID: "cli-e2e-default",
           },
           testTimeout: 20000, // Allow 20s per test for plenty of time on actions
           hookTimeout: 60000, // 60 seconds for hooks
