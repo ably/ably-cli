@@ -17,7 +17,6 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
     '$ ably auth issue-ably-token --capability \'{"*":["*"]}\'',
     '$ ably auth issue-ably-token --capability \'{"chat:*":["publish","subscribe"], "status:*":["subscribe"]}\' --ttl 3600',
     "$ ably auth issue-ably-token --client-id client123 --ttl 86400",
-    '$ ably auth issue-ably-token --client-id "none" --ttl 3600',
     "$ ably auth issue-ably-token --json",
     "$ ably auth issue-ably-token --pretty-json",
     "$ ably auth issue-ably-token --token-only",
@@ -37,7 +36,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
     }),
     "client-id": Flags.string({
       description:
-        'Client ID to issue the token to (defaults to the client ID the CLI acts as). Use "none" to issue a token with no client ID.',
+        'Client ID to issue the token to (defaults to the client ID the CLI acts as). "none" issues an anonymous token, which apps requiring identified clients reject.',
     }),
     "token-only": Flags.boolean({
       default: false,

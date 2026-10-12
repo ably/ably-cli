@@ -48,7 +48,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
     }),
     "client-id": Flags.string({
       description:
-        'Client ID to issue the token to (defaults to the client ID the CLI acts as). Use "none" to issue a token with no client ID.',
+        'Client ID to issue the token to (defaults to the client ID the CLI acts as). "none" issues an anonymous token, which apps requiring identified clients reject.',
     }),
     "client-type": Flags.string({
       description:
