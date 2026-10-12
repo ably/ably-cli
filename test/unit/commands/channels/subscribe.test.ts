@@ -72,6 +72,28 @@ describe("channels:subscribe command", () => {
       );
     });
 
+    it("should exit non-zero when the connection fails mid-subscription", async () => {
+      const mock = getMockAblyRealtime();
+      const commandPromise = runCommand(
+        ["channels:subscribe", "test-channel"],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
+      mock.connection._emit({
+        current: "failed",
+        previous: "connected",
+        reason: { message: "Evicted", code: 40012, statusCode: 400 },
+      } as Parameters<typeof mock.connection._emit>[0]);
+
+      const { error } = await commandPromise;
+      expect(error?.message).toContain("Connection failed: Evicted");
+      expect(error?.message).toContain("Ably error code: 40012");
+      expect(error?.oclif?.exit).toBeGreaterThan(0);
+    });
+
     it("should receive and display messages with event name and data", async () => {
       // Run command in background-like manner
       const commandPromise = runCommand(

@@ -50,6 +50,7 @@ import {
   waitUntilInterruptedOrTimeout,
   type ExitReason,
 } from "./utils/long-running.js";
+import { ConnectionHealthMonitor } from "./utils/connection-health.js";
 import isTestMode from "./utils/test-mode.js";
 import isWebCliMode from "./utils/web-mode.js";
 import * as fs from "node:fs";
@@ -159,6 +160,9 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * connection cap. An explicit --client-id is always used as given.
    */
   protected suffixClientIdPerProcess = false;
+
+  /** Aborted with the cause when a watched connection dies mid-command. */
+  private readonly connectionLost = new AbortController();
 
   // Core global flags available to all commands (verbose, json, pretty-json, web-cli-help)
   static globalFlags = { ...coreGlobalFlags };
@@ -1004,6 +1008,28 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * This hook runs before command execution
    * It's the oclif standard hook that runs before the run() method
    */
+  /**
+   * Emit a terminal "completed" line so JSON consumers know the command is
+   * done. Suppressed when the command is being delegated to from another
+   * command (the outer command emits its own terminator).
+   */
+  private logCompletedStatus(exitCode: 0 | 1): void {
+    const isJsonMode =
+      this.argv.includes("--json") || this.argv.includes("--pretty-json");
+    if (!isJsonMode || this.argv.includes("--skip-completed-status")) return;
+
+    const flags: BaseFlags = this.argv.includes("--pretty-json")
+      ? { "pretty-json": true }
+      : { json: true };
+    this.log(
+      this.formatJsonRecord(
+        JsonRecordType.Status,
+        { status: "completed", exitCode },
+        flags,
+      ),
+    );
+  }
+
   async finally(err: Error | undefined): Promise<void> {
     // Clean up cached clients
     try {
@@ -1036,25 +1062,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.debug(`Realtime client cleanup error: ${String(error)}`);
     }
 
-    // Emit a terminal "completed" line so JSON consumers know the command is done.
-    // Suppressed when the command is being delegated to from another command
-    // (the outer command emits its own terminator).
-    const isJsonMode =
-      this.argv.includes("--json") || this.argv.includes("--pretty-json");
-    const suppressCompleted = this.argv.includes("--skip-completed-status");
-    if (isJsonMode && !suppressCompleted) {
-      const flags: BaseFlags = this.argv.includes("--pretty-json")
-        ? { "pretty-json": true }
-        : { json: true };
-      const exitCode = err ? 1 : 0;
-      this.log(
-        this.formatJsonRecord(
-          JsonRecordType.Status,
-          { status: "completed", exitCode },
-          flags,
-        ),
-      );
-    }
+    this.logCompletedStatus(err ? 1 : 0);
 
     // Call super to maintain the parent class functionality
     await super.finally(err);
@@ -1584,11 +1592,13 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
    * name a target or filter, which must never become the CLI's own identity.
    */
   private identityFlag(flags: BaseFlags): string | undefined {
+    return this.declaresIdentityFlag() ? flags["client-id"] : undefined;
+  }
+
+  private declaresIdentityFlag(): boolean {
     const declared = (this.constructor as { flags?: Record<string, unknown> })
       .flags?.["client-id"];
-    return declared === clientIdFlag["client-id"]
-      ? flags["client-id"]
-      : undefined;
+    return declared === clientIdFlag["client-id"];
   }
 
   /**
@@ -1789,10 +1799,15 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
   ): () => void {
     const component = options?.component || "connection";
     const showUserMessages = options?.includeUserFriendlyMessages || false;
+    const health = new ConnectionHealthMonitor((error) =>
+      this.connectionLost.abort(error),
+    );
 
     const connectionStateHandler = (
       stateChange: Ably.ConnectionStateChange,
     ) => {
+      health.handle(stateChange);
+
       // Always emit in JSON mode so agents can observe connection lifecycle
       if (this.shouldOutputJson(flags)) {
         const eventData: Record<string, unknown> = {
@@ -2120,6 +2135,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
           (typeof cmdError.context.errorCode === "number"
             ? cmdError.context.errorCode
             : undefined),
+        {
+          tokenAuth: Boolean(process.env.ABLY_TOKEN),
+          hasClientIdFlag: this.declaresIdentityFlag(),
+        },
       );
 
     if (this.shouldOutputJson(flags)) {
@@ -2155,27 +2174,29 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     component: string,
     duration?: number,
   ): Promise<ExitReason> {
-    const exitReason = await waitUntilInterruptedOrTimeout(duration);
+    const exitReason = await waitUntilInterruptedOrTimeout(
+      duration,
+      this.connectionLost.signal,
+    );
     this.logCliEvent(flags, component, "runComplete", "Exiting wait loop", {
       exitReason,
     });
+
+    // A subscription whose connection died must not report success.
+    if (exitReason === "aborted") {
+      this.fail(this.connectionLost.signal.reason, flags, component);
+    }
+
     this.cleanupInProgress = exitReason === "signal";
 
     // For timeout cases in CLI commands, exit immediately to prevent hanging.
     // This is especially important for E2E tests and automated scenarios.
     if (exitReason === "timeout" && !isTestMode()) {
-      const message = "Duration elapsed – command finished cleanly.";
-      if (this.shouldOutputJson(flags)) {
-        this.log(
-          this.formatJsonRecord(
-            JsonRecordType.Status,
-            { status: "complete", message },
-            flags,
-          ),
-        );
-      } else {
-        this.log(message);
+      if (!this.shouldOutputJson(flags)) {
+        this.logToStderr("Duration elapsed – command finished cleanly.");
       }
+      // Exiting here skips finally(), so emit its terminal line ourselves.
+      this.logCompletedStatus(0);
       // Small delay to ensure output is flushed, then force-exit to prevent
       // hanging and avoid spurious cleanup messages (e.g. "Detached from channel").
       await new Promise<void>((resolve) => setTimeout(resolve, 200));

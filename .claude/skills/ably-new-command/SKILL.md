@@ -474,7 +474,7 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`
 - [ ] JSON data nested under a domain key (singular for events/single items, plural for collections) — not spread at top level (see `patterns.md` "JSON Data Nesting Convention")
 - [ ] `room.attach()` / `space.enter()` only called when the SDK method requires a realtime connection (subscribe, send, presence) — NOT for REST mutations (update, delete, annotate, history)
-- [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`)
+- [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`) and call `this.setupConnectionStateLogging(client, flags)` — together they fail the command (non-zero exit) when the connection fails or keeps dropping, instead of exiting 0
 - [ ] Error handling uses `this.fail()` exclusively, not `this.error()` or `this.log(chalk.red(...))`
 - [ ] Component strings are camelCase: single-word lowercase (`"room"`, `"auth"`), multi-word camelCase (`"channelPublish"`, `"roomPresenceSubscribe"`)
 - [ ] At least one `--json` example in `static examples`
