@@ -8,6 +8,9 @@ export const CLIENT_ID_ENV_VAR = "ABLY_CLIENT_ID";
 /** The JWT claim that carries the client ID an Ably JWT is bound to. */
 export const CLIENT_ID_CLAIM = "x-ably-clientId";
 
+/** The JWT claim that wraps a native Ably token inside a JWT. */
+const WRAPPED_TOKEN_CLAIM = "x-ably-token";
+
 /** Deprecated sentinel that opts out of a client ID entirely. */
 const NO_CLIENT_ID = "none";
 
@@ -24,9 +27,14 @@ export interface ClientIdentity {
 const SOURCE_NAMES: Record<ClientIdSource, string> = {
   flag: "--client-id",
   env: CLIENT_ID_ENV_VAR,
-  config: "the clientId config setting",
+  config: "the client.id config setting",
   default: "the generated default client ID",
 };
+
+/** How a resolved client ID's source is named in messages to the user. */
+export function describeClientIdSource(source: ClientIdSource): string {
+  return SOURCE_NAMES[source];
+}
 
 /** A user-supplied client ID the CLI cannot act as. */
 export class InvalidClientIdError extends Error {}
@@ -34,9 +42,14 @@ export class InvalidClientIdError extends Error {}
 /**
  * Reject client IDs that would otherwise fail obscurely: an empty value used
  * to fall back to a random identity silently, and "*" is rejected by the SDK
- * with an error that never names the flag the user typed.
+ * with an error that never names the flag the user typed. A minted token may
+ * still carry "*", which lets its holder assume any identity.
  */
-function validateClientId(value: string, source: ClientIdSource): void {
+function validateClientId(
+  value: string,
+  source: ClientIdSource,
+  allowWildcard: boolean,
+): void {
   const origin = SOURCE_NAMES[source];
   if (value.trim() === "") {
     throw new InvalidClientIdError(
@@ -44,15 +57,19 @@ function validateClientId(value: string, source: ClientIdSource): void {
     );
   }
 
-  if (value === "*") {
+  if (value === "*" && !allowWildcard) {
     throw new InvalidClientIdError(
-      `${origin} cannot be "*". The wildcard is only valid inside a token's capability; the CLI must act as one concrete client ID.`,
+      `${origin} cannot be "*". The wildcard is only valid in a token's client ID; the CLI must act as one concrete client ID.`,
     );
   }
 }
 
-function toIdentity(value: string, source: ClientIdSource): ClientIdentity {
-  validateClientId(value, source);
+function toIdentity(
+  value: string,
+  source: ClientIdSource,
+  allowWildcard = false,
+): ClientIdentity {
+  validateClientId(value, source, allowWildcard);
   const optedOut = value.toLowerCase() === NO_CLIENT_ID;
   return { clientId: optedOut ? undefined : value, source, optedOut };
 }
@@ -88,15 +105,20 @@ function resolveDefaultClientIdentity(
  * setting > generated install default. An explicit flag always wins, so two
  * terminals can still act as different clients.
  *
- * @throws InvalidClientIdError when the winning value is empty or "*".
+ * `allowWildcard` accepts "*" from the flag, for commands that mint a token
+ * rather than act as the client ID.
+ *
+ * @throws InvalidClientIdError when the winning value is empty or a
+ * disallowed "*".
  */
 export function resolveClientIdentity(
   flagValue: string | undefined,
   configManager: ConfigManager,
+  { allowWildcard = false }: { allowWildcard?: boolean } = {},
 ): ClientIdentity {
   return flagValue === undefined
     ? resolveDefaultClientIdentity(configManager)
-    : toIdentity(flagValue, "flag");
+    : toIdentity(flagValue, "flag", allowWildcard);
 }
 
 /** Forget the memoized process identity. For tests only. */
@@ -110,12 +132,12 @@ export type TokenIdentity =
 
 /**
  * The client ID a token is bound to. A JWT carries it in a readable claim; a
- * native Ably token is opaque, so its identity is only known once Ably
- * accepts it.
+ * native Ably token, alone or wrapped in a JWT, is opaque, so its identity is
+ * only known once Ably accepts it.
  */
 export function readTokenIdentity(token: string): TokenIdentity {
   const payload = jwt.decode(token, { json: true });
-  if (!payload) return { kind: "opaque" };
+  if (!payload || WRAPPED_TOKEN_CLAIM in payload) return { kind: "opaque" };
 
   const clientId: unknown = payload[CLIENT_ID_CLAIM];
   return {

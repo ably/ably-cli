@@ -158,7 +158,7 @@ const ABLY_TOKEN = new EnvVarEntry(
     new DetailSection("Client ID", [
       {
         kind: "paragraph",
-        text: "`--client-id` is ignored when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed.",
+        text: "`--client-id` is ignored when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed. The exception is a JWT whose client ID is `*`, which lets its holder choose: the CLI then acts as `--client-id`, `ABLY_CLIENT_ID`, or its default client ID.",
       },
     ]),
     new DetailSection("Token expiry", [
@@ -229,7 +229,7 @@ const ABLY_CLIENT_ID = new EnvVarEntry(
     new DetailSection("Token authentication", [
       {
         kind: "paragraph",
-        text: "Ignored when `ABLY_TOKEN` is set — the client ID comes from the token.",
+        text: "Ignored when `ABLY_TOKEN` is set — the client ID comes from the token — unless the token is a JWT whose client ID is `*`. A wildcard token lets its holder choose, so the CLI acts as `ABLY_CLIENT_ID` (or `--client-id`).",
       },
     ]),
   ],

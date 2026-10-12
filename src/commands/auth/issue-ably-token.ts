@@ -37,7 +37,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
     }),
     "client-id": Flags.string({
       description:
-        'Client ID to associate with the token. Use "none" to explicitly issue a token with no client ID, otherwise a default will be generated.',
+        'Client ID to bind the token to. Use "*" to let the token holder act as any client ID. Defaults to the client ID the CLI acts as.',
     }),
     "token-only": Flags.boolean({
       default: false,
@@ -81,18 +81,8 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
         ttl: flags.ttl * 1000, // Convert to milliseconds for Ably SDK
       };
 
-      // Handle client ID - use special "none" value to explicitly indicate no clientId
-      if (flags["client-id"]) {
-        if (flags["client-id"].toLowerCase() === "none") {
-          // No client ID - leave clientId undefined in the token params
-        } else {
-          // Use the provided client ID
-          tokenParams.clientId = flags["client-id"];
-        }
-      } else {
-        // Default to the identity the CLI itself acts as
-        tokenParams.clientId = this.resolveClientId(flags);
-      }
+      const clientId = this.resolveTokenClientId(flags);
+      if (clientId !== undefined) tokenParams.clientId = clientId;
 
       // Create Ably REST client and request token
       const rest = await this.createAblyRestClient(

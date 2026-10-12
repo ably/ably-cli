@@ -148,6 +148,53 @@ describe("auth:issue-ably-token command", () => {
       expect(tokenParams.clientId).toBeUndefined();
     });
 
+    it("should issue a wildcard token for --client-id '*'", async () => {
+      const restMock = getMockAblyRest();
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue({
+        token: "mock-ably-token-wildcard",
+        issued: Date.now(),
+        expires: Date.now() + 3600000,
+        capability: '{"*":["*"]}',
+        clientId: "*",
+      });
+
+      const { error } = await runCommand(
+        ["auth:issue-ably-token", "--client-id", "*"],
+        import.meta.url,
+      );
+
+      expect(error).toBeUndefined();
+      const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
+      expect(tokenParams.clientId).toBe("*");
+    });
+
+    it("should not resolve the default identity for an explicit --client-id", async () => {
+      const restMock = getMockAblyRest();
+      restMock.auth.createTokenRequest.mockResolvedValue({});
+      restMock.auth.requestToken.mockResolvedValue({
+        token: "mock-ably-token-explicit",
+        issued: Date.now(),
+        expires: Date.now() + 3600000,
+        capability: '{"*":["*"]}',
+        clientId: "alice",
+      });
+      process.env.ABLY_CLIENT_ID = "*";
+
+      try {
+        const { error } = await runCommand(
+          ["auth:issue-ably-token", "--client-id", "alice"],
+          import.meta.url,
+        );
+
+        expect(error).toBeUndefined();
+        const tokenParams = restMock.auth.createTokenRequest.mock.calls[0][0];
+        expect(tokenParams.clientId).toBe("alice");
+      } finally {
+        delete process.env.ABLY_CLIENT_ID;
+      }
+    });
+
     it("should output only token string with --token-only flag", async () => {
       const restMock = getMockAblyRest();
       const mockTokenString = "mock-ably-token-only";
