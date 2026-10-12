@@ -1,5 +1,5 @@
 import { Args } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 import chalk from "chalk";
 import Table from "cli-table3";
 
@@ -46,7 +46,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
   private intervalId: NodeJS.Timeout | null = null;
   private readonly MAX_LOG_LINES = 10;
   private messageLogBuffer: string[] = []; // Buffer for the last 10 logs
-  private realtime: Ably.Realtime | null = null;
+  private realtime: Ably.PubSubRealtimeClient | null = null;
 
   // Track whether a test is currently running and retain a reference to the
   // table that renders live status so we can update/clear it easily.
@@ -353,7 +353,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
   }
 
   private handleChannel(
-    client: Ably.Realtime,
+    client: Ably.PubSubRealtimeClient,
     channelName: string,
     flags: Record<string, unknown>,
   ): Ably.RealtimeChannel {
@@ -514,7 +514,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
   private async setupClient(
     flags: Record<string, unknown>,
-  ): Promise<Ably.Realtime | null> {
+  ): Promise<Ably.PubSubRealtimeClient | null> {
     const realtime = await this.createAblyRealtimeClient(flags);
     if (!realtime) {
       this.fail(
