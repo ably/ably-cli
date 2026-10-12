@@ -63,6 +63,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   ├── command_not_found/  # Fuzzy-match suggestions for unknown commands
 │   │   └── init/               # CLI initialization
 │   ├── services/               # Business logic
+│   │   ├── client-identity.ts  # Resolves the client ID the CLI acts as
 │   │   ├── config-manager.ts   # CLI configuration (accounts, apps, API keys)
 │   │   ├── control-api.ts      # Ably Control API HTTP client
 │   │   ├── history-manager.ts  # Interactive mode command history persistence
