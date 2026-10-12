@@ -17,6 +17,7 @@ interface JwtPayload {
   "x-ably-appId": string;
   "x-ably-capability": Record<string, string[]>;
   "x-ably-clientId"?: string;
+  "x-ably-clientType"?: "server";
 }
 
 export default class IssueJwtTokenCommand extends AblyBaseCommand {
@@ -27,6 +28,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
     '$ ably auth issue-jwt-token --capability \'{"*":["*"]}\'',
     '$ ably auth issue-jwt-token --capability \'{"chat:*":["publish","subscribe"], "status:*":["subscribe"]}\' --ttl 3600',
     "$ ably auth issue-jwt-token --client-id client123 --ttl 86400",
+    "$ ably auth issue-jwt-token --client-type server --client-id backend-worker",
     "$ ably auth issue-jwt-token --json",
     "$ ably auth issue-jwt-token --pretty-json",
     "$ ably auth issue-jwt-token --token-only",
@@ -47,6 +49,11 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
     "client-id": Flags.string({
       description:
         'Client ID to issue the token to (defaults to the client ID the CLI acts as). Use "none" to issue a token with no client ID.',
+    }),
+    "client-type": Flags.string({
+      description:
+        "Classify clients using the token as servers, exempt from MAU counting, by adding the signed x-ably-clientType claim",
+      options: ["server"],
     }),
     "token-only": Flags.boolean({
       default: false,
@@ -102,22 +109,11 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         "x-ably-capability": capabilities,
       };
 
-      // Handle client ID - use special "none" value to explicitly indicate no clientId
-      let clientId: null | string = null;
-      if (flags["client-id"]) {
-        if (flags["client-id"].toLowerCase() === "none") {
-          // No client ID - don't add it to the token
-          clientId = null;
-        } else {
-          // Use the provided client ID
-          jwtPayload["x-ably-clientId"] = flags["client-id"];
-          clientId = flags["client-id"];
-        }
-      } else {
-        // Default to the identity the CLI itself acts as
-        clientId = this.resolveClientId(flags) ?? null;
-        if (clientId) jwtPayload["x-ably-clientId"] = clientId;
-      }
+      const clientId = this.resolveTokenClientId(flags);
+      if (clientId !== undefined) jwtPayload["x-ably-clientId"] = clientId;
+
+      const clientType = flags["client-type"] as "server" | undefined;
+      if (clientType) jwtPayload["x-ably-clientType"] = clientType;
 
       // Sign the JWT
       const token = jwt.sign(jwtPayload, keySecret, {
@@ -141,7 +137,8 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
             token: {
               appId,
               capability: capabilities,
-              ...(clientId ? { clientId } : {}),
+              clientId: clientId ?? null,
+              ...(clientType ? { clientType } : {}),
               expires: new Date(jwtPayload.exp * 1000).toISOString(),
               issued: new Date(jwtPayload.iat * 1000).toISOString(),
               keyId,
@@ -165,8 +162,11 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         this.log(`${formatLabel("TTL")} ${flags.ttl} seconds`);
         this.log(`${formatLabel("App ID")} ${appId}`);
         this.log(`${formatLabel("Key ID")} ${keyId}`);
-        if (clientId) {
-          this.log(`${formatLabel("Client ID")} ${formatClientId(clientId)}`);
+        this.log(
+          `${formatLabel("Client ID")} ${clientId ? formatClientId(clientId) : "anonymous"}`,
+        );
+        if (clientType) {
+          this.log(`${formatLabel("Client Type")} ${clientType}`);
         }
         this.log(
           `${formatLabel("Capability")} ${this.formatJsonOutput(capabilities, flags)}`,

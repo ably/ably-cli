@@ -81,18 +81,8 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
         ttl: flags.ttl * 1000, // Convert to milliseconds for Ably SDK
       };
 
-      // Handle client ID - use special "none" value to explicitly indicate no clientId
-      if (flags["client-id"]) {
-        if (flags["client-id"].toLowerCase() === "none") {
-          // No client ID - leave clientId undefined in the token params
-        } else {
-          // Use the provided client ID
-          tokenParams.clientId = flags["client-id"];
-        }
-      } else {
-        // Default to the identity the CLI itself acts as
-        tokenParams.clientId = this.resolveClientId(flags);
-      }
+      const clientId = this.resolveTokenClientId(flags);
+      if (clientId !== undefined) tokenParams.clientId = clientId;
 
       // Create Ably REST client and request token
       const rest = await this.createAblyRestClient(
@@ -126,9 +116,7 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
               value: tokenDetails.token,
               issuedAt: new Date(tokenDetails.issued).toISOString(),
               expiresAt: new Date(tokenDetails.expires).toISOString(),
-              ...(tokenDetails.clientId
-                ? { clientId: tokenDetails.clientId }
-                : {}),
+              clientId: tokenDetails.clientId ?? null,
               capability: tokenDetails.capability,
             },
           },
@@ -145,11 +133,9 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
           `${formatLabel("Expires")} ${new Date(tokenDetails.expires).toISOString()}`,
         );
         this.log(`${formatLabel("TTL")} ${flags.ttl} seconds`);
-        if (tokenDetails.clientId) {
-          this.log(
-            `${formatLabel("Client ID")} ${formatClientId(tokenDetails.clientId)}`,
-          );
-        }
+        this.log(
+          `${formatLabel("Client ID")} ${tokenDetails.clientId ? formatClientId(tokenDetails.clientId) : "anonymous"}`,
+        );
         this.log(
           `${formatLabel("Capability")} ${this.formatJsonOutput({ capability: tokenDetails.capability }, flags)}`,
         );
