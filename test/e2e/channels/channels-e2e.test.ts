@@ -1,5 +1,5 @@
 import { describe, it, beforeEach, afterEach, beforeAll, expect } from "vitest";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,

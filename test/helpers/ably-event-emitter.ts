@@ -6,7 +6,7 @@
  * the real SDK behavior.
  */
 
-import * as Ably from "ably";
+import { createRealtimeClient } from "@ably/pubsub-server";
 
 /**
  * Type for Ably's EventEmitter instance.
@@ -20,8 +20,17 @@ export interface AblyEventEmitter {
 
 /**
  * Ably's internal EventEmitter constructor.
- * Access it from the Ably.Realtime class where it's exposed internally.
+ * Access it from the realtime client class where it's exposed internally. The
+ * server package exports only factories, so reach the class through an
+ * unconnected client's constructor.
  */
+const realtimeClient = createRealtimeClient({
+  key: "appId.keyId:keySecret",
+  autoConnect: false,
+});
 export const EventEmitter = (
-  Ably.Realtime as unknown as { EventEmitter: new () => AblyEventEmitter }
+  realtimeClient.constructor as unknown as {
+    EventEmitter: new () => AblyEventEmitter;
+  }
 ).EventEmitter;
+realtimeClient.close();

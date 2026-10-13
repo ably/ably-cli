@@ -71,11 +71,16 @@ export const hiddenControlApiFlags = {
 /**
  * client-id flag for commands where client identity matters (e.g., subscribe, publish, enter, update, delete).
  * Not needed for read-only queries (get, get-all, occupancy get) — Ably capabilities are operation-based, not clientId-based.
+ *
+ * This exact definition is the identity flag: the base command honours
+ * `client-id` as the CLI's own identity only when a command declares it via
+ * this object. A command-local `client-id` flag (a push target or filter, a
+ * token's subject) never changes who the CLI acts as.
  */
 export const clientIdFlag = {
   "client-id": Flags.string({
     description:
-      'Overrides any default client ID when using API authentication. Use "none" to explicitly set no client ID. Not applicable when using token authentication.',
+      'Client ID to act as. Defaults to ABLY_CLIENT_ID, or a stable ID generated for this install. Ignored under token authentication unless the token\'s client ID is "*".',
   }),
 };
 

@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 import chalk from "chalk";
 import Table from "cli-table3";
 
@@ -54,6 +54,8 @@ interface BenchmarkPayload {
 }
 
 export default class BenchPublisher extends AblyBaseCommand {
+  protected override suffixClientIdPerProcess = true;
+
   static override args = {
     channelName: Args.string({
       description: "The channel name to publish to",
@@ -107,7 +109,7 @@ export default class BenchPublisher extends AblyBaseCommand {
   private readonly MAX_LOG_LINES = 10; // Buffer for the last 10 logs
   private messageLogBuffer: string[] = [];
 
-  private realtime: Ably.Realtime | null = null;
+  private realtime: Ably.PubSubRealtimeClient | null = null;
   private presenceCount = 0;
 
   // Override finally to ensure resources are cleaned up

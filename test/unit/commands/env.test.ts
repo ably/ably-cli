@@ -13,6 +13,7 @@ const CANONICAL_NAMES = [
   "ABLY_ACCESS_TOKEN",
   "ABLY_ENDPOINT",
   "ABLY_APP_ID",
+  "ABLY_CLIENT_ID",
   "ABLY_CLI_CONFIG_DIR",
   "ABLY_HISTORY_FILE",
   "ABLY_CLI_DEFAULT_DURATION",
@@ -81,7 +82,7 @@ describe("env command", () => {
       expect(result).toHaveProperty("type", "result");
       expect(result).toHaveProperty("command", "env");
       expect(result).toHaveProperty("success", true);
-      expect(result.envVars).toHaveLength(10);
+      expect(result.envVars).toHaveLength(11);
       expect(result.envVars[0]).toMatchObject({
         name: "ABLY_API_KEY",
         category: "Authentication",
@@ -89,7 +90,7 @@ describe("env command", () => {
       });
       expect(result.envVars[3].name).toBe("ABLY_URL");
       expect(result.envVars[4].name).toBe("ABLY_ENDPOINT");
-      expect(result.envVars[9].name).toBe("ABLY_CLI_NON_INTERACTIVE");
+      expect(result.envVars[10].name).toBe("ABLY_CLI_NON_INTERACTIVE");
       expect(result.crossCutting).toBeDefined();
       expect(result.crossCutting.authResolutionOrder.heading).toBe(
         "Authentication Resolution Order",
