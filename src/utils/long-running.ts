@@ -8,10 +8,15 @@
 
 import isTestMode from "./test-mode.js";
 
-export type ExitReason = "signal" | "timeout";
+export type ExitReason = "signal" | "timeout" | "aborted";
 
+/**
+ * Wait until Ctrl+C, the duration elapses, or `signal` aborts (which a
+ * command uses to stop waiting on a connection that has died).
+ */
 export async function waitUntilInterruptedOrTimeout(
   durationSeconds?: number,
+  signal?: AbortSignal,
 ): Promise<ExitReason> {
   // In test mode, we may have many instances running concurrently
   // Increase the max listeners to avoid warnings
@@ -26,6 +31,7 @@ export async function waitUntilInterruptedOrTimeout(
     let sigintHandler: (() => void) | undefined;
     let sigtermHandler: (() => void) | undefined;
     let resolved = false;
+    const abortHandler = (): void => handleExit("aborted");
 
     const handleExit = (reason: ExitReason): void => {
       if (resolved) {
@@ -38,6 +44,7 @@ export async function waitUntilInterruptedOrTimeout(
       // Remove signal handlers if they were installed
       if (sigintHandler) process.removeListener("SIGINT", sigintHandler);
       if (sigtermHandler) process.removeListener("SIGTERM", sigtermHandler);
+      signal?.removeEventListener("abort", abortHandler);
 
       resolve(reason);
     };
@@ -66,5 +73,11 @@ export async function waitUntilInterruptedOrTimeout(
 
     process.once("SIGINT", sigintHandler);
     process.once("SIGTERM", sigtermHandler);
+
+    if (signal?.aborted) {
+      handleExit("aborted");
+    } else {
+      signal?.addEventListener("abort", abortHandler);
+    }
   });
 }
