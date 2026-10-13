@@ -3,6 +3,7 @@ import { Config } from "@oclif/core";
 import jwt from "jsonwebtoken";
 
 import { AblyBaseCommand } from "../../../src/base-command.js";
+import { clientIdFlag } from "../../../src/flags.js";
 import {
   CLIENT_ID_ENV_VAR,
   readTokenIdentity,
@@ -15,6 +16,8 @@ import {
 } from "../../helpers/mock-config-manager.js";
 
 class TestCommand extends AblyBaseCommand {
+  static override flags = { ...clientIdFlag };
+
   async run(): Promise<void> {}
 
   public testGetClientOptions(flags: BaseFlags) {

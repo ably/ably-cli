@@ -54,7 +54,7 @@ export default class PushDevicesSave extends AblyBaseCommand {
       description: "Web push auth secret (required for web transport)",
     }),
     "client-id": Flags.string({
-      description: "Client ID to associate with the device",
+      description: "Client ID to register the device to",
     }),
     metadata: Flags.string({
       description: "Device metadata as JSON",

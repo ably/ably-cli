@@ -20,7 +20,7 @@ export default class PushDevicesRemoveWhere extends AblyBaseCommand {
       description: "Filter by device ID",
     }),
     "client-id": Flags.string({
-      description: "Filter by client ID",
+      description: "Only remove devices registered to this client ID",
     }),
     ...forceFlag,
   };
