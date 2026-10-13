@@ -46,7 +46,7 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
     }),
     "client-id": Flags.string({
       description:
-        'Client ID to associate with the token. Use "none" to explicitly issue a token with no client ID, otherwise a default will be generated.',
+        'Client ID to bind the token to. Use "*" to let the token holder act as any client ID. Defaults to the client ID the CLI acts as.',
     }),
     "token-only": Flags.boolean({
       default: false,
@@ -102,23 +102,8 @@ export default class IssueJwtTokenCommand extends AblyBaseCommand {
         "x-ably-capability": capabilities,
       };
 
-      // Handle client ID - use special "none" value to explicitly indicate no clientId
-      let clientId: null | string = null;
-      if (flags["client-id"]) {
-        if (flags["client-id"].toLowerCase() === "none") {
-          // No client ID - don't add it to the token
-          clientId = null;
-        } else {
-          // Use the provided client ID
-          jwtPayload["x-ably-clientId"] = flags["client-id"];
-          clientId = flags["client-id"];
-        }
-      } else {
-        // Generate a default client ID
-        const defaultClientId = `ably-cli-${randomUUID().slice(0, 8)}`;
-        jwtPayload["x-ably-clientId"] = defaultClientId;
-        clientId = defaultClientId;
-      }
+      const clientId = this.resolveTokenClientId(flags) ?? null;
+      if (clientId) jwtPayload["x-ably-clientId"] = clientId;
 
       // Sign the JWT
       const token = jwt.sign(jwtPayload, keySecret, {
