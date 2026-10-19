@@ -97,8 +97,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Integrations E2E Tests", () => {
       expect(createRecord).toBeDefined();
 
       const rule = (createRecord?.rule ?? createRecord?.integration) as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const ruleId = (rule?.id ?? rule?.ruleId ?? "") as string;
       expect(ruleId).toBeTruthy();
 
@@ -165,8 +164,7 @@ describe.skipIf(SHOULD_SKIP_CONTROL_E2E)("Integrations E2E Tests", () => {
       expect(createRecord).toBeDefined();
 
       const createdRule = (createRecord?.rule ?? createRecord?.integration) as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const ruleId = (createdRule?.id ?? createdRule?.ruleId ?? "") as string;
       expect(ruleId).toBeTruthy();
       expect(createdRule).toHaveProperty("chatRoomFilter", "room:.*");

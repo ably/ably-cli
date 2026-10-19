@@ -59,8 +59,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
           `${formatLabel("State")} ${formatDeviceState(device.push.state)}`,
         );
       const recipient = device.push.recipient as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       if (recipient?.transportType) {
         this.log(
           `${formatLabel("Transport Type")} ${recipient.transportType as string}`,
