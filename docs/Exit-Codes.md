@@ -33,6 +33,7 @@ This document describes the exit codes used by the Ably CLI, particularly in int
 ### Single Ctrl+C
 - **At empty prompt**: Shows "^C" and message about typing 'exit' to quit
 - **During command execution**: Interrupts the command and returns to prompt
+- **At a command's y/n confirmation prompt**: Cancels the command ("Interrupted by user") and returns to prompt
 - **With partial command typed**: Clears the line and returns to prompt
 
 ### Double Ctrl+C (within 500ms)
