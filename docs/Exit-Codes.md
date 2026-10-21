@@ -55,6 +55,7 @@ This document describes the exit codes used by the Ably CLI, particularly in int
 Exit codes are handled in:
 - `src/commands/interactive.ts`: Sets exit code 42 for user exit
 - `src/utils/sigint-exit.ts`: Handles SIGINT behavior and exit code 130
+- `src/utils/sigint-cancellation.ts`: Turns Ctrl+C into exit code 130 for commands that combine spinners and prompts (e.g. `accounts login`)
 
 ---
 
