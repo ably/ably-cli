@@ -1,17 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let mockQuestion: (query: string, callback: (answer: string) => void) => void;
+let mockClose: ReturnType<typeof vi.fn>;
+let mockListeners: Record<string, () => void>;
 
 vi.mock("node:readline", () => ({
-  createInterface: () => ({
-    close: vi.fn(),
-    question: (query: string, callback: (answer: string) => void) => {
-      mockQuestion(query, callback);
-    },
-  }),
+  createInterface: () => {
+    mockClose = vi.fn();
+    mockListeners = {};
+    return {
+      close: mockClose,
+      on: (event: string, listener: () => void) => {
+        mockListeners[event] = listener;
+      },
+      question: (query: string, callback: (answer: string) => void) => {
+        mockQuestion(query, callback);
+      },
+    };
+  },
 }));
 
-import { promptForConfirmation } from "../../../src/utils/prompt-confirmation.js";
+import {
+  InterruptError,
+  promptForConfirmation,
+} from "../../../src/utils/prompt-confirmation.js";
 
 describe("promptForConfirmation", () => {
   beforeEach(() => {
@@ -44,6 +56,15 @@ describe("promptForConfirmation", () => {
     };
     await promptForConfirmation("Are you sure?");
     expect(capturedQuery).toBe("Are you sure? [y/n]");
+  });
+
+  it("rejects with InterruptError and closes the prompt on Ctrl+C", async () => {
+    vi.spyOn(process.stdout, "write").mockReturnValue(true);
+    mockQuestion = () => {};
+    const result = promptForConfirmation("Delete this?");
+    mockListeners.SIGINT();
+    await expect(result).rejects.toBeInstanceOf(InterruptError);
+    expect(mockClose).toHaveBeenCalled();
   });
 
   describe("defaultYes", () => {
