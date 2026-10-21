@@ -37,7 +37,10 @@ export default class StatusCommand extends AblyBaseCommand {
     const spinner =
       isInteractive || isJson
         ? null
-        : ora("Checking Ably service status...").start();
+        : ora({
+            discardStdin: false,
+            text: "Checking Ably service status...",
+          }).start();
     if (isInteractive) {
       this.logProgress("Checking Ably service status", flags);
     }

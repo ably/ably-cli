@@ -20,10 +20,8 @@ vi.mock("node:readline", () => ({
   },
 }));
 
-import {
-  InterruptError,
-  promptForConfirmation,
-} from "../../../src/utils/prompt-confirmation.js";
+import { promptForConfirmation } from "../../../src/utils/prompt-confirmation.js";
+import { InterruptError } from "../../../src/utils/sigint-cancellation.js";
 
 describe("promptForConfirmation", () => {
   beforeEach(() => {

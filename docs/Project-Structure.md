@@ -89,6 +89,7 @@ This document outlines the directory structure of the Ably CLI project.
 │       ├── prompt-confirmation.ts  # Y/N confirmation prompts
 │       ├── prompt-value.ts         # Free-text and masked value prompts
 │       ├── readline-helper.ts      # Readline utilities for interactive mode
+│       ├── sigint-cancellation.ts  # Ctrl+C cancellation for spinner + prompt flows (e.g. login)
 │       ├── sigint-exit.ts          # SIGINT/Ctrl+C handling (exit code 130)
 │       ├── string-distance.ts      # Levenshtein distance for fuzzy matching
 │       ├── terminal-diagnostics.ts # Terminal capability detection
@@ -132,7 +133,7 @@ This document outlines the directory structure of the Ably CLI project.
 │   │   └── interactive-mode.test.ts # Interactive REPL integration tests
 │   ├── tty/                    # TTY-dependent tests (node-pty, local only)
 │   │   ├── tty-test-helper.ts     # PTY spawn/wait/write helpers
-│   │   └── commands/              # Interactive SIGINT tests (prompt, running command, confirmation)
+│   │   └── commands/              # Ctrl+C tests (interactive prompt, running command, confirmation, accounts login)
 │   ├── e2e/                    # End-to-end tests against real Ably
 │   │   ├── auth/               # Auth E2E tests
 │   │   ├── bench/              # Benchmark E2E tests

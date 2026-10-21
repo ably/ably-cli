@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Flags, Interfaces } from "@oclif/core";
 import chalk from "chalk";
 import * as readline from "node:readline";
 import ora from "ora";
@@ -21,7 +21,14 @@ import openUrl from "../../utils/open-url.js";
 import { formatResource } from "../../utils/output.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import { promptForValue } from "../../utils/prompt-value.js";
+import {
+  forwardSigintToProcess,
+  InterruptError,
+  withSigintCancellation,
+} from "../../utils/sigint-cancellation.js";
 import { pickUniqueAlias, slugifyAccountName } from "../../utils/slugify.js";
+
+type LoginFlags = Interfaces.InferredFlags<typeof AccountsLogin.flags>;
 
 /** Offered as the default when the guided local flow prompts for a URL. */
 const DEFAULT_LOCAL_URL = "http://localhost:8081";
@@ -99,6 +106,22 @@ export default class AccountsLogin extends ControlBaseCommand {
   public async run(): Promise<void> {
     const { flags } = await this.parse(AccountsLogin);
 
+    // Login strings together a spinner and several interactive prompts, and
+    // the libraries behind them leave Ctrl+C unhandled when combined. Own
+    // SIGINT for the whole flow and exit from here instead.
+    try {
+      await withSigintCancellation((signal) => this.login(flags, signal));
+    } catch (error) {
+      if (error instanceof InterruptError) {
+        // Match the conventional exit code for SIGINT (128 + signal number).
+        this.exit(130);
+      }
+
+      throw error;
+    }
+  }
+
+  private async login(flags: LoginFlags, signal: AbortSignal): Promise<void> {
     // Display ASCII art logo if not in JSON mode and the caller hasn't
     // opted out (e.g. `ably init` already prints the logo and delegates here).
     if (!this.shouldOutputJson(flags) && !flags["skip-logo"]) {
@@ -114,8 +137,11 @@ export default class AccountsLogin extends ControlBaseCommand {
 
     let oauthTokens: OAuthTokens;
     try {
-      oauthTokens = await this.oauthLogin(flags);
+      oauthTokens = await this.oauthLogin(flags, signal);
     } catch (error) {
+      // A cancelled login has already been reported by the spinner; `run`
+      // handles the exit.
+      if (signal.aborted) throw error;
       this.fail(error, flags, "accountLogin");
     }
 
@@ -286,6 +312,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           }
         }
       } catch (error) {
+        if (error instanceof InterruptError) throw error;
         this.logWarning(`Could not fetch apps: ${errorMessage(error)}`, flags);
       }
 
@@ -413,6 +440,8 @@ export default class AccountsLogin extends ControlBaseCommand {
         }
       }
     } catch (error) {
+      // Ctrl+C at a confirmation prompt; `run` handles the exit.
+      if (error instanceof InterruptError) throw error;
       this.fail(error, flags, "accountLogin");
     }
   }
@@ -719,7 +748,10 @@ export default class AccountsLogin extends ControlBaseCommand {
     }
   }
 
-  private async oauthLogin(flags: BaseFlags): Promise<OAuthTokens> {
+  private async oauthLogin(
+    flags: BaseFlags,
+    signal: AbortSignal,
+  ): Promise<OAuthTokens> {
     const oauthClient = new OAuthClient({
       oauthHost: flags["oauth-host"],
     });
@@ -754,38 +786,40 @@ export default class AccountsLogin extends ControlBaseCommand {
       this.log("Open the URL above in your browser to authorize.");
     }
 
+    // ora discards stdin by default, which puts the terminal in raw mode so
+    // Ctrl+C arrives as a byte rather than a signal. Its stdin-discarder then
+    // never reads that byte (it attaches with prependListener, which doesn't
+    // start a fresh stdin flowing), so Ctrl+C would be silently swallowed.
     const spinner = this.shouldOutputJson(flags)
       ? undefined
-      : ora("Waiting for authorization...").start();
+      : ora({
+          discardStdin: false,
+          text: "Waiting for authorization...",
+        }).start();
 
-    // Wire up SIGINT so Ctrl+C during polling aborts the fetch and exits
-    // cleanly. Without this, the unsettled top-level await in bin/run.js
-    // triggers a confusing "Detected unsettled top-level await" warning
-    // from Node when the user hits Ctrl+C.
-    const abortController = new AbortController();
-    const onSigint = () => {
-      abortController.abort();
-      spinner?.fail("Authentication cancelled.");
-      // Match the conventional exit code for SIGINT (128 + signal number).
-      this.exit(130);
-    };
-    process.once("SIGINT", onSigint);
+    // Abort listeners run synchronously on Ctrl+C, so the spinner is stopped
+    // before the interruption unwinds the command.
+    const onAbort = () => spinner?.fail("Authentication cancelled.");
+    signal.addEventListener("abort", onAbort, { once: true });
 
     try {
       const tokens = await oauthClient.pollForToken(
         deviceResponse.deviceCode,
         deviceResponse.interval,
         deviceResponse.expiresIn,
-        abortController.signal,
+        signal,
       );
 
       spinner?.succeed("Authentication successful.");
       return tokens;
     } catch (error) {
-      spinner?.fail("Authentication failed.");
+      if (!signal.aborted) {
+        spinner?.fail("Authentication failed.");
+      }
+
       throw error;
     } finally {
-      process.removeListener("SIGINT", onSigint);
+      signal.removeEventListener("abort", onAbort);
     }
   }
 
@@ -820,6 +854,8 @@ export default class AccountsLogin extends ControlBaseCommand {
       input: process.stdin,
       output: process.stdout,
     });
+
+    forwardSigintToProcess(rl);
 
     const logFn = this.log.bind(this);
 
@@ -856,6 +892,8 @@ export default class AccountsLogin extends ControlBaseCommand {
       input: process.stdin,
       output: process.stdout,
     });
+
+    forwardSigintToProcess(rl);
 
     return new Promise((resolve) => {
       const askForAppName = () => {
