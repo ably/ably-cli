@@ -38,9 +38,13 @@ interface FakeServer {
 /**
  * Serve the OAuth device flow and the Control API endpoints login calls.
  * `grantToken` decides whether polling succeeds straight away or keeps
- * returning `authorization_pending`.
+ * returning `authorization_pending`; with `noApps`, login offers to create
+ * one instead of prompting for a key.
  */
-async function startFakeServer(grantToken: boolean): Promise<FakeServer> {
+async function startFakeServer(
+  grantToken: boolean,
+  { noApps = false } = {},
+): Promise<FakeServer> {
   const routes: Record<string, () => [number, unknown]> = {
     "/oauth/authorize_device": () => [
       200,
@@ -68,7 +72,7 @@ async function startFakeServer(grantToken: boolean): Promise<FakeServer> {
     "/api/v1/me/accounts": () => [200, [{ id: "acc-1", name: "Test Account" }]],
     "/api/v1/accounts/acc-1/apps": () => [
       200,
-      [{ accountId: "acc-1", id: "app-1", name: "Test App" }],
+      noApps ? [] : [{ accountId: "acc-1", id: "app-1", name: "Test App" }],
     ],
     // Two keys, so login has to prompt for one.
     "/api/v1/apps/app-1/keys": () => [
@@ -180,6 +184,22 @@ describe("accounts login - Ctrl+C handling (TTY)", () => {
       const { code } = await proc.exitPromise;
       expect(code).toBe(130);
       expect(proc.output).not.toContain("unsettled top-level await");
+    },
+    timeout,
+  );
+
+  it(
+    "exits with 130 when Ctrl+C is pressed at a confirmation after authorization",
+    async () => {
+      server = await startFakeServer(true, { noApps: true });
+      proc = spawnLogin(server.host);
+
+      await waitForOutput(proc, "create your first app");
+      sendCtrlC(proc);
+
+      const { code } = await proc.exitPromise;
+      expect(code).toBe(130);
+      expect(proc.output).not.toContain("Could not fetch apps");
     },
     timeout,
   );

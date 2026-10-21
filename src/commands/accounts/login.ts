@@ -312,6 +312,7 @@ export default class AccountsLogin extends ControlBaseCommand {
           }
         }
       } catch (error) {
+        if (error instanceof InterruptError) throw error;
         this.logWarning(`Could not fetch apps: ${errorMessage(error)}`, flags);
       }
 
@@ -439,6 +440,8 @@ export default class AccountsLogin extends ControlBaseCommand {
         }
       }
     } catch (error) {
+      // Ctrl+C at a confirmation prompt; `run` handles the exit.
+      if (error instanceof InterruptError) throw error;
       this.fail(error, flags, "accountLogin");
     }
   }
