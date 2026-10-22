@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { CommandError } from "../../errors/command-error.js";

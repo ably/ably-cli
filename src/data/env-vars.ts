@@ -158,7 +158,7 @@ const ABLY_TOKEN = new EnvVarEntry(
     new DetailSection("Client ID", [
       {
         kind: "paragraph",
-        text: "`--client-id` is ignored when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed.",
+        text: "`--client-id` is ignored when `ABLY_TOKEN` is set — the client ID is embedded in the token. A warning is logged if `--client-id` is passed. The exception is a JWT whose client ID is `*`, which lets its holder choose: the CLI then acts as `--client-id`, `ABLY_CLIENT_ID`, or its default client ID.",
       },
     ]),
     new DetailSection("Token expiry", [
@@ -210,6 +210,29 @@ const ABLY_APP_ID = new EnvVarEntry(
   "Provide a default value for the `--app` flag across commands.",
   new Example([`export ABLY_APP_ID="your-app-id"`, `ably auth keys list`]),
   [],
+);
+
+const ABLY_CLIENT_ID = new EnvVarEntry(
+  "ABLY_CLIENT_ID",
+  "Configuration",
+  "Client ID the CLI acts as",
+  "Any client ID except an empty string or `*`",
+  "A stable ID generated once per install",
+  "`--client-id` CLI flag > **`ABLY_CLIENT_ID`** > `client.id` in config > generated default",
+  ["channels", "rooms", "spaces", "connections", "bench", "logs", "auth"],
+  "Set the client ID every data plane command acts as under API key auth, so a machine or CI job keeps one identity across runs.",
+  new Example([
+    `export ABLY_CLIENT_ID="deploy-bot"`,
+    `ably channels publish my-channel hello`,
+  ]),
+  [
+    new DetailSection("Token authentication", [
+      {
+        kind: "paragraph",
+        text: "Ignored when `ABLY_TOKEN` is set — the client ID comes from the token — unless the token is a JWT whose client ID is `*`. A wildcard token lets its holder choose, so the CLI acts as `ABLY_CLIENT_ID` (or `--client-id`).",
+      },
+    ]),
+  ],
 );
 
 const ABLY_CLI_CONFIG_DIR = new EnvVarEntry(
@@ -544,6 +567,7 @@ export const ENV_VARS_DATA: EnvVarsData = new EnvVarsData(
     ABLY_URL,
     ABLY_ENDPOINT,
     ABLY_APP_ID,
+    ABLY_CLIENT_ID,
     ABLY_CLI_CONFIG_DIR,
     ABLY_HISTORY_FILE,
     ABLY_CLI_DEFAULT_DURATION,

@@ -34,11 +34,14 @@ importers:
   .:
     dependencies:
       '@ably/chat':
-        specifier: ^1.3.1
-        version: 1.3.1(ably@2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 0.0.0-canary.20261001T1209.783b80e6
+        version: 0.0.0-canary.20261001T1209.783b80e6(@ably/pubsub-core@3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@ably/pubsub-server':
+        specifier: 3.0.0-canary.20261001T0958.2d5f47d6
+        version: 3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@ably/spaces':
-        specifier: ^0.5.2
-        version: 0.5.2(ably@2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 0.0.0-canary.20261001T1221.ca08adce
+        version: 0.0.0-canary.20261001T1221.ca08adce(@ably/pubsub-core@3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@inquirer/prompts':
         specifier: ^8.4.2
         version: 8.4.2(@types/node@25.6.2)
@@ -60,9 +63,6 @@ importers:
       '@xterm/xterm':
         specifier: ^6.0.0
         version: 6.0.0
-      ably:
-        specifier: ^2.21.0
-        version: 2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       chalk:
         specifier: ^5.6.2
         version: 5.6.2
@@ -374,15 +374,15 @@ importers:
         version: 8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)
       vitest:
         specifier: ^4.1.6
-        version: 4.1.6(@edge-runtime/vm@3.2.0)(@types/node@25.6.2)(@vitest/coverage-v8@4.1.5)(@vitest/ui@4.1.6)(jsdom@26.1.0)(vite@8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+        version: 4.1.6(@edge-runtime/vm@3.2.0)(@types/node@25.6.2)(@vitest/coverage-v8@4.1.5(vitest@4.1.5))(@vitest/ui@4.1.6)(jsdom@26.1.0)(vite@8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
 packages:
 
-  '@ably/chat@1.3.1':
-    resolution: {integrity: sha512-dbhsIz9g2cDzAWv7TvTpEZlKD+xGh+SedZw74QwhmaNjZA/ieB4401ScN/poWLAaGahkXzB2hP2DzeSl4qkDOA==}
+  '@ably/chat@0.0.0-canary.20261001T1209.783b80e6':
+    resolution: {integrity: sha512-dOEGuJwQ9834GrE+rOLetxAZ7FlPk6qTiGEsAcMD/E2Ppckv4c/lRCL5DC6X04sb6r7yNCT68cZ0fzuO+atz1Q==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
-      ably: ^2.19.0
+      '@ably/pubsub-core': 3.0.0-canary.20261001T0958.2d5f47d6
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
@@ -394,10 +394,26 @@ packages:
   '@ably/msgpack-js@0.4.0':
     resolution: {integrity: sha512-IPt/BoiQwCWubqoNik1aw/6M/DleMdrxJOUpSja6xmMRbT2p1TA8oqKWgfZabqzrq8emRNeSl/+4XABPNnW5pQ==}
 
-  '@ably/spaces@0.5.2':
-    resolution: {integrity: sha512-uGCsN6GIDZREh/3IdR5NJchH5jqC7+HKzpB4gpn2zCXnh/71ggxs/Zk6B1z4caHK+eMcEZHotvY87S1+WghI4A==}
+  '@ably/pubsub-core@3.0.0-canary.20261001T0958.2d5f47d6':
+    resolution: {integrity: sha512-CI9ZPMS29TU429DQFRWtgFfkj0y6yS2n4arYdbBBr7X/cEZh9/LwupOs9f3Hfekfhid3sb7zF7B8AeaSJNOUzQ==}
+    engines: {node: '>=16'}
     peerDependencies:
-      ably: ^2.3.0
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
+  '@ably/pubsub-server@3.0.0-canary.20261001T0958.2d5f47d6':
+    resolution: {integrity: sha512-HDTV6oCrRLjlGV5boNTCUyHCM3aYfHSPD1Vo0XtoLwPbTV98Mo9vwPrq43JUVHx3XxvOWqGPKxetJUiwMQNW1w==}
+    engines: {node: '>=16'}
+
+  '@ably/spaces@0.0.0-canary.20261001T1221.ca08adce':
+    resolution: {integrity: sha512-EJBLd9ZQUXHEMNUOPbf1IMhzQTiJwAYPkanWaChrTPWeVoFJ5QEARrStWEMXotIPiRJsMyfS+vk33uQ2NZ1QVg==}
+    peerDependencies:
+      '@ably/pubsub-core': 3.0.0-canary.20261001T0958.2d5f47d6
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
     peerDependenciesMeta:
@@ -1792,11 +1808,6 @@ packages:
     cpu: [arm64]
     os: [android]
 
-  '@rollup/rollup-darwin-arm64@4.40.2':
-    resolution: {integrity: sha512-Gzf1Hn2Aoe8VZzevHostPX23U7N5+4D36WJNHK88NZHCJr7aVMG4fadqkIf72eqVPGjGc0HJHNuUaUcxiR+N/w==}
-    cpu: [arm64]
-    os: [darwin]
-
   '@rollup/rollup-darwin-arm64@4.59.0':
     resolution: {integrity: sha512-W2Psnbh1J8ZJw0xKAd8zdNgF9HRLkdWwwdWqubSVk0pUuQkoHnv7rx4GiF9rT4t5DIZGAsConRE3AxCdJ4m8rg==}
     cpu: [arm64]
@@ -1880,12 +1891,6 @@ packages:
   '@rollup/rollup-linux-s390x-gnu@4.59.0':
     resolution: {integrity: sha512-oF87Ie3uAIvORFBpwnCvUzdeYUqi2wY6jRFWJAy1qus/udHFYIkplYRW+wo+GRUP4sKzYdmE1Y3+rY5Gc4ZO+w==}
     cpu: [s390x]
-    os: [linux]
-    libc: [glibc]
-
-  '@rollup/rollup-linux-x64-gnu@4.40.2':
-    resolution: {integrity: sha512-lG7Xa+BmBNwpjmVUbmyKxdQJ3Q6whHjMjzQplOs5Z+Gj7mxPtWakGHqzMqNER68G67kmCX9qX57aRsW5V0VOng==}
-    cpu: [x64]
     os: [linux]
     libc: [glibc]
 
@@ -2635,18 +2640,6 @@ packages:
   abbrev@3.0.1:
     resolution: {integrity: sha512-AO2ac6pjRB3SJmGJo+v5/aK6Omggp6fsLrs6wN9bd35ulu4cCwaAU9+7ZhXjeqHVkaHThLuzH0nZr0YpCDhygg==}
     engines: {node: ^18.17.0 || >=20.5.0}
-
-  ably@2.21.0:
-    resolution: {integrity: sha512-Zgs3O/hqhnTEoXeV1WxoQeLaww58JbnDVFbVeEDj2kCHeuLPeavTbyf2NQBkxAM3jooN5mILaP0PDm79NOcpKw==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
 
   acorn-import-attributes@1.9.5:
     resolution: {integrity: sha512-n02Vykv5uA3eHGM/Z2dQrcD56kL8TyDb2p1+0P83PClMnC/nc+anbQRhIOWnSq4Ke/KvDPrY3C9hDtC/A3eHnQ==}
@@ -6030,15 +6023,15 @@ packages:
 
 snapshots:
 
-  '@ably/chat@1.3.1(ably@2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@ably/chat@0.0.0-canary.20261001T1209.783b80e6(@ably/pubsub-core@3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
-      ably: 2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@ably/pubsub-core': 3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       async-mutex: 0.5.0
       dequal: 2.0.3
       lodash.clonedeep: 4.5.0
     optionalDependencies:
-      '@rollup/rollup-darwin-arm64': 4.40.2
-      '@rollup/rollup-linux-x64-gnu': 4.40.2
+      '@rollup/rollup-darwin-arm64': 4.59.0
+      '@rollup/rollup-linux-x64-gnu': 4.59.0
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
 
@@ -6046,9 +6039,33 @@ snapshots:
     dependencies:
       bops: 1.0.1
 
-  '@ably/spaces@0.5.2(ably@2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@ably/pubsub-core@3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
-      ably: 2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@ably/msgpack-js': 0.4.0
+      dequal: 2.0.3
+      fastestsmallesttextencoderdecoder: 1.0.22
+      got: 11.8.6
+      ulid: 2.4.0
+      ws: 8.21.1
+    optionalDependencies:
+      react: 19.2.6
+      react-dom: 19.2.6(react@19.2.6)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@ably/pubsub-server@3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      '@ably/pubsub-core': 3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+    transitivePeerDependencies:
+      - bufferutil
+      - react
+      - react-dom
+      - utf-8-validate
+
+  '@ably/spaces@0.0.0-canary.20261001T1221.ca08adce(@ably/pubsub-core@3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+    dependencies:
+      '@ably/pubsub-core': 3.0.0-canary.20261001T0958.2d5f47d6(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       nanoid: 3.3.11
     optionalDependencies:
       react: 19.2.6
@@ -7585,9 +7602,6 @@ snapshots:
   '@rollup/rollup-android-arm64@4.59.0':
     optional: true
 
-  '@rollup/rollup-darwin-arm64@4.40.2':
-    optional: true
-
   '@rollup/rollup-darwin-arm64@4.59.0':
     optional: true
 
@@ -7631,9 +7645,6 @@ snapshots:
     optional: true
 
   '@rollup/rollup-linux-s390x-gnu@4.59.0':
-    optional: true
-
-  '@rollup/rollup-linux-x64-gnu@4.40.2':
     optional: true
 
   '@rollup/rollup-linux-x64-gnu@4.59.0':
@@ -8567,7 +8578,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vitest: 4.1.6(@edge-runtime/vm@3.2.0)(@types/node@25.6.2)(@vitest/coverage-v8@4.1.5)(@vitest/ui@4.1.6)(jsdom@26.1.0)(vite@8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
+      vitest: 4.1.6(@edge-runtime/vm@3.2.0)(@types/node@25.6.2)(@vitest/coverage-v8@4.1.5(vitest@4.1.5))(@vitest/ui@4.1.6)(jsdom@26.1.0)(vite@8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
   '@vitest/utils@4.1.5':
     dependencies:
@@ -8596,21 +8607,6 @@ snapshots:
   '@zeit/schemas@2.36.0': {}
 
   abbrev@3.0.1: {}
-
-  ably@2.21.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
-    dependencies:
-      '@ably/msgpack-js': 0.4.0
-      dequal: 2.0.3
-      fastestsmallesttextencoderdecoder: 1.0.22
-      got: 11.8.6
-      ulid: 2.4.0
-      ws: 8.20.0
-    optionalDependencies:
-      react: 19.2.6
-      react-dom: 19.2.6(react@19.2.6)
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
 
   acorn-import-attributes@1.9.5(acorn@8.16.0):
     dependencies:
@@ -12043,7 +12039,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.6(@edge-runtime/vm@3.2.0)(@types/node@25.6.2)(@vitest/coverage-v8@4.1.5)(@vitest/ui@4.1.6)(jsdom@26.1.0)(vite@8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)):
+  vitest@4.1.6(@edge-runtime/vm@3.2.0)(@types/node@25.6.2)(@vitest/coverage-v8@4.1.5(vitest@4.1.5))(@vitest/ui@4.1.6)(jsdom@26.1.0)(vite@8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)):
     dependencies:
       '@vitest/expect': 4.1.6
       '@vitest/mocker': 4.1.6(vite@8.0.10(@types/node@25.6.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
@@ -12201,8 +12197,7 @@ snapshots:
 
   ws@8.20.0: {}
 
-  ws@8.21.1:
-    optional: true
+  ws@8.21.1: {}
 
   wsl-utils@0.3.1:
     dependencies:

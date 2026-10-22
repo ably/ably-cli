@@ -28,7 +28,7 @@ export default class PushChannelsRemove extends AblyBaseCommand {
       exclusive: ["client-id"],
     }),
     "client-id": Flags.string({
-      description: "Client ID to unsubscribe",
+      description: "Client ID whose subscription to remove",
       exclusive: ["device-id"],
     }),
     ...forceFlag,

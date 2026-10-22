@@ -1,4 +1,4 @@
-import type * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 import chalk, { type ChalkInstance } from "chalk";
 
 import { formatMessageData, isJsonData } from "./json-formatter.js";

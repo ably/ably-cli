@@ -64,7 +64,7 @@ If the topic/subtopic doesn't exist yet, you also need an index file at `src/com
 **Product API commands** (channels, rooms, spaces, presence, pub/sub):
 ```typescript
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 import chalk from "chalk";
 
 import { AblyBaseCommand } from "../../base-command.js";
@@ -138,6 +138,8 @@ static flags = {
 - `await this.runControlCommand(flags, api => api.method(appId))` — creates the Control API client, executes the call, and handles errors in one step. Returns `Promise<T>` (non-nullable). Useful for single API calls; for multi-step flows, use `this.createControlApi(flags)` directly.
 
 **When to include `clientIdFlag`:** Add `...clientIdFlag` to commands where client identity affects the operation: subscribe, publish, enter, set, acquire, update, delete, append, annotate. The reason is that users may want to test auth scenarios — e.g., "can client B update client A's message?" — so they need the ability to set their client ID. Do NOT add to read-only queries (get, get-all, history, occupancy get) — Ably capabilities are operation-based, not clientId-based, so client identity is irrelevant for pure reads.
+
+**Target client IDs are not identity:** the base command treats `--client-id` as the client ID the CLI acts as only when the command declares it via the shared `clientIdFlag` object. When a command's `--client-id` names a *target* or *filter* (a push recipient, a token's subject), declare a command-local `Flags.string()` instead — never spread `clientIdFlag` for that — so the value can't become the CLI's own identity. `test/unit/base/client-id-target-guard.test.ts` enforces this for every command.
 
 For history commands, also use `timeRangeFlags`:
 ```typescript
@@ -466,13 +468,13 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] Non-JSON data output uses multi-line labeled blocks (see `patterns.md` "Human-Readable Output Format"), not tables or custom grids
 - [ ] Non-JSON output exposes all available SDK fields (same data as JSON mode, omitting only null/empty values)
 - [ ] SDK types imported directly (`import type { CursorUpdate } from "@ably/spaces"`) — no local interface redefinitions of SDK types (display interfaces in `src/utils/` are fine)
-- [ ] Field coverage checked against SDK type definitions (`node_modules/ably/ably.d.ts`, `node_modules/@ably/spaces/dist/mjs/types.d.ts`)
+- [ ] Field coverage checked against SDK type definitions (`node_modules/@ably/pubsub-core/types.d.ts`, re-exported by `@ably/pubsub-server`; `node_modules/@ably/spaces/dist/mjs/types.d.ts`)
 - [ ] Subscribe commands do NOT fetch initial state — they only listen for new events (use `get-all` for current state)
 - [ ] Resource names use `formatResource(name)`, never quoted
 - [ ] JSON output uses `logJsonResult()` (one-shot) or `logJsonEvent()` (streaming), not direct `formatJsonRecord()`
 - [ ] JSON data nested under a domain key (singular for events/single items, plural for collections) — not spread at top level (see `patterns.md` "JSON Data Nesting Convention")
 - [ ] `room.attach()` / `space.enter()` only called when the SDK method requires a realtime connection (subscribe, send, presence) — NOT for REST mutations (update, delete, annotate, history)
-- [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`)
+- [ ] Subscribe/enter commands use `this.waitAndTrackCleanup(flags, component, flags.duration)` (not `waitUntilInterruptedOrTimeout`) and call `this.setupConnectionStateLogging(client, flags)` — together they fail the command (non-zero exit) when the connection fails or keeps dropping, instead of exiting 0
 - [ ] Error handling uses `this.fail()` exclusively, not `this.error()` or `this.log(chalk.red(...))`
 - [ ] Component strings are camelCase: single-word lowercase (`"room"`, `"auth"`), multi-word camelCase (`"channelPublish"`, `"roomPresenceSubscribe"`)
 - [ ] At least one `--json` example in `static examples`
