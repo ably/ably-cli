@@ -73,11 +73,9 @@ export default class ChannelsOccupancyGet extends AblyBaseCommand {
       const occupancyData = ((channelDetails as { items?: unknown[] })
         .items?.[0] ?? {}) as Record<string, unknown>;
       const statusObj = occupancyData.status as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const occupancyObj = statusObj?.occupancy as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const metricsRaw = occupancyObj?.metrics as OccupancyMetrics | undefined;
       const occupancyMetrics: OccupancyMetrics = metricsRaw ?? {
         connections: 0,

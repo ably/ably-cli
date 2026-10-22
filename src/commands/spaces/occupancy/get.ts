@@ -67,11 +67,9 @@ export default class SpacesOccupancyGet extends SpacesBaseCommand {
         unknown
       >;
       const status = occupancyData.status as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const occupancy = status?.occupancy as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const raw = (occupancy?.metrics ?? {}) as Record<string, number>;
       const occupancyMetrics: OccupancyMetrics = {
         connections: raw.connections ?? 0,

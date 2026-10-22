@@ -151,8 +151,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
       for (const [index, item] of batchPayload.entries()) {
         const entry = item as Record<string, unknown>;
         const itemPayload = entry.payload as
-          | Record<string, unknown>
-          | undefined;
+          Record<string, unknown> | undefined;
 
         if (!itemPayload?.notification && !itemPayload?.data) {
           this.fail(
@@ -294,8 +293,7 @@ export default class PushBatchPublish extends AblyBaseCommand {
                 {},
               );
               const parsedExtras = parsed.extras as
-                | Record<string, unknown>
-                | undefined;
+                Record<string, unknown> | undefined;
 
               if (
                 parsedExtras &&

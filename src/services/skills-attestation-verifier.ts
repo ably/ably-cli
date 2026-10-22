@@ -75,8 +75,7 @@ export async function verifyTarballAttestation(
         sha256: string,
         opts: AttestationVerificationOptions,
       ) =>
-        | Promise<AttestationVerificationResult>
-        | AttestationVerificationResult;
+        Promise<AttestationVerificationResult> | AttestationVerificationResult;
     };
     return hook.verifyAttestation(tarballSha256, opts);
   }
