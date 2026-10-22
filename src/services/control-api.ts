@@ -65,6 +65,11 @@ export interface Key {
   status: string;
 }
 
+// `matcher` rules select channels by match expression (e.g. "chat:*");
+// `namespace` rules predate them and match a first segment plus everything
+// beneath it. A rule's mode is fixed at creation.
+export type ChannelRuleMode = "matcher" | "namespace";
+
 export interface Namespace {
   appId: string;
   authenticated?: boolean;
@@ -76,6 +81,7 @@ export interface Namespace {
   created: number;
   exposeTimeSerial?: boolean;
   id: string;
+  mode?: ChannelRuleMode;
   modified: number;
   mutableMessages?: boolean;
   persistLast?: boolean;
@@ -338,6 +344,7 @@ export class ControlApi {
       conflationInterval?: number;
       conflationKey?: string;
       exposeTimeSerial?: boolean;
+      mode?: ChannelRuleMode;
       mutableMessages?: boolean;
       persistLast?: boolean;
       persisted?: boolean;

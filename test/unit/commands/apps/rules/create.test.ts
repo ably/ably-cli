@@ -157,6 +157,23 @@ describe("apps:rules:create command", () => {
       expect(result!.rule).toHaveProperty("persisted", true);
       expect(result!.rule).toHaveProperty("mutableMessages", true);
     });
+
+    it("should always create a matcher-mode rule", async () => {
+      const appId = getMockConfigManager().getCurrentAppId()!;
+      nockControl()
+        .post(`/v1/apps/${appId}/namespaces`, (body) => {
+          return body.id === "chat:*" && body.mode === "matcher";
+        })
+        .reply(201, mockNamespace({ id: "chat:*", mode: "matcher" }));
+
+      const { stdout } = await runCommand(
+        ["apps:rules:create", "chat:*", "--json"],
+        import.meta.url,
+      );
+
+      const result = parseNdjsonLines(stdout).find((r) => r.type === "result")!;
+      expect(result.rule).toHaveProperty("mode", "matcher");
+    });
   });
 
   describe("error handling", () => {
