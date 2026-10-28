@@ -9,17 +9,18 @@ export default class RulesCreateCommand extends ControlBaseCommand {
 
   static args = {
     ruleName: Args.string({
-      description: "Name of the rule",
+      description:
+        'Match expression selecting the channels the rule applies to, e.g. "chat:*" or "*:presence"',
       required: true,
     }),
   };
 
   static examples = [
-    '$ ably apps rules create "chat" --persisted',
-    '$ ably apps rules create "chat" --mutable-messages',
-    '$ ably apps rules create "events" --push-enabled',
-    '$ ably apps rules create "notifications" --persisted --push-enabled --app "My App"',
-    '$ ably apps rules create "chat" --persisted --json',
+    '$ ably apps rules create "chat:*" --persisted',
+    '$ ably apps rules create "chat:*" --mutable-messages',
+    '$ ably apps rules create "*:presence" --push-enabled',
+    '$ ably apps rules create "notifications:*" --persisted --push-enabled --app "My App"',
+    '$ ably apps rules create "chat:*" --persisted --json',
   ];
 
   static flags = {
@@ -119,6 +120,7 @@ export default class RulesCreateCommand extends ControlBaseCommand {
         conflationEnabled: flags["conflation-enabled"],
         conflationInterval: flags["conflation-interval"],
         conflationKey: flags["conflation-key"],
+        mode: "matcher" as const,
         mutableMessages,
         persistLast: flags["persist-last"],
         persisted,
@@ -145,6 +147,7 @@ export default class RulesCreateCommand extends ControlBaseCommand {
               conflationKey: createdNamespace.conflationKey ?? null,
               created: new Date(createdNamespace.created).toISOString(),
               id: createdNamespace.id,
+              mode: createdNamespace.mode ?? null,
               modified: new Date(createdNamespace.modified).toISOString(),
               mutableMessages: createdNamespace.mutableMessages || false,
               persistLast: createdNamespace.persistLast || false,

@@ -4,12 +4,12 @@ export default class RulesIndexCommand extends BaseTopicCommand {
   protected topicName = "apps:rules";
   protected commandGroup = "rules";
 
-  static description = "Manage Ably rules (namespaces)";
+  static description = "Manage Ably channel rules";
 
   static examples = [
     "$ ably apps rules list",
-    '$ ably apps rules create "chat" --persisted',
-    '$ ably apps rules update "chat" --push-enabled',
-    '$ ably apps rules delete "chat"',
+    '$ ably apps rules create "chat:*" --persisted',
+    '$ ably apps rules update "chat:*" --push-enabled',
+    '$ ably apps rules delete "chat:*"',
   ];
 }

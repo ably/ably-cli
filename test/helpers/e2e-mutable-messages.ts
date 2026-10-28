@@ -6,8 +6,9 @@ export { SHOULD_SKIP_CONTROL_E2E as SHOULD_SKIP_MUTABLE_TESTS } from "./e2e-test
 
 /** Namespace prefix for mutable message test channels. */
 export const MUTABLE_NAMESPACE = "e2e-mutable";
+const MUTABLE_RULE = `${MUTABLE_NAMESPACE}:*`;
 
-// The module-level ruleCreated flag and the shared MUTABLE_NAMESPACE channel
+// The module-level ruleCreated flag and the shared MUTABLE_RULE channel
 // rule assume e2e files run serially. Vitest's e2e project sets
 // `fileParallelism: false` (see vitest.config.ts), so only one file uses this
 // helper at a time. If that config ever changes, switch to a per-caller
@@ -32,7 +33,7 @@ export async function setupMutableMessagesRule(): Promise<void> {
       "apps",
       "rules",
       "create",
-      MUTABLE_NAMESPACE,
+      MUTABLE_RULE,
       "--mutable-messages",
       "--app",
       appId,
@@ -63,7 +64,7 @@ export async function setupMutableMessagesRule(): Promise<void> {
       mutableMessages?: boolean;
     }>;
     const existing = rules.find(
-      (r) => r.id === MUTABLE_NAMESPACE && r.mutableMessages === true,
+      (r) => r.id === MUTABLE_RULE && r.mutableMessages === true,
     );
 
     if (existing) {
@@ -93,7 +94,7 @@ export async function teardownMutableMessagesRule(): Promise<void> {
       "apps",
       "rules",
       "delete",
-      MUTABLE_NAMESPACE,
+      MUTABLE_RULE,
       "--app",
       appId,
       "--force",
@@ -110,7 +111,7 @@ export async function teardownMutableMessagesRule(): Promise<void> {
 
 /**
  * Generate a channel name under the mutable namespace.
- * Format: "e2e-mutable:<suffix>-<uuid>" — matches the namespace rule.
+ * Format: "e2e-mutable:<suffix>-<uuid>" — matches MUTABLE_RULE.
  */
 export function getMutableChannelName(suffix: string): string {
   return `${MUTABLE_NAMESPACE}:${suffix}-${randomUUID().slice(0, 8)}`;
