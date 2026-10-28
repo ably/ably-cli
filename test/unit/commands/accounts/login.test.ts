@@ -522,6 +522,38 @@ describe("accounts:login command", () => {
       expect(authEvent).toHaveProperty("userCode", "TEST-CODE");
       expect(authEvent).toHaveProperty("verificationUri");
     });
+
+    it("exits with 130 and no error when interrupted while polling", async () => {
+      nock("https://ably.com").post("/oauth/authorize_device").reply(200, {
+        device_code: "dc_test",
+        expires_in: 300,
+        interval: 0.01,
+        user_code: "TEST-CODE",
+        verification_uri: "https://ably.com/device",
+        verification_uri_complete:
+          "https://ably.com/device?user_code=TEST-CODE",
+      });
+      // Interrupt from inside the first poll, so the SIGINT can't arrive
+      // before the command is listening for it.
+      nock("https://ably.com")
+        .post("/oauth/token")
+        .reply(() => {
+          setImmediate(() => process.emit("SIGINT"));
+          return [400, { error: "authorization_pending" }];
+        })
+        .persist();
+
+      const { error, stdout } = await runCommand(
+        ["accounts:login", "--json"],
+        import.meta.url,
+      );
+
+      expect(error?.oclif?.exit).toBe(130);
+      const errorEvents = parseNdjsonLines(stdout).filter(
+        (e) => e.type === "error",
+      );
+      expect(errorEvents).toEqual([]);
+    });
   });
 
   describe("local server login", () => {

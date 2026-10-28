@@ -43,10 +43,13 @@ export function spawnTty(
   args: string[] = ["interactive"],
   env: Record<string, string | undefined> = {},
 ): TtyProcess {
-  const childEnv = {
-    ...DEFAULT_ENV,
-    ...env,
-  };
+  // node-pty stringifies values, so drop undefined entries to let callers
+  // unset inherited variables rather than set them to "undefined".
+  const childEnv = Object.fromEntries(
+    Object.entries<string | undefined>({ ...DEFAULT_ENV, ...env }).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  );
 
   const pty = nodePty.spawn("node", [BIN_PATH, ...args], {
     name: "xterm-256color",

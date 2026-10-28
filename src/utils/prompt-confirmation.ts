@@ -1,12 +1,6 @@
 import * as readline from "node:readline";
 
-/** Rejection reason when the user presses Ctrl+C at a confirmation prompt. */
-export class InterruptError extends Error {
-  constructor() {
-    super("Interrupted by user");
-    this.name = "InterruptError";
-  }
-}
+import { InterruptError } from "./sigint-cancellation.js";
 
 /**
  * Prompts the user for confirmation with a yes/no question.

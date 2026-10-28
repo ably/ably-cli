@@ -38,7 +38,7 @@ export default class AskCommand extends ControlBaseCommand {
     const spinner =
       isInteractive || this.shouldOutputJson(flags)
         ? null
-        : ora("Thinking...").start();
+        : ora({ discardStdin: false, text: "Thinking..." }).start();
     if (isInteractive && !this.shouldOutputJson(flags)) {
       this.logProgress("Thinking", flags);
     }
