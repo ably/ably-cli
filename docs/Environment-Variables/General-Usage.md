@@ -14,6 +14,7 @@ These environment variables are most commonly used during development as well as
 | `ABLY_TOKEN` | Authentication | Token/JWT for data plane commands | None |
 | `ABLY_ACCESS_TOKEN` | Authentication | Access token for Control API commands | None |
 | `ABLY_APP_ID` | App Selection | Default app for `--app` flag | None |
+| `ABLY_CLIENT_ID` | Configuration | Client ID the CLI acts as | Generated once per install |
 | `ABLY_CLI_CONFIG_DIR` | Configuration | Custom config directory | `~/.ably` |
 | `ABLY_HISTORY_FILE` | Configuration | Custom history file location | `~/.ably/history` |
 | `ABLY_CLI_DEFAULT_DURATION` | Behavior | Auto-exit long-running commands (seconds) | None (forever) |
@@ -22,3 +23,5 @@ These environment variables are most commonly used during development as well as
 | `ABLY_ENDPOINT` | Host Override | Override Realtime/REST API endpoint (host only) | SDK default |
 
 > For development, testing, debugging, and internal variables, see [Development Stage Usage](Development-Usage.md).
+>
+> For how `ABLY_CLIENT_ID`, `--client-id` and tokens decide which client ID the CLI acts as, and why the CLI always connects as a server for MAU billing, see [Client Identity](../Client-Identity.md).
