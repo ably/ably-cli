@@ -17,7 +17,6 @@ export default class IssueAblyTokenCommand extends AblyBaseCommand {
     '$ ably auth issue-ably-token --capability \'{"*":["*"]}\'',
     '$ ably auth issue-ably-token --capability \'{"chat:*":["publish","subscribe"], "status:*":["subscribe"]}\' --ttl 3600',
     "$ ably auth issue-ably-token --client-id client123 --ttl 86400",
-    '$ ably auth issue-ably-token --client-id "none" --ttl 3600',
     "$ ably auth issue-ably-token --json",
     "$ ably auth issue-ably-token --pretty-json",
     "$ ably auth issue-ably-token --token-only",
