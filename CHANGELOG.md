@@ -7,39 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-11-02
 
-This release prepares the CLI for MAU-based (monthly active user) billing: the CLI now always connects as a server, and acts as one stable client ID instead of a new random one per command. It also changes what `ably apps rules create` matches; review the migration notes before upgrading.
+The 2.0.0 release gets the CLI ready for MAU-based pricing, where Ably bills each distinct client ID that connects from a device. Until now every CLI command connected as a new random client ID, so a single terminal session could look like dozens of users. The CLI now connects as a server, which is not counted as MAU, and acts as one stable client ID that you can see in the "Using:" banner and choose yourself.
 
-### Added
+This release also changes what `ably apps rules create` matches, to work the same way as the rules the dashboard creates.
 
-- **One stable client identity.** The CLI resolves its client ID once per process, with the precedence `--client-id` > `ABLY_CLIENT_ID` > `client.id` in the config > an install default generated once and saved in the config. Every client, interactive command and minted token shares it, so a session no longer leaves dozens of random `ably-cli-<uuid>` names in message history and presence. The "Using:" banner shows the resolved client ID. See [docs/Client-Identity.md](docs/Client-Identity.md).
-- **`--client-type server`** on `ably auth issue-jwt-token` adds the signed `x-ably-clientType=server` claim, the only way a token-authenticated client can be classified as a server.
-- Channel rules show their mode (`matcher` or `namespace`) in `ably apps rules create`, `update` and `list`, since the same-looking ID means different things in each.
-- Error hints for invalid client IDs (40012). The client ID hints (40012, 40161, 91000) now depend on context: under token auth they point at re-issuing the token, and they only suggest `--client-id` on commands that have it.
+Below is an overview of the major changes in this release. See [Client Identity](docs/Client-Identity.md) for the full details of how the CLI chooses its client ID.
 
-### Changed
+### Breaking changes
 
-- **BREAKING: `ably apps rules create` creates match-expression rules.** A rule's ID is now a match expression with the same syntax as a capability resource (`chat:*`, `*:presence`, `foo:*:baz`), as the dashboard creates them. `ably apps rules create "chat"` used to apply to `chat` and every channel beneath it; it now applies to the channel `chat` alone. `ably apps rules update` keeps the mode a rule was created with, so existing rules keep matching as before.
-- **The CLI always connects as a server.** It is built on `@ably/pubsub-server` 3.0.0 instead of `ably` v2, with `@ably/chat` 2.0.0 and `@ably/spaces` 0.6.0 on the same core, so Pub/Sub, Chat and Spaces traffic from the CLI is server traffic and is not counted as MAU.
-- **Long-running commands fail when their connection dies.** A subscribe, enter or other long-running command now exits non-zero when its connection fails, or when it drops five times in a row without staying connected for 10 seconds (which is how a server-side rejection such as an eviction can present). Previously it logged a warning and exited 0.
-- When a long-running command reaches `--duration`, it now emits the standard `{"type":"status","status":"completed"}` JSON line instead of an ad-hoc `complete` line, and prints its human-readable message to stderr.
-- Token output always states the identity: `Client ID: anonymous` in human output and `clientId: null` in JSON, rather than leaving it out.
-- An explicit `--client-id` on the token commands goes through the same rules as the CLI's own identity: `none` is deprecated and warns, and `*` is allowed so wildcard tokens can still be minted.
-- An empty client ID (which used to fall back silently to a random ID) and `*` are rejected as the CLI's identity, with a message naming where the value came from. `none` is deprecated. Under token auth the identity is the token's and is never overridden; a JWT without an `x-ably-clientId` claim is rejected up front.
-- `ably bench` gives each process its own client ID suffix, so concurrent bench processes stay under the per-client-ID connection limit.
+- `ably apps rules create "chat"` used to create a rule for `chat` and every channel beneath it, such as `chat:room1`. It now creates a rule for the channel `chat` alone. To cover the channels beneath it, use `ably apps rules create "chat:*"`. Existing rules are unaffected and keep matching as before.
+- Long-running commands, such as `subscribe` and `enter`, now exit with a non-zero code when their connection fails, or when it drops five times in a row without staying connected for 10 seconds. Previously they logged a warning and exited with 0, so a script could not tell that it had stopped receiving messages.
+- When a long-running command reaches `--duration`, its `--json` output ends with the standard `{"type":"status","status":"completed"}` line, the same as every other command, instead of a separate `complete` line.
+- An empty client ID is rejected instead of silently falling back to a random one, and `*` is rejected as the CLI's own client ID. `--client-id none` still works but is deprecated and prints a warning.
 
-### Fixed
+### One client ID per install
 
-- `--client-id` flags that name a target rather than the caller (push device and channel filters, token subjects) no longer become the CLI's own identity. `ably push devices remove-where --client-id user123` used to connect as `user123` too, billing an end user who never connected.
-- `ably auth revoke-token` uses the SDK instead of a hard-coded `rest.ably.io` request, so it honours the configured endpoint and reports failures per target.
-- Spaces connection and cursor-attach failures keep the Ably error code and status instead of losing them.
-- Ctrl+C during `ably accounts login` cancels the login and exits with code 130. Previously it did nothing, or Node reported "Detected unsettled top-level await".
-- Ctrl+C at a yes/no prompt inside `ably interactive` cancels the command and returns to the shell prompt, instead of exiting the shell.
+- The CLI acts as one client ID for every command, every command in `ably interactive`, and every token it issues. It is chosen from the first of `--client-id`, `ABLY_CLIENT_ID`, `client.id` in `~/.ably/config`, or a default generated once per install and saved in the config.
+- The "Using:" banner shows the client ID the command acts as.
+- To act as another user, for example to demo two users chatting, pass `--client-id` in each terminal.
+- `--client-id` flags that name someone else, such as `ably push devices remove-where --client-id user123`, no longer make the CLI connect as that user too. Before, the push admin's request was attributed to, and billed as, the end user.
+- Under token auth, the client ID comes from the token and is never overridden. A JWT without an `x-ably-clientId` claim is rejected before connecting, with an explanation.
+- `ably bench` gives each process its own client ID, so many concurrent bench processes do not hit the per-client-ID connection limit.
 
-### Migration Notes
+### Server connections
 
-1. **Channel rules:** to create a rule that covers a channel and every channel beneath it, use a match expression: `ably apps rules create "chat"` → `ably apps rules create "chat:*"`. Existing rules are not affected.
-2. **Scripts that read long-running output:** `--duration` now ends with the standard `completed` status line rather than `complete`, and a dropped connection exits non-zero instead of 0.
-3. **Client IDs:** commands no longer act as a fresh random client ID each run. Set `ABLY_CLIENT_ID` or pass `--client-id` where a script needs a specific identity, and stop passing `--client-id none` (deprecated) or an empty value (rejected).
+- The CLI is built on `@ably/pubsub-server` 3.0.0 instead of `ably` 2.x, with `@ably/chat` 2.0.0 and `@ably/spaces` 0.6.0 on the same core. Every Pub/Sub, Chat and Spaces connection the CLI makes is a server connection and does not count as MAU.
+
+### Tokens
+
+- `ably auth issue-ably-token` and `issue-jwt-token` always show who the token is for: `Client ID: anonymous` in human output and `clientId: null` in JSON, rather than leaving the field out.
+- `ably auth issue-jwt-token --client-type server` issues a JWT whose holder connects as a server.
+- `--client-id "*"` still issues wildcard tokens.
+- `ably auth revoke-token` uses the endpoint you are configured for, instead of always calling `rest.ably.io`, and reports a failure for each target separately.
+
+### Channel rules
+
+- `ably apps rules create` creates rules whose ID is a match expression, with the same syntax as a capability resource: `chat:*`, `*:presence` or `foo:*:baz`.
+- `ably apps rules create`, `update` and `list` show each rule's mode, `matcher` or `namespace`, since the same ID matches different channels in each. `update` keeps the mode a rule was created with.
+
+### Bug fixes
+
+- Ctrl+C during `ably accounts login` cancels the login and exits with code 130. Before, it was ignored or left Node reporting "Detected unsettled top-level await".
+- Ctrl+C at a yes/no prompt in `ably interactive` cancels the command and returns to the shell prompt, instead of closing the shell.
+- Spaces connection and cursor errors keep their Ably error code, so the error hint and the JSON error envelope show it.
+- Errors about an invalid client ID (40012, 40161 and 91000) come with a hint for what to do next. Under token auth the hint says to issue a new token, and it only suggests `--client-id` on commands that have that flag.
 
 ## [1.3.0] - 2026-09-08
 
