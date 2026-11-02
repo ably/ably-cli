@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-11-02
+
+The 2.0.0 release gets the CLI ready for MAU-based pricing, where Ably bills each distinct client ID that connects from a device. Until now every CLI command connected as a new random client ID, so a single terminal session could look like dozens of users. The CLI now connects as a server, which is not counted as MAU, and acts as one stable client ID that you can see in the "Using:" banner and choose yourself.
+
+This release also changes what `ably apps rules create` matches, to work the same way as the rules the dashboard creates.
+
+Below is an overview of the major changes in this release. See [Client Identity](docs/Client-Identity.md) for the full details of how the CLI chooses its client ID.
+
+### Breaking changes
+
+- `ably apps rules create "chat"` used to create a rule for `chat` and every channel beneath it, such as `chat:room1`. It now creates a rule for the channel `chat` alone. To cover the channels beneath it, use `ably apps rules create "chat:*"`. Existing rules are unaffected and keep matching as before.
+- Long-running commands, such as `subscribe` and `enter`, now exit with a non-zero code when their connection fails, or when it drops five times in a row without staying connected for 10 seconds. Previously they logged a warning and exited with 0, so a script could not tell that it had stopped receiving messages.
+- When a long-running command reaches `--duration`, its `--json` output ends with the standard `{"type":"status","status":"completed"}` line, the same as every other command, instead of a separate `complete` line.
+- An empty client ID is rejected instead of silently falling back to a random one, and `*` is rejected as the CLI's own client ID. `--client-id none` still works but is deprecated and prints a warning.
+
+### One client ID per install
+
+- The CLI acts as one client ID for every command, every command in `ably interactive`, and every token it issues. It is chosen from the first of `--client-id`, `ABLY_CLIENT_ID`, `client.id` in `~/.ably/config`, or a default generated once per install and saved in the config.
+- The "Using:" banner shows the client ID the command acts as.
+- To act as another user, for example to demo two users chatting, pass `--client-id` in each terminal.
+- Under token auth, the client ID comes from the token and is never overridden. A JWT without an `x-ably-clientId` claim is rejected before connecting, with an explanation.
+- `ably bench` gives each process its own client ID, so many concurrent bench processes do not hit the per-client-ID connection limit.
+
+### Server connections
+
+- The CLI is built on `@ably/pubsub-server` 3.0.0 instead of `ably` 2.x, with `@ably/chat` 2.0.0 and `@ably/spaces` 0.6.0 on the same core. Every Pub/Sub, Chat and Spaces connection the CLI makes is a server connection.
+
+### Tokens
+
+- `ably auth issue-ably-token` and `issue-jwt-token` always show who the token is for: `Client ID: anonymous` in human output and `clientId: null` in JSON, rather than leaving the field out.
+- `ably auth issue-jwt-token --client-type server` issues a JWT whose holder connects as a server.
+- `--client-id "*"` still issues wildcard tokens.
+- `ably auth revoke-token` uses the endpoint you are configured for, instead of always calling `rest.ably.io`, and reports a failure for each target separately.
+
+### Channel rules
+
+- `ably apps rules create` creates rules whose ID is a match expression, with the same syntax as a capability resource: `chat:*`, `*:presence` or `foo:*:baz`.
+- `ably apps rules create`, `update` and `list` show each rule's mode, `matcher` or `namespace`, since the same ID matches different channels in each. `update` keeps the mode a rule was created with.
+
 ## [1.3.0] - 2026-09-08
 
 ### Added
