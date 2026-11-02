@@ -9,6 +9,7 @@ import {
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
+  getTestClientId,
 } from "../../helpers/e2e-test-helper.js";
 import { parseNdjsonLines } from "../../helpers/ndjson.js";
 
@@ -177,8 +178,11 @@ describe.skipIf(SHOULD_SKIP_E2E)("Auth Tokens E2E Tests", () => {
         {
           "x-ably-appId": appId,
           "x-ably-capability": { "*": ["*"] },
-          "x-ably-clientId": `e2e-revoke-key-client-${randomUUID().slice(0, 8)}`,
+          "x-ably-clientId": getTestClientId("e2e-revoke-key-client"),
           "x-ably-revocation-key": revocationKey,
+          // The CLI always connects as a server, which token auth allows
+          // only with this claim.
+          "x-ably-clientType": "server",
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 3600,
           jti: randomUUID(),

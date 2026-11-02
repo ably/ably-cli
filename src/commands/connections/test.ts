@@ -1,5 +1,6 @@
 import { Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
+import { createRealtimeClient } from "@ably/pubsub-server";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { extractErrorInfo } from "../../utils/errors.js";
@@ -27,8 +28,8 @@ export default class ConnectionsTest extends AblyBaseCommand {
     }),
   };
 
-  private wsClient: Ably.Realtime | null = null;
-  private xhrClient: Ably.Realtime | null = null;
+  private wsClient: Ably.PubSubRealtimeClient | null = null;
+  private xhrClient: Ably.PubSubRealtimeClient | null = null;
 
   // Override finally to ensure resources are cleaned up
   async finally(err: Error | undefined): Promise<void> {
@@ -250,7 +251,7 @@ export default class ConnectionsTest extends AblyBaseCommand {
       transportParams: Record<string, boolean>;
     },
   ): Promise<{
-    client: Ably.Realtime | null;
+    client: Ably.PubSubRealtimeClient | null;
     error: Error | null;
     success: boolean;
   }> {
@@ -265,14 +266,14 @@ export default class ConnectionsTest extends AblyBaseCommand {
     );
     this.logProgress(`Testing ${config.displayName} connection to Ably`, flags);
 
-    let client: Ably.Realtime | null = null;
+    let client: Ably.PubSubRealtimeClient | null = null;
 
     try {
       const options: Ably.ClientOptions = {
         ...baseOptions,
         transportParams: config.transportParams,
       };
-      client = new Ably.Realtime(options);
+      client = createRealtimeClient(options);
 
       client.connection.on((stateChange: Ably.ConnectionStateChange) => {
         this.logCliEvent(

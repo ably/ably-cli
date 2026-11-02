@@ -1,35 +1,21 @@
-import * as Ably from "ably";
-import Spaces, { type Space, type SpaceOptions } from "@ably/spaces";
+import type * as Ably from "@ably/pubsub-server";
+import {
+  createSpacesClient as createSdkSpacesClient,
+  type Space,
+  type SpaceOptions,
+  type SpacesClient,
+} from "@ably/spaces";
 import { AblyBaseCommand } from "./base-command.js";
 import { productApiFlags } from "./flags.js";
 import { BaseFlags } from "./types/cli.js";
-import { errorMessage } from "./utils/errors.js";
+import { errorMessage, errorWithReason } from "./utils/errors.js";
 import isTestMode from "./utils/test-mode.js";
-
-// Dynamic import to handle module structure issues
-let SpacesConstructor: (new (client: Ably.Realtime) => unknown) | null = null;
-
-async function getSpacesConstructor(): Promise<
-  new (client: Ably.Realtime) => unknown
-> {
-  if (!SpacesConstructor) {
-    const spacesModule = (await import("@ably/spaces")) as unknown;
-    const moduleAsRecord = spacesModule as Record<string, unknown>;
-    const defaultProperty = moduleAsRecord.default as
-      | Record<string, unknown>
-      | undefined;
-    SpacesConstructor = (defaultProperty?.default ||
-      moduleAsRecord.default ||
-      moduleAsRecord) as new (client: Ably.Realtime) => unknown;
-  }
-  return SpacesConstructor;
-}
 
 export abstract class SpacesBaseCommand extends AblyBaseCommand {
   static globalFlags = { ...productApiFlags };
   protected space: Space | null = null;
-  protected spaces: Spaces | null = null;
-  protected realtimeClient: Ably.Realtime | null = null;
+  protected spaces: SpacesClient | null = null;
+  protected realtimeClient: Ably.PubSubRealtimeClient | null = null;
   protected parsedFlags: BaseFlags = {};
   protected hasEnteredSpace = false;
 
@@ -171,7 +157,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     flags: BaseFlags,
     spaceName: string,
   ): Promise<{
-    realtimeClient: Ably.Realtime;
+    realtimeClient: Ably.PubSubRealtimeClient;
     spacesClient: unknown;
     space: Space;
   }> {
@@ -194,7 +180,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     }
 
     // Create a Spaces client using the Ably client
-    this.spaces = await this.createSpacesClient(this.realtimeClient);
+    this.spaces = this.createSpacesClient(this.realtimeClient);
 
     // We set the offline timeout to 2s otherwise Spaces will hang on to left members for 2 minutes.
     const options: Partial<SpaceOptions> = {
@@ -240,7 +226,10 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         state: connection.state,
       });
       this.fail(
-        `${errorMsg}. Use --verbose to see detailed connection logs.`,
+        errorWithReason(
+          `${errorMsg}. Use --verbose to see detailed connection logs.`,
+          connection.errorReason,
+        ),
         flags,
         "connection",
       );
@@ -277,7 +266,7 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         this.logCliEvent(flags, "connection", "failed", errorMsg, {
           state: "failed",
         });
-        reject(new Error(errorMsg));
+        reject(errorWithReason(errorMsg, stateChange.reason));
       };
 
       const onClosed = () => {
@@ -285,9 +274,9 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
         reject(new Error("Connection closed unexpectedly"));
       };
 
-      const onSuspended = () => {
+      const onSuspended = (stateChange: Ably.ConnectionStateChange) => {
         cleanup();
-        reject(new Error("Connection suspended"));
+        reject(errorWithReason("Connection suspended", stateChange.reason));
       };
 
       connection.on("connected", onConnected);
@@ -395,8 +384,9 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
           channel.off("attached", onAttached);
           channel.off("failed", onFailed);
           reject(
-            new Error(
+            errorWithReason(
               `Cursors channel failed to attach: ${stateChange.reason?.message || "Unknown error"}`,
+              stateChange.reason,
             ),
           );
         };
@@ -419,9 +409,9 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
     }
   }
 
-  protected async createSpacesClient(
-    realtimeClient: Ably.Realtime,
-  ): Promise<Spaces> {
+  protected createSpacesClient(
+    realtimeClient: Ably.PubSubRealtimeClient,
+  ): SpacesClient {
     // If in test mode, skip connection and use mock
     if (isTestMode()) {
       this.debug(`Running in test mode, using mock Ably Spaces client`);
@@ -439,7 +429,6 @@ export abstract class SpacesBaseCommand extends AblyBaseCommand {
       );
     }
 
-    const Spaces = await getSpacesConstructor();
-    return new Spaces(realtimeClient) as Spaces;
+    return createSdkSpacesClient(realtimeClient);
   }
 }

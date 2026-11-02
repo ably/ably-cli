@@ -81,7 +81,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
       }
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
+      this.setupConnectionStateLogging(this.chatClient.pubsubClient, flags, {
         includeUserFriendlyMessages: true,
       });
 
@@ -171,7 +171,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               action: "enter",
               room: this.roomName,
               clientId: this.chatClient.clientId,
-              connectionId: this.chatClient.realtime.connection.id,
+              connectionId: this.chatClient.pubsubClient.connection.id,
               data: this.data ?? null,
               timestamp: new Date().toISOString(),
             },
@@ -187,7 +187,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
           `${formatLabel("Client ID")} ${formatClientId(this.chatClient.clientId ?? "unknown")}`,
         );
         this.log(
-          `${formatLabel("Connection ID")} ${this.chatClient.realtime.connection.id}`,
+          `${formatLabel("Connection ID")} ${this.chatClient.pubsubClient.connection.id}`,
         );
         if (this.data !== null) {
           this.log(`${formatLabel("Data")} ${JSON.stringify(this.data)}`);

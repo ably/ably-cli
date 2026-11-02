@@ -31,7 +31,7 @@ This is the Ably CLI npm package (`@ably/cli`), built with the [oclif framework]
 │   ├── integration/   # Multi-component, mocked external services
 │   ├── e2e/           # Full scenarios against real Ably
 │   └── helpers/       # runCommand(), MockConfigManager, etc.
-├── docs/              # Project docs (Testing.md, Project-Structure.md, etc.)
+├── docs/              # Project docs (Testing.md, Project-Structure.md, Client-Identity.md, etc.)
 └── package.json       # Scripts defined here
 ```
 
@@ -100,7 +100,7 @@ Flags are NOT global. Each command explicitly declares only the flags it needs v
 - **`coreGlobalFlags`** — `--verbose`, `--json`, `--pretty-json`, `--web-cli-help` (hidden) (on every command via `AblyBaseCommand.globalFlags`)
 - **`productApiFlags`** — core + hidden product API flags (`port`, `tlsPort`, `tls`). Use for commands that talk to the Ably product API.
 - **`controlApiFlags`** — core + hidden control API flags (`control-host`, `dashboard-host`). Use for commands that talk to the Control API.
-- **`clientIdFlag`** — `--client-id`. Add to commands where client identity affects the operation: subscribe, publish, enter, set, acquire, update, delete, append. Do NOT add to read-only queries (get, get-all, occupancy get) — Ably capabilities are operation-based, not clientId-based, so client identity is irrelevant for pure reads. Do NOT add globally.
+- **`clientIdFlag`** — `--client-id`. Add to commands where acting as a particular client is part of the operation: subscribe, publish, enter, set, acquire, update, delete, append. Do NOT add to read-only queries (get, get-all, occupancy get): every command, reads included, already acts as the session's client ID (`ABLY_CLIENT_ID` > config > generated default, see `docs/Client-Identity.md`) and Ably counts it under MAU billing, but a read has no reason to act as someone else. Do NOT add globally. A `--client-id` that names a *target* (push recipient, token subject) must be a command-local flag, never `clientIdFlag` — the base command treats only `clientIdFlag` as identity.
 - **`durationFlag`** — `--duration` / `-D`. Use for long-running subscribe/stream commands that auto-exit after N seconds.
 - **`rewindFlag`** — `--rewind`. Use for subscribe commands that support message replay (default: 0).
 - **`timeRangeFlags`** — `--start`, `--end`. Use for history and stats commands. Parse with `parseTimestamp()` from `src/utils/time.ts`. Accepts ISO 8601, Unix ms, or relative (e.g., `"1h"`, `"30m"`, `"2d"`).
@@ -282,7 +282,7 @@ this.error()         ← oclif exit (ONLY inside fail, nowhere else)
 - **Never use `this.error()` directly** — it is an internal implementation detail of `this.fail()`.
 - **`requireAppId`** returns `Promise<string>` (not nullable) — calls `this.fail()` internally if no app found.
 - **`runControlCommand<T>`** returns `Promise<T>` (not nullable) — calls `this.fail()` internally on error.
-- **Error hints**: `fail()` appends a CLI-specific hint from `src/utils/errors.ts` if one exists for the Ably error code. Hints must only contain actionable CLI advice (e.g., "run `ably login`"), not restate the upstream error message (which is already shown). When adding new error codes, **fetch** https://ably.com/docs/platform/errors/codes using WebFetch to get the official description — do NOT rely on memory or assumptions about what an error code means.
+- **Error hints**: `fail()` appends a CLI-specific hint from `src/utils/errors.ts` if one exists for the Ably error code. A hint may be a function of `HintContext` (token auth or not, whether the command declares `--client-id`) so it never suggests a flag the command lacks. Hints must only contain actionable CLI advice (e.g., "run `ably login`"), not restate the upstream error message (which is already shown). When adding new error codes, **fetch** https://ably.com/docs/platform/errors/codes using WebFetch to get the official description — do NOT rely on memory or assumptions about what an error code means.
 - **`extractErrorInfo(error)`** (`src/utils/errors.ts`) — extracts `{ message, code?, statusCode?, href? }` from an unknown error value. Use in commands that report per-item errors inline (batch publish results, connection test summaries) rather than exiting via `this.fail()`.
 
 ### Additional output patterns (direct chalk, not helpers)
@@ -326,9 +326,10 @@ When adding COMMANDS sections in `src/help.ts`, use `chalk.bold()` for headers, 
   - Spaces: https://ably.com/docs/spaces and API ref at https://sdk.ably.com/builds/ably/spaces/main/typedoc/index.html
   - Control API: https://ably.com/docs/account/control-api and ref at https://ably.com/docs/api/control-api
   - Platform: https://ably.com/docs/platform
+- **Pub/Sub packages**: the CLI never imports `ably`, and depends on `@ably/pubsub-server` only. Types come from it too (`import type * as Ably from "@ably/pubsub-server"`; clients are `Ably.PubSubRealtimeClient` / `Ably.PubSubHttpClient`). Clients are constructed only by `createAblyRestClient()` / `createAblyRealtimeClient()` in the base command, with `createHttpClient` / `createRealtimeClient` from `@ably/pubsub-server`, so the CLI always connects as a server. Chat and Spaces are built on the same core: create them with `createChatClient(realtime, options)` and `createSpacesClient(realtime)`, passing the CLI's own realtime client. Nothing in the dependency tree uses `ably` v2.
 - The CLI uses Ably SDKs for all data plane commands. When an API exists in the data plane REST API but has no corresponding SDK method, use the Pub/Sub SDK's request method.
 - The Control API has no official SDK, so raw HTTP requests are used.
-- **SDK packages (`node_modules/ably/`, `node_modules/@ably/spaces/`, `node_modules/@ably/chat/`) are the local source of truth** for types and method behavior. Type definitions (e.g., `ably.d.ts`, `types.d.ts`) tell you what fields exist; source code (e.g., `Space.js`, `Members.js`) tells you how methods behave (side effects, prerequisites like `space.enter()`). When in doubt, read the implementation — not just the types. See `references/patterns.md` "Field display rules" in the `ably-new-command` skill for the full path table and import conventions.
+- **SDK packages (`node_modules/@ably/pubsub-core/` (the core behind `@ably/pubsub-server`), `node_modules/@ably/spaces/`, `node_modules/@ably/chat/`) are the local source of truth** for types and method behavior. Type definitions (e.g., `@ably/pubsub-core/types.d.ts`, `types.d.ts`) tell you what fields exist; source code (e.g., `Space.js`, `Members.js`) tells you how methods behave (side effects, prerequisites like `space.enter()`). When in doubt, read the implementation — not just the types. See `references/patterns.md` "Field display rules" in the `ably-new-command` skill for the full path table and import conventions.
 
 ## Development Standards
 

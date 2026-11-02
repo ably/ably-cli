@@ -28,7 +28,7 @@ export default class PushChannelsSave extends AblyBaseCommand {
       exclusive: ["client-id"],
     }),
     "client-id": Flags.string({
-      description: "Client ID to subscribe",
+      description: "Client ID to subscribe to the channel",
       exclusive: ["device-id"],
     }),
   };

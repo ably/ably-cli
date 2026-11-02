@@ -45,14 +45,59 @@ export function extractErrorInfo(error: unknown): {
 }
 
 /**
- * Return a friendly, actionable hint for known Ably error codes.
- * Returns undefined for unknown codes.
+ * Build an Error with a CLI-facing message that keeps the Ably code, status
+ * code and help URL of the underlying reason, so `fail()` can still attach
+ * the code and its hint.
  */
-const clientIdHint = "Use the --client-id flag to set a client identity.";
+export function errorWithReason(
+  message: string,
+  reason?: { code?: number; statusCode?: number; href?: string } | null,
+): Error {
+  return Object.assign(new Error(message), {
+    code: reason?.code,
+    statusCode: reason?.statusCode,
+    href: reason?.href,
+  });
+}
+
+/** What a hint may depend on: how the CLI authenticated and its flags. */
+export interface HintContext {
+  /** Authenticating with ABLY_TOKEN, so the client ID comes from the token. */
+  tokenAuth?: boolean;
+  /** The command declares the identity --client-id flag. */
+  hasClientIdFlag?: boolean;
+}
+
+type Hint = string | ((context: HintContext) => string);
+
 const tokenExpiredHint =
   "Generate a new token or use an API key instead. See https://ably.com/docs/auth for details.";
 
-const hints: Record<number, string> = {
+const reissueTokenHint =
+  'The client ID comes from your token: re-issue it with one, e.g. "ably auth issue-jwt-token --client-id <id>".';
+
+function clientIdSources({ hasClientIdFlag }: HintContext): string {
+  return hasClientIdFlag
+    ? "--client-id or the ABLY_CLIENT_ID environment variable"
+    : "the ABLY_CLIENT_ID environment variable";
+}
+
+const clientIdHint: Hint = (context) =>
+  context.tokenAuth
+    ? reissueTokenHint
+    : `Set a client ID with ${clientIdSources(context)}.`;
+
+const invalidClientIdHint: Hint = (context) =>
+  context.tokenAuth
+    ? reissueTokenHint
+    : `Set a valid client ID (not empty and not "*") with ${clientIdSources(context)}.`;
+
+/**
+ * Return a friendly, actionable hint for known Ably error codes.
+ * Returns undefined for unknown codes.
+ */
+const hints: Record<number, Hint> = {
+  40012: invalidClientIdHint,
   40101: 'Check your API key or token, or re-authenticate with "ably login".',
   40103:
     "This is unexpected - TLS is enabled by default. Please report this issue at https://ably.com/support",
@@ -71,7 +116,11 @@ const hints: Record<number, string> = {
   91000: clientIdHint,
 };
 
-export function getFriendlyAblyErrorHint(code?: number): string | undefined {
+export function getFriendlyAblyErrorHint(
+  code?: number,
+  context: HintContext = {},
+): string | undefined {
   if (code === undefined) return undefined;
-  return hints[code];
+  const hint = hints[code];
+  return typeof hint === "function" ? hint(context) : hint;
 }

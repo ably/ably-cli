@@ -199,7 +199,7 @@ export interface MockAblyChat {
   clientOptions: MockClientOptions;
   clientId: string;
   // Reference to the underlying realtime client
-  realtime: MockAblyRealtime;
+  pubsubClient: MockAblyRealtime;
   // Helper to reset all mocks to default state
   _reset: () => void;
 }
@@ -494,7 +494,7 @@ function createMockAblyChat(): MockAblyChat {
     connection,
     clientOptions: {},
     clientId: "mock-client-id",
-    realtime,
+    pubsubClient: realtime,
     _reset: () => {
       rooms._rooms.clear();
       connection.current = "connected";

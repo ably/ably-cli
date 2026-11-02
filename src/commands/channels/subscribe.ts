@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import * as Ably from "ably";
+import type * as Ably from "@ably/pubsub-server";
 import { AblyBaseCommand } from "../../base-command.js";
 import {
   clientIdFlag,
@@ -61,7 +61,7 @@ export default class ChannelsSubscribe extends AblyBaseCommand {
 
   static override strict = false;
 
-  private client: Ably.Realtime | null = null;
+  private client: Ably.PubSubRealtimeClient | null = null;
   private sequenceCounter = 0;
 
   async run(): Promise<void> {

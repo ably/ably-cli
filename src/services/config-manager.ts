@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -65,8 +66,17 @@ export interface OAuthSession {
   refreshToken: string;
 }
 
+/** The identity the CLI acts as on the data plane, shared by every account. */
+export interface ClientConfig {
+  /** Client ID set by the user; wins over the generated default. */
+  id?: string;
+  /** Stable client ID generated on first use, so runs don't mint random IDs. */
+  defaultId?: string;
+}
+
 export interface AblyConfig {
   accounts: Record<string, AccountConfig>;
+  client?: ClientConfig;
   current?: {
     account?: string;
     /** @deprecated Legacy field migrated to account.currentAppId on first load */
@@ -184,7 +194,15 @@ export interface ConfigManager {
   // Config file
   getConfigPath(): string;
   saveConfig(): void;
+
+  // Data plane client identity
+  getClientId(): string | undefined;
+  getDefaultClientId(): string;
   reloadConfig(): void;
+}
+
+export function generateDefaultClientId(): string {
+  return `ably-cli-${randomUUID().slice(0, 8)}`;
 }
 
 // Type declaration for test mocks available on globalThis
@@ -329,6 +347,27 @@ export class TomlConfigManager implements ConfigManager {
   // Get path to config file
   public getConfigPath(): string {
     return this.configPath;
+  }
+
+  public getClientId(): string | undefined {
+    return this.config.client?.id;
+  }
+
+  // Get the install's default client ID, generating and persisting it on first use
+  public getDefaultClientId(): string {
+    const existing = this.config.client?.defaultId;
+    if (existing) return existing;
+
+    const defaultId = generateDefaultClientId();
+    this.config.client = { ...this.config.client, defaultId };
+    try {
+      this.saveConfig();
+    } catch {
+      // A read-only config (e.g. a locked-down CI container) must not break
+      // every command: keep the ID in memory for this process instead.
+    }
+
+    return defaultId;
   }
 
   // Get the current account configuration
