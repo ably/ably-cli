@@ -111,9 +111,9 @@
     }
   },
   "dependencies": {
-    "@ably/chat": "0.0.0-canary.20261001T1209.783b80e6",
-    "@ably/pubsub-server": "3.0.0-canary.20261001T0958.2d5f47d6",
-    "@ably/spaces": "0.0.0-canary.20261001T1221.ca08adce",
+    "@ably/chat": "2.0.0",
+    "@ably/pubsub-server": "3.0.0",
+    "@ably/spaces": "0.6.0",
     "@inquirer/prompts": "^8.4.2",
     "@oclif/core": "^4.11.1",
     "@oclif/plugin-autocomplete": "^3.2.48",

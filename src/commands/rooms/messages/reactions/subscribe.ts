@@ -70,7 +70,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
       const { roomName: room } = args;
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
+      this.setupConnectionStateLogging(this.chatClient.pubsubClient, flags, {
         includeUserFriendlyMessages: true,
       });
 

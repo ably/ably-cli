@@ -6,3 +6,5 @@ ignoredBuiltDependencies:
   - esbuild
   - protobufjs
   - ssh2
+minimumReleaseAgeExclude:
+  - '@ably/**'

@@ -80,7 +80,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
       }
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
+      this.setupConnectionStateLogging(this.chatClient.pubsubClient, flags, {
         includeUserFriendlyMessages: true,
       });
 
