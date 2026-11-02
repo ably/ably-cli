@@ -3,7 +3,7 @@ import {
   E2E_API_KEY,
   SHOULD_SKIP_E2E,
   getUniqueChannelName,
-  getUniqueClientId,
+  getTestClientId,
   cleanupTrackedResources,
   setupTestFailureHandler,
   resetTestTracking,
@@ -26,7 +26,7 @@ describe.skipIf(SHOULD_SKIP_E2E)(
     beforeEach(() => {
       resetTestTracking();
       spaceName = getUniqueChannelName("space-loc");
-      clientId = getUniqueClientId("loc-client");
+      clientId = getTestClientId("loc-client");
     });
 
     afterEach(async () => {
