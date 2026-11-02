@@ -73,7 +73,7 @@ export default class TypingKeystroke extends ChatBaseCommand {
       const { roomName } = args;
 
       // Set up connection state logging
-      this.setupConnectionStateLogging(this.chatClient.realtime, flags, {
+      this.setupConnectionStateLogging(this.chatClient.pubsubClient, flags, {
         includeUserFriendlyMessages: true,
       });
 

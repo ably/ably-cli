@@ -168,7 +168,7 @@ async run(): Promise<void> {
       return this.fail("Failed to create Chat client", flags, "roomMessageUpdate");
     }
 
-    this.setupConnectionStateLogging(chatClient.realtime, flags);
+    this.setupConnectionStateLogging(chatClient.pubsubClient, flags);
 
     // NO room.attach() — update/delete/annotate are REST calls
     const room = await chatClient.rooms.get(args.room);
