@@ -10,6 +10,10 @@ import {
   formatResource,
 } from "../../../utils/output.js";
 import type { LocationEntry } from "../../../utils/spaces-output.js";
+import {
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "../../../utils/terminal-safe.js";
 
 export default class SpacesLocationsGet extends SpacesBaseCommand {
   static override args = {
@@ -75,9 +79,11 @@ export default class SpacesLocationsGet extends SpacesBaseCommand {
 
         for (const [i, entry] of entries.entries()) {
           this.log(`${formatIndex(i + 1)}`);
-          this.log(`  ${formatLabel("Connection ID")} ${entry.connectionId}`);
           this.log(
-            `  ${formatLabel("Location")} ${JSON.stringify(entry.location)}`,
+            `  ${formatLabel("Connection ID")} ${escapeIdentifier(entry.connectionId)}`,
+          );
+          this.log(
+            `  ${formatLabel("Location")} ${escapeJsonControlChars(JSON.stringify(entry.location))}`,
           );
           this.log("");
         }

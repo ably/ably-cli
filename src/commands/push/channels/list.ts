@@ -15,6 +15,7 @@ import {
   collectPaginatedResults,
   formatPaginationLog,
 } from "../../../utils/pagination.js";
+import { escapeIdentifier } from "../../../utils/terminal-safe.js";
 
 export default class PushChannelsList extends AblyBaseCommand {
   static override description = "List push channel subscriptions";
@@ -104,10 +105,12 @@ export default class PushChannelsList extends AblyBaseCommand {
       for (const sub of subscriptions) {
         const type = sub.deviceId ? "device" : "client";
         const id = sub.deviceId || sub.clientId;
-        this.log(formatHeading(`${type}: ${id}`));
+        this.log(formatHeading(`${type}: ${escapeIdentifier(id)}`));
         this.log(`  ${formatLabel("Channel")} ${formatResource(sub.channel)}`);
         if (sub.deviceId)
-          this.log(`  ${formatLabel("Device ID")} ${sub.deviceId}`);
+          this.log(
+            `  ${formatLabel("Device ID")} ${escapeIdentifier(sub.deviceId)}`,
+          );
         if (sub.clientId)
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(sub.clientId)}`,

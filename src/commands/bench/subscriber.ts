@@ -5,8 +5,16 @@ import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../flags.js";
-import { formatHeading, formatResource } from "../../utils/output.js";
+import {
+  formatClientId,
+  formatHeading,
+  formatResource,
+} from "../../utils/output.js";
 import type { BenchMessageData, BenchPresenceData } from "../../types/bench.js";
+import {
+  escapeControlChars,
+  escapeIdentifier,
+} from "../../utils/terminal-safe.js";
 
 interface TestMetrics {
   endToEndLatencies: number[]; // Publisher -> Subscriber
@@ -201,10 +209,13 @@ export default class BenchSubscriber extends AblyBaseCommand {
             }
           }
 
-          this.logProgress(`Active test ID: ${metrics.testId}`, flags);
+          this.logProgress(
+            `Active test ID: ${escapeIdentifier(metrics.testId)}`,
+            flags,
+          );
           if (metrics.testDetails) {
             this.logProgress(
-              `Test will send ${String(metrics.testDetails.messageCount)} messages at ${String(metrics.testDetails.messageRate)} msg/sec using ${String(metrics.testDetails.transport)} transport`,
+              `Test will send ${escapeControlChars(metrics.testDetails.messageCount)} messages at ${escapeControlChars(metrics.testDetails.messageRate)} msg/sec using ${escapeControlChars(metrics.testDetails.transport)} transport`,
               flags,
             );
           }
@@ -230,7 +241,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
 
     table = new Table({
       colWidths: [20, 30], // Adjust column widths
-      head: [chalk.white("Benchmark Test"), chalk.white(testId)],
+      head: [
+        chalk.white("Benchmark Test"),
+        chalk.white(escapeIdentifier(testId)),
+      ],
       style: {
         border: [], // No additional styles for the border
         head: [], // No additional styles for the header
@@ -293,7 +307,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
       flags,
       "benchmark",
       "testFinished",
-      `Benchmark test ${metrics.testId} finished`,
+      `Benchmark test ${escapeIdentifier(metrics.testId)} finished`,
       { results },
     );
 
@@ -315,7 +329,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
     });
 
     summaryTable.push(
-      ["Test ID", metrics.testId],
+      ["Test ID", escapeIdentifier(metrics.testId)],
       ["Messages received", metrics.messagesReceived.toString()],
       [
         "Test duration",
@@ -403,7 +417,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
           flags,
           "presence",
           "memberEntered",
-          `Member entered presence: ${clientId}`,
+          `Member entered presence: ${formatClientId(clientId)}`,
           { clientId, data },
         );
 
@@ -423,16 +437,19 @@ export default class BenchSubscriber extends AblyBaseCommand {
             flags,
             "benchmark",
             "publisherDetected",
-            `Publisher detected with test ID: ${testId}`,
+            `Publisher detected with test ID: ${escapeIdentifier(testId)}`,
             { testDetails, testId },
           );
           metrics.testDetails = testDetails;
           metrics.publisherActive = true;
           metrics.lastMessageTime = Date.now();
           // Do not start a new test here, wait for the first message
-          this.logProgress(`Publisher detected with test ID: ${testId}`, flags);
           this.logProgress(
-            `Test will send ${String(testDetails.messageCount)} messages at ${String(testDetails.messageRate)} msg/sec using ${String(testDetails.transport)} transport`,
+            `Publisher detected with test ID: ${escapeIdentifier(testId)}`,
+            flags,
+          );
+          this.logProgress(
+            `Test will send ${escapeControlChars(testDetails.messageCount)} messages at ${escapeControlChars(testDetails.messageRate)} msg/sec using ${escapeControlChars(testDetails.transport)} transport`,
             flags,
           );
         }
@@ -449,7 +466,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
           flags,
           "presence",
           "memberLeft",
-          `Member left presence: ${clientId}`,
+          `Member left presence: ${formatClientId(clientId)}`,
           { clientId },
         );
 
@@ -546,7 +563,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
       flags,
       "benchmark",
       "newTestDetected",
-      `New benchmark test detected with ID: ${testId}`,
+      `New benchmark test detected with ID: ${escapeIdentifier(testId)}`,
       { testId },
     );
     metrics.messagesReceived = 0;
@@ -677,10 +694,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
           flags,
           "benchmark",
           "testStarted",
-          `Benchmark test started with ID: ${metrics.testId}`,
+          `Benchmark test started with ID: ${escapeIdentifier(metrics.testId)}`,
           { testId: metrics.testId },
         );
-        const logMsg = `Benchmark test started: ${metrics.testId}`;
+        const logMsg = `Benchmark test started: ${escapeIdentifier(metrics.testId)}`;
         this.addLogToBuffer(logMsg, flags); // Pass flags here
       } else if (msgData.type === "message") {
         // If we missed the 'start' envelope (subscriber started late), initialise on first message
@@ -698,7 +715,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
             flags,
             "benchmark",
             "testStartedLate",
-            `Benchmark test inferred from first message with ID: ${metrics.testId}`,
+            `Benchmark test inferred from first message with ID: ${escapeIdentifier(metrics.testId)}`,
             { testId: metrics.testId },
           );
         }
@@ -715,7 +732,7 @@ export default class BenchSubscriber extends AblyBaseCommand {
         metrics.endToEndLatencies.push(endToEndLatency);
         metrics.totalLatency += endToEndLatency;
 
-        const logMsg = `Received message ${message.id} (e2e: ${endToEndLatency}ms)`;
+        const logMsg = `Received message ${escapeIdentifier(message.id)} (e2e: ${endToEndLatency}ms)`;
         this.addLogToBuffer(logMsg, flags);
 
         if (!this.shouldOutputJson(flags)) {
@@ -774,7 +791,10 @@ export default class BenchSubscriber extends AblyBaseCommand {
     // Recreate table with updated data
     const updatedTable = new Table({
       colWidths: [20, 30],
-      head: [chalk.white("Benchmark Test"), chalk.white(metrics.testId || "")],
+      head: [
+        chalk.white("Benchmark Test"),
+        chalk.white(escapeIdentifier(metrics.testId || "")),
+      ],
       style: {
         border: [],
         head: [],

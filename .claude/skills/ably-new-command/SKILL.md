@@ -273,6 +273,7 @@ Rules:
 - `formatLabel(text)` — dim with colon, for field labels
 - `formatHeading(text)` — bold, for record headings in lists
 - `formatIndex(n)` — dim bracketed number, for history ordering
+- **Remote values must not reach the terminal raw.** Message data, names, client IDs, channel names and other values that come from Ably are attacker-controlled: a publisher can embed escape sequences that clear the screen, spoof output, or plant links and titles in the reader's terminal. Pass them through `formatResource`/`formatClientId`/`formatEventType`/`formatMessageData` (which escape control characters), or wrap other remote fields in `escapeControlChars()` (free text) or `escapeIdentifier()` (names and IDs: also escapes newlines, tabs and invisible characters) from `src/utils/terminal-safe.ts`. `this.log()`/`this.logToStderr()` strip every non-colour escape as a backstop, but only the formatters stop colour spoofing — and `process.stdout.write`, `console.*`, readline prompts and inquirer bypass the backstop entirely.
 - Use `this.fail()` for all errors (see Error handling below), never `this.log(chalk.red(...))`
 - Never use `console.log` or `console.error` — always `this.log()` for data or the logging helpers for status messages
 - Use `this.logProgress(msg, flags)`, `this.logSuccessMessage(msg, flags)`, `this.logListening(msg, flags)`, `this.logHolding(msg, flags)`, `this.logWarning(msg, flags)` for status messages — no `shouldOutputJson` guard needed. In non-JSON mode all emit to stderr. In JSON mode: `logProgress` and `logSuccessMessage` are silent; `logListening` (status: "listening"), `logHolding` (status: "holding"), and `logWarning` (status: "warning") emit structured JSON on stdout
@@ -464,6 +465,7 @@ See the "Keeping Skills Up to Date" section in `CLAUDE.md` for the full list of 
 - [ ] Human data output wrapped in `if (!this.shouldOutputJson(flags))` — but `logProgress`, `logSuccessMessage`, `logListening`, `logWarning` helpers do NOT need guards
 - [ ] Status messages use base command helpers (`this.logProgress`, `this.logSuccessMessage`, `this.logListening`, `this.logWarning`) — NOT `this.logToStderr(formatProgress/Success/Listening/Warning(...))`
 - [ ] Output formatters used correctly for data display (`formatResource`, `formatTimestamp`, `formatClientId`, `formatEventType`, `formatLabel`, `formatHeading`, `formatIndex`)
+- [ ] Remote string fields not covered by a formatter are wrapped in `escapeControlChars()` (terminal escape injection)
 - [ ] `logSuccessMessage()` messages end with `.` (period)
 - [ ] Non-JSON data output uses multi-line labeled blocks (see `patterns.md` "Human-Readable Output Format"), not tables or custom grids
 - [ ] Non-JSON output exposes all available SDK fields (same data as JSON mode, omitting only null/empty values)

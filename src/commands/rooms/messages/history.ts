@@ -20,6 +20,7 @@ import {
   formatPaginationLog,
 } from "../../../utils/pagination.js";
 import { parseTimestamp } from "../../../utils/time.js";
+import { escapeControlChars } from "../../../utils/terminal-safe.js";
 
 export default class MessagesHistory extends ChatBaseCommand {
   static override args = {
@@ -190,7 +191,9 @@ export default class MessagesHistory extends ChatBaseCommand {
               `  ${formatLabel("Action")} ${formatEventType(String(message.action))}`,
             );
             this.log(`  ${formatLabel("Client ID")} ${formatClientId(author)}`);
-            this.log(`  ${formatLabel("Text")} ${message.text}`);
+            this.log(
+              `  ${formatLabel("Text")} ${escapeControlChars(message.text)}`,
+            );
             this.log(
               `  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
             );

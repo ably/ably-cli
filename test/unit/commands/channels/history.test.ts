@@ -184,6 +184,82 @@ describe("channels:history command", () => {
       expect(messages[0].data).toEqual({ text: "Hello world" });
       expect(messages[0].timestamp).toBe("2023-11-14T22:13:20.000Z");
     });
+    it("should render control sequences in message fields as visible text", async () => {
+      const injected = "\u001B[2J\u001B]8;;https://evil.example\u001B\\link";
+      const mock = getMockAblyRest();
+      mock.channels._getChannel("test-channel").history.mockResolvedValue(
+        createMockPaginatedResult([
+          {
+            id: "msg-1",
+            name: `event${injected}`,
+            data: injected,
+            timestamp: 1700000000000,
+            clientId: `client${injected}`,
+          },
+        ]),
+      );
+
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+        { stripAnsi: false },
+      );
+
+      expect(stdout).not.toContain("\u001B[2J");
+      expect(stdout).not.toContain("\u001B]8;;");
+      expect(stdout).toContain(
+        String.raw`\u001b[2J\u001b]8;;https://evil.example`,
+      );
+      expect(stdout).toContain(String.raw`event\u001b[2J`);
+      expect(stdout).toContain(String.raw`client\u001b[2J`);
+    });
+    it("should keep DEL and C1 characters in --json output losslessly", async () => {
+      const data = "a\u007Fb\u0085c\u009B2J";
+      const mock = getMockAblyRest();
+      mock.channels
+        ._getChannel("test-channel")
+        .history.mockResolvedValue(
+          createMockPaginatedResult([
+            { id: "msg-1", name: "event", data, timestamp: 1700000000000 },
+          ]),
+        );
+
+      const records = await captureJsonLogs(async () => {
+        await runCommand(
+          ["channels:history", "test-channel", "--json"],
+          import.meta.url,
+        );
+      });
+
+      const result = records.find((r) => r.type === "result");
+      expect((result?.messages as Array<Record<string, unknown>>)[0].data).toBe(
+        data,
+      );
+    });
+    it("should render C1 and bidi characters in JSON data keys and values visibly", async () => {
+      const mock = getMockAblyRest();
+      mock.channels._getChannel("test-channel").history.mockResolvedValue(
+        createMockPaginatedResult([
+          {
+            id: "msg-1",
+            name: "order.update",
+            data: { orderId: "123", "\u009BAstatus": "acct-\u009B5A42\u202E" },
+            timestamp: 1700000000000,
+          },
+        ]),
+      );
+
+      const { stdout } = await runCommand(
+        ["channels:history", "test-channel"],
+        import.meta.url,
+        { stripAnsi: false },
+      );
+
+      expect(stdout).not.toContain("\u009B");
+      expect(stdout).not.toContain("\u202E");
+      expect(stdout).toContain(String.raw`"\u009bAstatus"`);
+      expect(stdout).toContain(String.raw`"acct-\u009b5A42\u202e"`);
+    });
   });
 
   describe("flags", () => {

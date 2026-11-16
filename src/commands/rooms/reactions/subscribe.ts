@@ -6,6 +6,7 @@ import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
   formatClientId,
+  formatEventType,
   formatLabel,
   formatResource,
   formatTimestamp,
@@ -130,7 +131,7 @@ export default class RoomsReactionsSubscribe extends ChatBaseCommand {
           );
         } else {
           this.log(
-            `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(reaction.clientId)} reacted with ${chalk.yellow(reaction.name || "unknown")}`,
+            `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(reaction.clientId)} reacted with ${formatEventType(reaction.name || "unknown")}`,
           );
 
           // Show any additional metadata in the reaction

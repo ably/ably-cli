@@ -15,7 +15,7 @@ import {
 } from "../../../src/services/config-manager.js";
 import { InteractiveHelper } from "../../../src/services/interactive-helper.js";
 import { BaseFlags } from "../../../src/types/cli.js";
-import { Config } from "@oclif/core";
+import { Command, Config } from "@oclif/core";
 
 // Create a testable implementation of the abstract AblyBaseCommand
 class TestCommand extends AblyBaseCommand {
@@ -387,6 +387,66 @@ describe("AblyBaseCommand", function () {
       command.testIsWebCliMode = true;
       expect(command.testIsAllowedInWebCliMode("help")).toBe(true);
       expect(command.testIsAllowedInWebCliMode("channels:publish")).toBe(true);
+    });
+  });
+
+  describe("terminal output sanitising", function () {
+    it("log() keeps colours but drops other escape sequences", function () {
+      const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+      const cmd = new TestCommand([], { root: "/cli" } as unknown as Config);
+
+      cmd.log(
+        "\u001B[36mcyan\u001B[39m \u001B[2J\u001B]0;title\u0007%s",
+        "done\r",
+      );
+
+      expect(consoleLog).toHaveBeenCalledWith("\u001B[36mcyan\u001B[39m done");
+    });
+
+    it("catch() escapes the message of an error that bypassed fail()", async function () {
+      const error = new Error("channel \u001B[2J\u001B]0;title\u0007");
+      const catchError = (
+        command as unknown as { catch(err: Error): Promise<unknown> }
+      ).catch.bind(command);
+
+      await expect(catchError(error)).rejects.toBe(error);
+      expect(error.message).toBe(
+        String.raw`channel \u001b[2J\u001b]0;title\u0007`,
+      );
+    });
+
+    it("catch() also sanitises the stack, which DEBUG output prints", async function () {
+      const error = new Error("channel \u001B]0;title\u0007");
+      const catchError = (
+        command as unknown as { catch(err: Error): Promise<unknown> }
+      ).catch.bind(command);
+
+      await expect(catchError(error)).rejects.toBe(error);
+      expect(error.stack).not.toContain("\u001B");
+      expect(error.stack).toContain(String.raw`\u001b]0;title\u0007`);
+    });
+
+    it("catch() keeps colours in oclif errors but strips other sequences", async function () {
+      const error = Object.assign(
+        new Error("\u001B[31mfailed\u001B[39m \u001B[2J"),
+        { oclif: { exit: 1 } },
+      );
+      const catchError = (
+        command as unknown as { catch(err: Error): Promise<unknown> }
+      ).catch.bind(command);
+
+      await expect(catchError(error)).rejects.toBe(error);
+      expect(error.message).toBe("\u001B[31mfailed\u001B[39m ");
+    });
+
+    it("logToStderr() drops non-SGR escape sequences", function () {
+      const superLogToStderr = vi
+        .spyOn(Command.prototype, "logToStderr")
+        .mockImplementation(() => {});
+
+      command.logToStderr("warn \u001B]8;;https://evil.example\u001B\\link");
+
+      expect(superLogToStderr).toHaveBeenCalledWith("warn link");
     });
   });
 

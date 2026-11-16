@@ -210,6 +210,32 @@ describe("channels:subscribe command", () => {
       expect(record).toHaveProperty("message.version");
       expect(record).toHaveProperty("message.annotations");
     });
+    it("should render control sequences in received messages as visible text", async () => {
+      const commandPromise = runCommand(
+        ["channels:subscribe", "test-channel"],
+        import.meta.url,
+        { stripAnsi: false },
+      );
+
+      await vi.waitFor(() => {
+        expect(mockSubscribeCallback).not.toBeNull();
+      });
+
+      mockSubscribeCallback!({
+        id: "msg-1",
+        name: "event",
+        data: "\u001B[2J\u001B[Hspoofed",
+        timestamp: Date.now(),
+        clientId: "client\u001B]0;title\u0007",
+      });
+
+      const { stdout } = await commandPromise;
+
+      expect(stdout).not.toContain("\u001B[2J");
+      expect(stdout).not.toContain("\u001B]0;");
+      expect(stdout).toContain(String.raw`\u001b[2J\u001b[Hspoofed`);
+      expect(stdout).toContain(String.raw`client\u001b]0;title\u0007`);
+    });
   });
 
   describe("flags", () => {

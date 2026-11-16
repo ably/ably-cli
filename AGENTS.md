@@ -213,6 +213,7 @@ All output helpers use the `format` prefix and are exported from `src/utils/outp
 - **Timestamps**: `formatTimestamp(ts)` — dim `[timestamp]` for event streams. `formatMessageTimestamp(message.timestamp)` — converts Ably message timestamp (number|undefined) to ISO string.
 - **Labels**: `formatLabel("Field Name")` — dim with colon appended, for field names in structured output.
 - **Client IDs**: `formatClientId(id)` — blue, for user/client identifiers in events.
+- **Remote values**: anything that came from Ably (message data/name, client IDs, channel names, presence data, room message text) is attacker-controlled and can carry terminal escape sequences. Route it through `formatResource`/`formatClientId`/`formatEventType`/`formatMessageData`, which escape control characters, or wrap other remote fields in `escapeControlChars()` (free text) or `escapeIdentifier()` (names and IDs: also escapes newlines, tabs and invisible characters) from `src/utils/terminal-safe.ts`. `this.log()`/`this.logToStderr()` strip non-colour escapes as a backstop, and `catch()` sanitises errors that bypass `fail()`; `process.stdout.write`, `console.*` and readline prompts are not covered.
 - **Event types**: `formatEventType(type)` — yellow, for action/event type labels.
 - **Headings**: `formatHeading("Record ID: " + id)` — bold, for record headings in list output.
 - **Index**: `formatIndex(n)` — dim bracketed number `[n]`, for history/list ordering.

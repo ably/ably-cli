@@ -3,6 +3,7 @@ import { Flags } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import {
+  formatClientId,
   formatDeviceState,
   formatHeading,
   formatLabel,
@@ -14,6 +15,11 @@ import {
   collectPaginatedResults,
   formatPaginationLog,
 } from "../../../utils/pagination.js";
+import {
+  escapeControlChars,
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "../../../utils/terminal-safe.js";
 
 export default class PushDevicesList extends AblyBaseCommand {
   static override description = "List push device registrations";
@@ -93,26 +99,32 @@ export default class PushDevicesList extends AblyBaseCommand {
       this.log("");
 
       for (const device of devices) {
-        this.log(formatHeading(`Device ID: ${device.id}`));
-        this.log(`  ${formatLabel("Platform")} ${device.platform}`);
-        this.log(`  ${formatLabel("Form Factor")} ${device.formFactor}`);
+        this.log(formatHeading(`Device ID: ${escapeIdentifier(device.id)}`));
+        this.log(
+          `  ${formatLabel("Platform")} ${escapeIdentifier(device.platform)}`,
+        );
+        this.log(
+          `  ${formatLabel("Form Factor")} ${escapeIdentifier(device.formFactor)}`,
+        );
         if (device.push.state)
           this.log(
             `  ${formatLabel("State")} ${formatDeviceState(device.push.state)}`,
           );
         if (device.clientId)
-          this.log(`  ${formatLabel("Client ID")} ${device.clientId}`);
+          this.log(
+            `  ${formatLabel("Client ID")} ${formatClientId(device.clientId)}`,
+          );
         const recipient = device.push.recipient as
           | Record<string, unknown>
           | undefined;
         if (recipient?.transportType) {
           this.log(
-            `  ${formatLabel("Transport")} ${recipient.transportType as string}`,
+            `  ${formatLabel("Transport")} ${escapeControlChars(recipient.transportType)}`,
           );
         }
         if (device.metadata) {
           this.log(
-            `  ${formatLabel("Metadata")} ${JSON.stringify(device.metadata)}`,
+            `  ${formatLabel("Metadata")} ${escapeJsonControlChars(JSON.stringify(device.metadata))}`,
           );
         }
         this.log("");

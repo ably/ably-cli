@@ -5,6 +5,7 @@ import Table from "cli-table3";
 
 import { AblyBaseCommand } from "../../base-command.js";
 import { clientIdFlag, productApiFlags } from "../../flags.js";
+import { formatClientId } from "../../utils/output.js";
 import { errorMessage } from "../../utils/errors.js";
 import { promptForConfirmation } from "../../utils/prompt-confirmation.js";
 import type { BenchPresenceData } from "../../types/bench.js";
@@ -335,7 +336,7 @@ export default class BenchPublisher extends AblyBaseCommand {
             flags,
             "benchmark",
             "subscriberDetected",
-            `Subscriber detected: ${member.clientId}`,
+            `Subscriber detected: ${formatClientId(member.clientId)}`,
             { clientId: member.clientId },
           );
           channel.presence.unsubscribe("enter", subscriberCheck);
@@ -602,7 +603,7 @@ export default class BenchPublisher extends AblyBaseCommand {
           flags,
           "presence",
           "memberEntered",
-          `Member entered presence: ${member.clientId}`,
+          `Member entered presence: ${formatClientId(member.clientId)}`,
           { clientId: member.clientId, data: member.data },
         );
       },
@@ -614,7 +615,7 @@ export default class BenchPublisher extends AblyBaseCommand {
           flags,
           "presence",
           "memberLeft",
-          `Member left presence: ${member.clientId}`,
+          `Member left presence: ${formatClientId(member.clientId)}`,
           { clientId: member.clientId },
         );
       },
@@ -626,7 +627,7 @@ export default class BenchPublisher extends AblyBaseCommand {
           flags,
           "presence",
           "memberUpdated",
-          `Member updated presence: ${member.clientId}`,
+          `Member updated presence: ${formatClientId(member.clientId)}`,
           { clientId: member.clientId, data: member.data },
         );
       },

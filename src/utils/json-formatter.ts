@@ -1,5 +1,7 @@
 import chalk from "chalk";
 
+import { escapeControlChars, escapeJsonControlChars } from "./terminal-safe.js";
+
 /**
  * Format JSON data with syntax highlighting for console output
  * @param data Any data that can be serialized to JSON
@@ -15,8 +17,11 @@ export function formatJson(data: unknown): string {
       return colorValue(data);
     }
 
-    // For objects and arrays, do pretty printing with color
-    const jsonString = JSON.stringify(data, null, 2);
+    // For objects and arrays, do pretty printing with color. JSON.stringify
+    // leaves DEL, C1 and bidi characters raw in keys and values; escape them
+    // visibly, as --json does, rather than letting the log() backstop
+    // silently drop them and show a different key or value than was sent.
+    const jsonString = escapeJsonControlChars(JSON.stringify(data, null, 2));
     return colorizeJson(jsonString);
   } catch {
     // If JSON serialization fails (e.g. circular reference), return a safe string representation
@@ -26,11 +31,11 @@ export function formatJson(data: unknown): string {
       if (typeof data === "bigint") return data.toString();
       if (typeof data === "number") return data.toString();
       if (typeof data === "boolean") return data.toString();
-      return typeof data === "string" ? data : "undefined";
+      return typeof data === "string" ? escapeControlChars(data) : "undefined";
     }
 
     try {
-      return JSON.stringify(data);
+      return escapeJsonControlChars(JSON.stringify(data));
     } catch {
       return "[Circular]";
     }
@@ -41,7 +46,7 @@ export function formatJson(data: unknown): string {
  * Format message data for display: uses colorized JSON for objects, String() for primitives.
  */
 export function formatMessageData(data: unknown): string {
-  return isJsonData(data) ? formatJson(data) : String(data);
+  return isJsonData(data) ? formatJson(data) : escapeControlChars(data);
 }
 
 /**
@@ -87,7 +92,7 @@ function colorValue(value: unknown): string {
     }
 
     case "string": {
-      return chalk.green(`"${value}"`);
+      return chalk.green(`"${escapeControlChars(value)}"`);
     }
 
     case "bigint": {
@@ -99,7 +104,9 @@ function colorValue(value: unknown): string {
     }
 
     default: {
-      return typeof value === "object" ? JSON.stringify(value) : "[Function]";
+      return typeof value === "object"
+        ? escapeJsonControlChars(JSON.stringify(value))
+        : "[Function]";
     }
   }
 }

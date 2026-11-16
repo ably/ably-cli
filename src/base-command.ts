@@ -45,6 +45,10 @@ import {
   formatWarning,
 } from "./utils/output.js";
 import stripAnsi from "strip-ansi";
+import {
+  escapeControlChars,
+  escapeJsonControlChars,
+} from "./utils/terminal-safe.js";
 import { getAgentName, getCliVersion } from "./utils/version.js";
 import type { SpacesClient } from "@ably/spaces";
 import { ChatClient } from "@ably/chat";
@@ -1103,6 +1107,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     data: Record<string, unknown>,
     flags: BaseFlags,
   ): string {
+    return escapeJsonControlChars(this.serializeJson(data, flags));
+  }
+
+  private serializeJson(data: Record<string, unknown>, flags: BaseFlags) {
     if (this.isPrettyJsonOutput(flags)) {
       try {
         return colorJson(data);
@@ -2189,7 +2197,10 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
       this.exit(1);
     }
 
-    let humanMessage = cmdError.message;
+    // Server error messages can echo remote values (channel names, client
+    // IDs), so render their control characters visibly. JSON output above is
+    // already safe: JSON.stringify escapes them.
+    let humanMessage = escapeControlChars(cmdError.message);
     if (friendlyHint) {
       humanMessage += `\n${friendlyHint}`;
     }
@@ -2200,7 +2211,7 @@ export abstract class AblyBaseCommand extends InteractiveBaseCommand {
     if (code !== undefined) {
       const helpUrl = cmdError.context.helpUrl as string | undefined;
       humanMessage += helpUrl
-        ? `\nAbly error code: ${String(code)} (${helpUrl})`
+        ? `\nAbly error code: ${String(code)} (${escapeControlChars(helpUrl)})`
         : `\nAbly error code: ${String(code)}`;
     }
 

@@ -4,6 +4,7 @@ import { Args } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { SpacesBaseCommand } from "../../../spaces-base-command.js";
 import {
+  formatClientId,
   formatMessageTimestamp,
   formatTimestamp,
 } from "../../../utils/output.js";
@@ -83,7 +84,7 @@ export default class SpacesMembersSubscribe extends SpacesBaseCommand {
             flags,
             "member",
             "duplicateEventSkipped",
-            `Skipping duplicate event '${action}' for ${clientId}`,
+            `Skipping duplicate event '${action}' for ${formatClientId(clientId)}`,
             { action, clientId },
           );
           return; // Skip duplicate events within 500ms window

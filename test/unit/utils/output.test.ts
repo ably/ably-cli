@@ -17,6 +17,7 @@ import {
   formatPresenceAction,
   buildJsonRecord,
   formatWarning,
+  formatJsonString,
 } from "../../../src/utils/output.js";
 
 describe("formatProgress", () => {
@@ -319,5 +320,16 @@ describe("buildJsonRecord", () => {
     });
     expect(record.success).toBe(false);
     expect(record.error).toEqual({ message: "something failed" });
+  });
+});
+
+describe("formatJsonString", () => {
+  it("escapes DEL, C1 and bidi characters losslessly", () => {
+    const data = { value: "a\u007Fb\u0085c\u202Ed" };
+    for (const options of [{ json: true }, { prettyJson: true }]) {
+      const json = formatJsonString(data, options);
+      expect(json).not.toMatch(/[\u007F-\u009F\u202E]/);
+      expect(JSON.parse(json)).toEqual(data);
+    }
   });
 });

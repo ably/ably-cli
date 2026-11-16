@@ -18,6 +18,10 @@ import {
   collectPaginatedResults,
   formatPaginationLog,
 } from "../../../utils/pagination.js";
+import {
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "../../../utils/terminal-safe.js";
 
 // Chat SDK maps room presence to the underlying channel: roomName::$chat
 const chatChannelName = (roomName: string) => `${roomName}::$chat`;
@@ -129,12 +133,16 @@ export default class RoomsPresenceGet extends AblyBaseCommand {
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,
           );
-          this.log(`  ${formatLabel("Connection ID")} ${member.connectionId}`);
+          this.log(
+            `  ${formatLabel("Connection ID")} ${escapeIdentifier(member.connectionId)}`,
+          );
           this.log(
             `  ${formatLabel("Action")} ${formatEventType(String(member.action))}`,
           );
           if (member.data !== null && member.data !== undefined) {
-            this.log(`  ${formatLabel("Data")} ${JSON.stringify(member.data)}`);
+            this.log(
+              `  ${formatLabel("Data")} ${escapeJsonControlChars(JSON.stringify(member.data))}`,
+            );
           }
           this.log(
             `  ${formatLabel("Timestamp")} ${formatMessageTimestamp(member.timestamp)}`,

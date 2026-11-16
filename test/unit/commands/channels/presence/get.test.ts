@@ -122,6 +122,27 @@ describe("channels:presence:get command", () => {
       expect(stdout).toContain('{"status":"online"}');
     });
 
+    it("should render C1 characters in member data visibly", async () => {
+      const mock = getMockAblyRest();
+      mock.channels._getChannel("test-channel").presence.get.mockResolvedValue(
+        createMockPaginatedResult([
+          {
+            ...mockPresenceMembers[0],
+            data: { "\u009BAstatus": "online" },
+          },
+        ]),
+      );
+
+      const { stdout } = await runCommand(
+        ["channels:presence:get", "test-channel"],
+        import.meta.url,
+        { stripAnsi: false },
+      );
+
+      expect(stdout).not.toContain("\u009B");
+      expect(stdout).toContain(String.raw`{"\u009bAstatus":"online"}`);
+    });
+
     it("should pass limit to presence.get", async () => {
       const mock = getMockAblyRest();
       const channel = mock.channels._getChannel("test-channel");
