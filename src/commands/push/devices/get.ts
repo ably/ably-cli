@@ -3,10 +3,16 @@ import { Args } from "@oclif/core";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { productApiFlags } from "../../../flags.js";
 import {
+  formatClientId,
   formatDeviceState,
   formatLabel,
   formatResource,
 } from "../../../utils/output.js";
+import {
+  escapeControlChars,
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "../../../utils/terminal-safe.js";
 
 export default class PushDevicesGet extends AblyBaseCommand {
   static override args = {
@@ -49,11 +55,17 @@ export default class PushDevicesGet extends AblyBaseCommand {
         flags,
       );
       this.log("");
-      this.log(`${formatLabel("Device ID")} ${device.id}`);
-      this.log(`${formatLabel("Platform")} ${device.platform}`);
-      this.log(`${formatLabel("Form Factor")} ${device.formFactor}`);
+      this.log(`${formatLabel("Device ID")} ${escapeIdentifier(device.id)}`);
+      this.log(
+        `${formatLabel("Platform")} ${escapeIdentifier(device.platform)}`,
+      );
+      this.log(
+        `${formatLabel("Form Factor")} ${escapeIdentifier(device.formFactor)}`,
+      );
       if (device.clientId)
-        this.log(`${formatLabel("Client ID")} ${device.clientId}`);
+        this.log(
+          `${formatLabel("Client ID")} ${formatClientId(device.clientId)}`,
+        );
       if (device.push.state)
         this.log(
           `${formatLabel("State")} ${formatDeviceState(device.push.state)}`,
@@ -63,7 +75,7 @@ export default class PushDevicesGet extends AblyBaseCommand {
         | undefined;
       if (recipient?.transportType) {
         this.log(
-          `${formatLabel("Transport Type")} ${recipient.transportType as string}`,
+          `${formatLabel("Transport Type")} ${escapeControlChars(recipient.transportType)}`,
         );
       }
       if (recipient?.deviceToken) {
@@ -72,16 +84,18 @@ export default class PushDevicesGet extends AblyBaseCommand {
           token.length > 8
             ? `${token.slice(0, 4)}...${token.slice(-4)} (redacted)`
             : "****(redacted)";
-        this.log(`${formatLabel("Device Token")} ${redacted}`);
+        this.log(
+          `${formatLabel("Device Token")} ${escapeControlChars(redacted)}`,
+        );
       }
       if (recipient?.targetUrl) {
         this.log(
-          `${formatLabel("Target URL")} ${recipient.targetUrl as string}`,
+          `${formatLabel("Target URL")} ${escapeControlChars(recipient.targetUrl)}`,
         );
       }
       if (device.metadata) {
         this.log(
-          `${formatLabel("Metadata")} ${JSON.stringify(device.metadata)}`,
+          `${formatLabel("Metadata")} ${escapeJsonControlChars(JSON.stringify(device.metadata))}`,
         );
       }
     } catch (error) {

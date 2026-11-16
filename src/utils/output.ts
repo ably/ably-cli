@@ -2,6 +2,11 @@ import type * as Ably from "@ably/pubsub-server";
 import chalk, { type ChalkInstance } from "chalk";
 
 import { formatMessageData, isJsonData } from "./json-formatter.js";
+import {
+  escapeControlChars,
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "./terminal-safe.js";
 
 export function formatProgress(message: string): string {
   return `${message}...`;
@@ -20,7 +25,7 @@ export function formatListening(description: string): string {
 }
 
 export function formatResource(name: string): string {
-  return chalk.cyan(name);
+  return chalk.cyan(escapeIdentifier(name));
 }
 
 export function formatTimestamp(ts: string): string {
@@ -72,12 +77,12 @@ export function formatLimitWarning(
 
 /** Client identity display — cyan-blue for client IDs in event output */
 export function formatClientId(id: string): string {
-  return chalk.blue(id);
+  return chalk.blue(escapeIdentifier(id));
 }
 
 /** Event type/action display — yellow for event type labels */
 export function formatEventType(type: string): string {
-  return chalk.yellow(type);
+  return chalk.yellow(escapeIdentifier(type));
 }
 
 /** Field label display — dim text with colon for structured output fields */
@@ -108,7 +113,7 @@ export function formatDeviceState(state: string): string {
       return chalk.red(state);
     }
     default: {
-      return state;
+      return escapeIdentifier(state);
     }
   }
 }
@@ -154,7 +159,7 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     }
 
     if (msg.id) {
-      lines.push(`${formatLabel("ID")} ${msg.id}`);
+      lines.push(`${formatLabel("ID")} ${escapeIdentifier(msg.id)}`);
     }
 
     lines.push(
@@ -175,7 +180,7 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     }
 
     if (msg.serial) {
-      lines.push(`${formatLabel("Serial")} ${msg.serial}`);
+      lines.push(`${formatLabel("Serial")} ${escapeIdentifier(msg.serial)}`);
     }
 
     if (
@@ -187,7 +192,7 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
     ) {
       lines.push(
         `${formatLabel("Version")}`,
-        `  ${formatLabel("Serial")} ${msg.version.serial}`,
+        `  ${formatLabel("Serial")} ${escapeIdentifier(msg.version.serial)}`,
       );
       if (msg.version.timestamp !== undefined) {
         lines.push(
@@ -214,14 +219,17 @@ export function formatMessagesOutput(messages: MessageDisplayFields[]): string {
           .map((line) => `      ${line}`)
           .join("\n");
 
-        lines.push(`    ${formatLabel(annotationType)}`, formattedValue);
+        lines.push(
+          `    ${formatLabel(escapeIdentifier(annotationType))}`,
+          formattedValue,
+        );
       }
     }
 
     if (isJsonData(msg.data)) {
       lines.push(`${formatLabel("Data")}`, formatMessageData(msg.data));
     } else {
-      lines.push(`${formatLabel("Data")} ${String(msg.data)}`);
+      lines.push(`${formatLabel("Data")} ${formatMessageData(msg.data)}`);
     }
 
     blocks.push(lines.join("\n"));
@@ -255,7 +263,7 @@ export function formatPresenceOutput(
     ];
 
     if (msg.id) {
-      lines.push(`${formatLabel("ID")} ${msg.id}`);
+      lines.push(`${formatLabel("ID")} ${escapeIdentifier(msg.id)}`);
     }
 
     lines.push(
@@ -269,7 +277,9 @@ export function formatPresenceOutput(
     }
 
     if (msg.connectionId) {
-      lines.push(`${formatLabel("Connection ID")} ${msg.connectionId}`);
+      lines.push(
+        `${formatLabel("Connection ID")} ${escapeIdentifier(msg.connectionId)}`,
+      );
     }
 
     if (msg.data !== null && msg.data !== undefined) {
@@ -322,7 +332,7 @@ export function formatAnnotationsOutput(
     }
 
     if (ann.id) {
-      lines.push(`${formatLabel("ID")} ${ann.id}`);
+      lines.push(`${formatLabel("ID")} ${escapeIdentifier(ann.id)}`);
     }
 
     lines.push(
@@ -338,7 +348,7 @@ export function formatAnnotationsOutput(
     }
 
     if (ann.name) {
-      lines.push(`${formatLabel("Name")} ${ann.name}`);
+      lines.push(`${formatLabel("Name")} ${escapeIdentifier(ann.name)}`);
     }
 
     if (ann.clientId) {
@@ -346,11 +356,11 @@ export function formatAnnotationsOutput(
     }
 
     if (ann.count !== undefined) {
-      lines.push(`${formatLabel("Count")} ${ann.count}`);
+      lines.push(`${formatLabel("Count")} ${escapeControlChars(ann.count)}`);
     }
 
     if (ann.serial) {
-      lines.push(`${formatLabel("Serial")} ${ann.serial}`);
+      lines.push(`${formatLabel("Serial")} ${escapeIdentifier(ann.serial)}`);
     }
 
     if (ann.data !== undefined) {
@@ -362,11 +372,15 @@ export function formatAnnotationsOutput(
     }
 
     if (ann.encoding) {
-      lines.push(`${formatLabel("Encoding")} ${ann.encoding}`);
+      lines.push(
+        `${formatLabel("Encoding")} ${escapeIdentifier(ann.encoding)}`,
+      );
     }
 
     if (ann.messageSerial) {
-      lines.push(`${formatLabel("Message Serial")} ${ann.messageSerial}`);
+      lines.push(
+        `${formatLabel("Message Serial")} ${escapeIdentifier(ann.messageSerial)}`,
+      );
     }
 
     if (ann.extras !== undefined && ann.extras !== null) {
@@ -431,10 +445,9 @@ export function formatJsonString(
   data: Record<string, unknown>,
   options: { json?: boolean; prettyJson?: boolean },
 ): string {
-  if (options.prettyJson) {
-    return JSON.stringify(data, null, 2);
-  }
-  return JSON.stringify(data);
+  return escapeJsonControlChars(
+    options.prettyJson ? JSON.stringify(data, null, 2) : JSON.stringify(data),
+  );
 }
 
 export function formatPresenceAction(action: string): {

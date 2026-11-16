@@ -13,6 +13,7 @@ import {
   formatTimestamp,
   formatLabel,
 } from "../../../utils/output.js";
+import { escapeJsonControlChars } from "../../../utils/terminal-safe.js";
 
 export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
   static override description = "Subscribe to live connection lifecycle logs";
@@ -102,7 +103,7 @@ export default class LogsConnectionLifecycleSubscribe extends AblyBaseCommand {
 
           if (message.data !== null && message.data !== undefined) {
             this.log(
-              `${formatLabel("Data")} ${JSON.stringify(message.data, null, 2)}`,
+              `${formatLabel("Data")} ${escapeJsonControlChars(JSON.stringify(message.data, null, 2))}`,
             );
           }
 

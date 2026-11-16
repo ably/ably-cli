@@ -106,6 +106,32 @@ describe("channels:presence:subscribe command", () => {
       expect(stdout).toContain("online");
     });
 
+    it("should keep a remote client ID on one line in --verbose event logs", async () => {
+      const commandPromise = runCommand(
+        ["channels:presence:subscribe", "test-channel", "--verbose"],
+        import.meta.url,
+      );
+
+      await vi.waitFor(() => {
+        expect(presenceCallback).not.toBeNull();
+      });
+
+      presenceCallback!({
+        action: "enter",
+        clientId: "bob\n\u001B[31mError:\u001B[0m fake line",
+        timestamp: Date.now(),
+        connectionId: "conn-123",
+        id: "presence-msg-123",
+      });
+
+      const { stdout } = await commandPromise;
+
+      expect(stdout).not.toMatch(/^Error: fake line/m);
+      expect(stdout).toContain(
+        String.raw`Presence event: enter by bob\u000a\u001b[31mError:`,
+      );
+    });
+
     it("should run with --json flag without errors", async () => {
       const mock = getMockAblyRealtime();
       const channel = mock.channels._getChannel("test-channel");

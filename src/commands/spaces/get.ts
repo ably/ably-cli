@@ -13,6 +13,10 @@ import {
   formatResource,
 } from "../../utils/output.js";
 import type { MemberOutput } from "../../utils/spaces-output.js";
+import {
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "../../utils/terminal-safe.js";
 
 const SPACE_CHANNEL_TAG = "::$space";
 
@@ -140,20 +144,22 @@ export default class SpacesGet extends SpacesBaseCommand {
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,
           );
-          this.log(`  ${formatLabel("Connection ID")} ${member.connectionId}`);
+          this.log(
+            `  ${formatLabel("Connection ID")} ${escapeIdentifier(member.connectionId)}`,
+          );
           this.log(`  ${formatLabel("Connected")} ${member.isConnected}`);
           if (
             member.profileData &&
             Object.keys(member.profileData).length > 0
           ) {
             this.log(
-              `  ${formatLabel("Profile")} ${JSON.stringify(member.profileData)}`,
+              `  ${formatLabel("Profile")} ${escapeJsonControlChars(JSON.stringify(member.profileData))}`,
             );
           }
 
           if (member.location != null) {
             this.log(
-              `  ${formatLabel("Location")} ${JSON.stringify(member.location)}`,
+              `  ${formatLabel("Location")} ${escapeJsonControlChars(JSON.stringify(member.location))}`,
             );
           }
 

@@ -146,7 +146,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
               this.logJsonEvent({ reaction: eventData }, flags);
             } else {
               this.log(
-                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(event.reaction.clientId)} [${event.reaction.type}] ${event.type}: ${formatEventType(event.reaction.name || "unknown")} to message ${formatResource(event.reaction.messageSerial)}`,
+                `${formatTimestamp(timestamp)} ${chalk.green("⚡")} ${formatClientId(event.reaction.clientId)} [${formatEventType(event.reaction.type)}] ${event.type}: ${formatEventType(event.reaction.name || "unknown")} to message ${formatResource(event.reaction.messageSerial)}`,
               );
             }
           },
@@ -257,7 +257,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
   ): void {
     for (const [reactionName, details] of Object.entries(summary)) {
       this.log(
-        `    ${formatEventType(reactionName)}: ${details.total} (${details.clientIds.join(", ")})`,
+        `    ${formatEventType(reactionName)}: ${details.total} (${details.clientIds.map((id) => formatClientId(id)).join(", ")})`,
       );
     }
   }
@@ -270,7 +270,7 @@ export default class MessagesReactionsSubscribe extends ChatBaseCommand {
   ): void {
     for (const [reactionName, details] of Object.entries(summary)) {
       const clientList = Object.entries(details.clientIds)
-        .map(([clientId, count]) => `${clientId}(${count})`)
+        .map(([clientId, count]) => `${formatClientId(clientId)}(${count})`)
         .join(", ");
       this.log(
         `    ${formatEventType(reactionName)}: ${details.total} (${clientList})`,

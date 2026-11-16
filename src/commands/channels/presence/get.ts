@@ -17,6 +17,10 @@ import {
   collectPaginatedResults,
   formatPaginationLog,
 } from "../../../utils/pagination.js";
+import {
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "../../../utils/terminal-safe.js";
 
 export default class ChannelsPresenceGet extends AblyBaseCommand {
   static override args = {
@@ -124,12 +128,16 @@ export default class ChannelsPresenceGet extends AblyBaseCommand {
           this.log(
             `  ${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,
           );
-          this.log(`  ${formatLabel("Connection ID")} ${member.connectionId}`);
+          this.log(
+            `  ${formatLabel("Connection ID")} ${escapeIdentifier(member.connectionId)}`,
+          );
           this.log(
             `  ${formatLabel("Action")} ${formatEventType(String(member.action))}`,
           );
           if (member.data !== null && member.data !== undefined) {
-            this.log(`  ${formatLabel("Data")} ${JSON.stringify(member.data)}`);
+            this.log(
+              `  ${formatLabel("Data")} ${escapeJsonControlChars(JSON.stringify(member.data))}`,
+            );
           }
           this.log(
             `  ${formatLabel("Timestamp")} ${formatMessageTimestamp(member.timestamp)}`,

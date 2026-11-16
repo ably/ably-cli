@@ -14,6 +14,8 @@ import { TerminalDiagnostics } from "../utils/terminal-diagnostics.js";
 import { formatWarning } from "../utils/output.js";
 import "../utils/sigint-exit.js";
 import isWebCliMode from "../utils/web-mode.js";
+import stripAnsi from "strip-ansi";
+import { stripUnsafeEscapes } from "../utils/terminal-safe.js";
 
 interface HistorySearchState {
   active: boolean;
@@ -525,11 +527,12 @@ export default class Interactive extends Command {
       }
 
       // Always show errors in red
-      let errorMessage = err.message || "Unknown error";
-
-      // Clean up the error message if it has ANSI codes or extra formatting
-      // eslint-disable-next-line no-control-regex
-      errorMessage = errorMessage.replaceAll(/\u001B\[[0-9;]*m/g, ""); // Remove ANSI codes
+      // Drop colours (it is re-coloured below) and every other escape
+      // sequence: console.error bypasses the base command's log() sanitising,
+      // and the message can carry remote values from an SDK or server error.
+      const errorMessage = stripAnsi(
+        stripUnsafeEscapes(err.message || "Unknown error"),
+      );
 
       // Check for specific error types
       if (err.isCommandNotFound) {
@@ -546,7 +549,7 @@ export default class Interactive extends Command {
       } else if (err.stack && process.env.DEBUG) {
         // Show stack trace in debug mode
         console.error(chalk.red("Error:"), errorMessage);
-        console.error(err.stack);
+        console.error(stripUnsafeEscapes(err.stack));
       } else {
         // All other errors - show with Error prefix
         console.error(chalk.red("Error:"), errorMessage);

@@ -1,5 +1,11 @@
 import { Command, Interfaces } from "@oclif/core";
 import isTestMode from "./utils/test-mode.js";
+import { format } from "node:util";
+
+import {
+  escapeControlChars,
+  stripUnsafeEscapes,
+} from "./utils/terminal-safe.js";
 
 type PrettyPrintableError = Interfaces.PrettyPrintableError;
 
@@ -58,7 +64,7 @@ export abstract class InteractiveBaseCommand extends Command {
       if (process.env.DEBUG) {
         console.error(
           "[InteractiveBaseCommand] Throwing error instead of exiting:",
-          error.message,
+          stripUnsafeEscapes(error.message),
         );
       }
       throw error;
@@ -104,7 +110,13 @@ export abstract class InteractiveBaseCommand extends Command {
   }
 
   /**
-   * Override log to ensure proper output in interactive mode
+   * Override log to ensure proper output in interactive mode.
+   *
+   * Every line passes through `stripUnsafeEscapes()`, so a remote value that
+   * reached output without going through a formatter still cannot clear the
+   * screen, move the cursor, set the title, or write links or the clipboard.
+   * Colours (SGR) are kept. Deliberate terminal control (screen clears in
+   * bench, inline typing updates) uses process.stdout.write directly.
    */
   log(message?: string, ...args: unknown[]): void {
     // If we have this, the command wasn't run in oclif.runCommand, so don't log to avoid polluting.
@@ -116,7 +128,31 @@ export abstract class InteractiveBaseCommand extends Command {
     if (message === undefined) {
       console.log();
     } else {
-      console.log(message, ...args);
+      console.log(stripUnsafeEscapes(format(message, ...args)));
     }
+  }
+
+  logToStderr(message = "", ...args: unknown[]): void {
+    super.logToStderr(stripUnsafeEscapes(format(message, ...args)));
+  }
+
+  /**
+   * Errors that leave run() reach oclif's handler, which prints the message
+   * (or, with DEBUG set, the stack, which embeds the original message) with
+   * console.error, past log() and the formatters. Anything not already shaped
+   * by oclif (fail() goes through this.error(), so its CLIError is) is an SDK
+   * or runtime error whose message may echo remote values: escape it visibly.
+   * oclif-shaped messages keep their colours but lose every other escape
+   * sequence. Non-Error throws (including null/undefined) go to oclif as-is.
+   */
+  protected override async catch(
+    err: Interfaces.CommandError,
+  ): Promise<unknown> {
+    if (err instanceof Error) {
+      const sanitize = "oclif" in err ? stripUnsafeEscapes : escapeControlChars;
+      err.message = sanitize(err.message);
+      if (typeof err.stack === "string") err.stack = sanitize(err.stack);
+    }
+    return super.catch(err);
   }
 }

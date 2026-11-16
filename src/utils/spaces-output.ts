@@ -7,6 +7,11 @@ import {
   formatMessageTimestamp,
   formatResource,
 } from "./output.js";
+import {
+  escapeControlChars,
+  escapeIdentifier,
+  escapeJsonControlChars,
+} from "./terminal-safe.js";
 
 // --- JSON display interfaces (used by logJsonResult / logJsonEvent) ---
 
@@ -99,19 +104,19 @@ export function formatMemberBlock(
   const indent = options?.indent ?? "";
   const lines: string[] = [
     `${indent}${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,
-    `${indent}${formatLabel("Connection ID")} ${member.connectionId}`,
+    `${indent}${formatLabel("Connection ID")} ${escapeIdentifier(member.connectionId)}`,
     `${indent}${formatLabel("Connected")} ${member.isConnected}`,
   ];
 
   if (member.profileData && Object.keys(member.profileData).length > 0) {
     lines.push(
-      `${indent}${formatLabel("Profile")} ${JSON.stringify(member.profileData)}`,
+      `${indent}${formatLabel("Profile")} ${escapeJsonControlChars(JSON.stringify(member.profileData))}`,
     );
   }
 
   if (member.location != null) {
     lines.push(
-      `${indent}${formatLabel("Location")} ${JSON.stringify(member.location)}`,
+      `${indent}${formatLabel("Location")} ${escapeJsonControlChars(JSON.stringify(member.location))}`,
     );
   }
 
@@ -134,18 +139,20 @@ export function formatMemberEventBlock(
   const lines: string[] = [
     `${formatLabel("Action")} ${formatEventType(action)}`,
     `${formatLabel("Client ID")} ${formatClientId(member.clientId)}`,
-    `${formatLabel("Connection ID")} ${member.connectionId}`,
+    `${formatLabel("Connection ID")} ${escapeIdentifier(member.connectionId)}`,
     `${formatLabel("Connected")} ${member.isConnected}`,
   ];
 
   if (member.profileData && Object.keys(member.profileData).length > 0) {
     lines.push(
-      `${formatLabel("Profile")} ${JSON.stringify(member.profileData)}`,
+      `${formatLabel("Profile")} ${escapeJsonControlChars(JSON.stringify(member.profileData))}`,
     );
   }
 
   if (member.location != null) {
-    lines.push(`${formatLabel("Location")} ${JSON.stringify(member.location)}`);
+    lines.push(
+      `${formatLabel("Location")} ${escapeJsonControlChars(JSON.stringify(member.location))}`,
+    );
   }
 
   return lines.join("\n");
@@ -161,14 +168,14 @@ export function formatCursorBlock(
   const indent = options?.indent ?? "";
   const lines: string[] = [
     `${indent}${formatLabel("Client ID")} ${formatClientId(cursor.clientId)}`,
-    `${indent}${formatLabel("Connection ID")} ${cursor.connectionId}`,
-    `${indent}${formatLabel("Position X")} ${cursor.position.x}`,
-    `${indent}${formatLabel("Position Y")} ${cursor.position.y}`,
+    `${indent}${formatLabel("Connection ID")} ${escapeIdentifier(cursor.connectionId)}`,
+    `${indent}${formatLabel("Position X")} ${escapeControlChars(cursor.position.x)}`,
+    `${indent}${formatLabel("Position Y")} ${escapeControlChars(cursor.position.y)}`,
   ];
 
   if (cursor.data && Object.keys(cursor.data).length > 0) {
     lines.push(
-      `${indent}${formatLabel("Data")} ${JSON.stringify(cursor.data)}`,
+      `${indent}${formatLabel("Data")} ${escapeJsonControlChars(JSON.stringify(cursor.data))}`,
     );
   }
 
@@ -194,7 +201,7 @@ export function formatLockBlock(
 
   if (lock.attributes && Object.keys(lock.attributes).length > 0) {
     lines.push(
-      `${indent}${formatLabel("Attributes")} ${JSON.stringify(lock.attributes)}`,
+      `${indent}${formatLabel("Attributes")} ${escapeJsonControlChars(JSON.stringify(lock.attributes))}`,
     );
   }
 
@@ -217,13 +224,13 @@ export function formatLocationUpdateBlock(update: {
 }): string {
   const lines: string[] = [
     `${formatLabel("Client ID")} ${formatClientId(update.member.clientId)}`,
-    `${formatLabel("Connection ID")} ${update.member.connectionId}`,
-    `${formatLabel("Current Location")} ${JSON.stringify(update.currentLocation)}`,
+    `${formatLabel("Connection ID")} ${escapeIdentifier(update.member.connectionId)}`,
+    `${formatLabel("Current Location")} ${escapeJsonControlChars(JSON.stringify(update.currentLocation))}`,
   ];
 
   if (update.previousLocation != null) {
     lines.push(
-      `${formatLabel("Previous Location")} ${JSON.stringify(update.previousLocation)}`,
+      `${formatLabel("Previous Location")} ${escapeJsonControlChars(JSON.stringify(update.previousLocation))}`,
     );
   }
 

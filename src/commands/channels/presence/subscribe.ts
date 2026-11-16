@@ -3,6 +3,7 @@ import type * as Ably from "@ably/pubsub-server";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import {
+  formatClientId,
   formatResource,
   formatMessageTimestamp,
   formatPresenceOutput,
@@ -87,7 +88,7 @@ export default class ChannelsPresenceSubscribe extends AblyBaseCommand {
             flags,
             "presence",
             presenceMessage.action,
-            `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
+            `Presence event: ${presenceMessage.action} by ${formatClientId(presenceMessage.clientId)}`,
             presenceData,
           );
 

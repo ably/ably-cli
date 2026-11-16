@@ -108,6 +108,25 @@ describe("channels:list command", () => {
         prefix: "test-",
       });
     });
+    it("should render control sequences in channel names as visible text", async () => {
+      const mock = getMockAblyRest();
+      mock.request.mockResolvedValue({
+        ...createMockPaginatedResult([
+          { channelId: "ns:\u001B[2J\u001B]0;title\u0007name" },
+        ]),
+        statusCode: 200,
+      });
+
+      const { stdout } = await runCommand(["channels:list"], import.meta.url, {
+        stripAnsi: false,
+      });
+
+      expect(stdout).not.toContain("\u001B[2J");
+      expect(stdout).not.toContain("\u001B]0;");
+      expect(stdout).toContain(
+        String.raw`ns:\u001b[2J\u001b]0;title\u0007name`,
+      );
+    });
   });
 
   describe("JSON output", () => {

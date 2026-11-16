@@ -102,6 +102,7 @@ For each changed command file, run the relevant checks. Spawn agents for paralle
 7. **Grep** for box-drawing characters (`┌`, `┬`, `├`, `└`, `─.*─`, `│`) — non-JSON output must use multi-line labeled blocks, not ASCII tables or grids
 8. **Read** the file and check that non-JSON data output uses `formatLabel()` for field labels in multi-line blocks, not inline or single-line formatting
 9. **Check** subscribe commands do NOT fetch initial state (no `getAll()` or equivalent before subscribing) — subscribe should only listen for new events
+10. **Read** the file and check that every remote-sourced value (message data/name/text, client IDs, channel names, presence/member data) in non-JSON output goes through `formatResource`/`formatClientId`/`formatEventType`/`formatMessageData` or `escapeControlChars()` — raw interpolation lets a publisher inject terminal escape sequences. Flag `process.stdout.write`, `console.*` or readline prompts that print remote values without sanitising; they bypass the `log()` backstop
 
 **Field completeness check (read — for data-outputting commands):**
 1. **Read** the JSON output path and compare fields emitted vs the non-JSON output path — non-JSON should expose the same fields as JSON mode (omitting only null/empty values)

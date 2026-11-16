@@ -3,7 +3,10 @@ import { Args } from "@oclif/core";
 
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { isJsonData } from "../../../utils/json-formatter.js";
+import {
+  formatMessageData,
+  isJsonData,
+} from "../../../utils/json-formatter.js";
 import {
   formatClientId,
   formatEventType,
@@ -12,6 +15,7 @@ import {
   formatResource,
   formatTimestamp,
 } from "../../../utils/output.js";
+import { escapeJsonControlChars } from "../../../utils/terminal-safe.js";
 
 export default class RoomsPresenceSubscribe extends ChatBaseCommand {
   static override args = {
@@ -122,7 +126,7 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
           flags,
           "presence",
           event.type,
-          `Presence event: ${event.type} by ${member.clientId}`,
+          `Presence event: ${event.type} by ${formatClientId(member.clientId)}`,
           presenceData,
         );
 
@@ -149,10 +153,12 @@ export default class RoomsPresenceSubscribe extends ChatBaseCommand {
             if (isJsonData(member.data)) {
               lines.push(
                 `${formatLabel("Data")}`,
-                JSON.stringify(member.data, null, 2),
+                escapeJsonControlChars(JSON.stringify(member.data, null, 2)),
               );
             } else {
-              lines.push(`${formatLabel("Data")} ${String(member.data)}`);
+              lines.push(
+                `${formatLabel("Data")} ${formatMessageData(member.data)}`,
+              );
             }
           }
           this.log(lines.join("\n"));

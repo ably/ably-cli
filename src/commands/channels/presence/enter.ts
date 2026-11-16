@@ -2,7 +2,10 @@ import { Args, Flags } from "@oclif/core";
 import type * as Ably from "@ably/pubsub-server";
 import { AblyBaseCommand } from "../../../base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
-import { isJsonData } from "../../../utils/json-formatter.js";
+import {
+  formatMessageData,
+  isJsonData,
+} from "../../../utils/json-formatter.js";
 import {
   formatClientId,
   formatEventType,
@@ -12,6 +15,7 @@ import {
   formatResource,
   formatTimestamp,
 } from "../../../utils/output.js";
+import { escapeJsonControlChars } from "../../../utils/terminal-safe.js";
 
 export default class ChannelsPresenceEnter extends AblyBaseCommand {
   static override args = {
@@ -110,7 +114,7 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             flags,
             "presence",
             presenceMessage.action,
-            `Presence event: ${presenceMessage.action} by ${presenceMessage.clientId}`,
+            `Presence event: ${presenceMessage.action} by ${formatClientId(presenceMessage.clientId)}`,
             event,
           );
 
@@ -130,9 +134,15 @@ export default class ChannelsPresenceEnter extends AblyBaseCommand {
             ) {
               if (isJsonData(presenceMessage.data)) {
                 this.log(formatLabel("Data"));
-                this.log(JSON.stringify(presenceMessage.data, null, 2));
+                this.log(
+                  escapeJsonControlChars(
+                    JSON.stringify(presenceMessage.data, null, 2),
+                  ),
+                );
               } else {
-                this.log(`${formatLabel("Data")} ${presenceMessage.data}`);
+                this.log(
+                  `${formatLabel("Data")} ${formatMessageData(presenceMessage.data)}`,
+                );
               }
             }
 

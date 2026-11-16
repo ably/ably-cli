@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
 import { clientIdFlag, durationFlag, productApiFlags } from "../../../flags.js";
 import { formatResource } from "../../../utils/output.js";
+import { escapeIdentifier } from "../../../utils/terminal-safe.js";
 
 export default class TypingSubscribe extends ChatBaseCommand {
   static override args = {
@@ -108,27 +109,20 @@ export default class TypingSubscribe extends ChatBaseCommand {
           // the mocha output hard to read when the CLI is invoked from unit
           // tests (ABLY_CLI_TEST_MODE=true) or when stdout is not a TTY (CI).
           const shouldInlineUpdate = this.shouldUseTerminalUpdates();
+          const typingLine =
+            currentlyTyping.length > 0
+              ? chalk.yellow(
+                  `${currentlyTyping.map((id) => escapeIdentifier(id)).join(", ")} ${currentlyTyping.length === 1 ? "is" : "are"} typing...`,
+                )
+              : undefined;
 
           if (shouldInlineUpdate) {
             // Clear the current line and rewrite it in-place.
             process.stdout.write("\r\u001B[K");
-
-            if (currentlyTyping.length > 0) {
-              const memberNames = currentlyTyping.join(", ");
-              process.stdout.write(
-                chalk.yellow(
-                  `${memberNames} ${currentlyTyping.length === 1 ? "is" : "are"} typing...`,
-                ),
-              );
-            }
-          } else if (currentlyTyping.length > 0) {
+            if (typingLine) process.stdout.write(typingLine);
+          } else if (typingLine) {
             // Fallback: just log a new line so that test output remains intact.
-            const memberNames = currentlyTyping.join(", ");
-            this.log(
-              chalk.yellow(
-                `${memberNames} ${currentlyTyping.length === 1 ? "is" : "are"} typing...`,
-              ),
-            );
+            this.log(typingLine);
           }
         }
       });

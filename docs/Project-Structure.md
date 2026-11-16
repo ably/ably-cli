@@ -94,6 +94,7 @@ This document outlines the directory structure of the Ably CLI project.
 │       ├── sigint-cancellation.ts  # Ctrl+C cancellation for spinner + prompt flows (e.g. login)
 │       ├── sigint-exit.ts          # SIGINT/Ctrl+C handling (exit code 130)
 │       ├── string-distance.ts      # Levenshtein distance for fuzzy matching
+│       ├── terminal-safe.ts        # Terminal escape injection defences (escapeControlChars, escapeIdentifier, stripUnsafeEscapes)
 │       ├── terminal-diagnostics.ts # Terminal capability detection
 │       ├── test-mode.ts            # isTestMode() helper
 │       ├── version.ts              # Version string utilities

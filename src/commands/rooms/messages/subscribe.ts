@@ -13,6 +13,7 @@ import {
   formatEventType,
   formatClientId,
 } from "../../../utils/output.js";
+import { escapeControlChars } from "../../../utils/terminal-safe.js";
 
 // Define message interface
 interface ChatMessage {
@@ -144,7 +145,9 @@ export default class MessagesSubscribe extends ChatBaseCommand {
         this.log(
           `${roomPrefix}  ${formatLabel("Client ID")} ${formatClientId(author)}`,
         );
-        this.log(`${roomPrefix}  ${formatLabel("Text")} ${message.text}`);
+        this.log(
+          `${roomPrefix}  ${formatLabel("Text")} ${escapeControlChars(message.text)}`,
+        );
         this.log(
           `${roomPrefix}  ${formatLabel("Serial")} ${formatResource(message.serial)}`,
         );

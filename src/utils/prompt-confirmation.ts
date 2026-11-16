@@ -1,6 +1,7 @@
 import * as readline from "node:readline";
 
 import { InterruptError } from "./sigint-cancellation.js";
+import { stripUnsafeEscapes } from "./terminal-safe.js";
 
 /**
  * Prompts the user for confirmation with a yes/no question.
@@ -43,7 +44,9 @@ export function promptForConfirmation(
       reject(new InterruptError());
     });
 
-    rl.question(promptMessage, (answer) => {
+    // Prompts often name a server-side resource; readline writes them
+    // straight to stdout, past the base command's log() sanitising.
+    rl.question(stripUnsafeEscapes(promptMessage), (answer) => {
       rl.close();
       const response = answer.toLowerCase().trim();
       if (response === "") {

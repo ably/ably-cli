@@ -2,7 +2,10 @@ import { ChatClient, Room, PresenceEvent, PresenceData } from "@ably/chat";
 import { Args, Flags } from "@oclif/core";
 import { productApiFlags, clientIdFlag, durationFlag } from "../../../flags.js";
 import { ChatBaseCommand } from "../../../chat-base-command.js";
-import { isJsonData } from "../../../utils/json-formatter.js";
+import {
+  formatMessageData,
+  isJsonData,
+} from "../../../utils/json-formatter.js";
 import {
   formatResource,
   formatTimestamp,
@@ -12,6 +15,7 @@ import {
   formatLabel,
   formatMessageTimestamp,
 } from "../../../utils/output.js";
+import { escapeJsonControlChars } from "../../../utils/terminal-safe.js";
 
 export default class RoomsPresenceEnter extends ChatBaseCommand {
   static override args = {
@@ -118,7 +122,7 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               flags,
               "presence",
               event.type,
-              `Presence event: ${event.type} by ${member.clientId}`,
+              `Presence event: ${event.type} by ${formatClientId(member.clientId)}`,
               presenceEvent,
             );
             if (this.shouldOutputJson(flags)) {
@@ -134,9 +138,15 @@ export default class RoomsPresenceEnter extends ChatBaseCommand {
               if (member.data !== null && member.data !== undefined) {
                 if (isJsonData(member.data)) {
                   this.log(formatLabel("Data"));
-                  this.log(JSON.stringify(member.data, null, 2));
+                  this.log(
+                    escapeJsonControlChars(
+                      JSON.stringify(member.data, null, 2),
+                    ),
+                  );
                 } else {
-                  this.log(`${formatLabel("Data")} ${member.data}`);
+                  this.log(
+                    `${formatLabel("Data")} ${formatMessageData(member.data)}`,
+                  );
                 }
               }
 
